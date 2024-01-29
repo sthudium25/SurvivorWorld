@@ -7,4 +7,5 @@ go south
 hack vines
 go west
 unlock tomb
+go in
 hide idol
