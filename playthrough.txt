@@ -1,0 +1,10 @@
+get machete
+go out
+go north
+go north
+get clue
+go south
+hack vines
+go west
+unlock tomb
+hide idol
