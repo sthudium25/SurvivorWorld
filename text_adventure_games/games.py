@@ -1,5 +1,6 @@
 from .things import Location, Character
 from . import parsing, actions, blocks
+from .managers import containment
 
 import json
 import inspect
@@ -34,6 +35,10 @@ class Game:
 
         # Records history of commands, states, and descriptions
         self.game_history = []
+
+        # State Managers
+        # 1. Containment
+        self.containers = containment.ContainmentManager()
 
         self.game_over = False
         self.game_over_description = None
@@ -82,6 +87,17 @@ class Game:
                 for b in location.blocks:
                     self.parser.add_block(b)
                     seen_before[name] = True
+            # Look at items in the location to see if they are containers
+            if len(location.items) > 0 and name not in seen_before:
+                for _, item_list in location.items.items():  # {name[str]: List[Item]}
+                    for item in item_list:
+                        if item.get_property("is_container"):
+                            self.containers.add_container(item)
+                        if item.has_property("is_contained"):
+                            # Get the container Item
+                            container = item.get_property("is_contained")
+                            # add the item to the containment manater
+                            self.containers.add_item(container, item)
 
     def game_loop(self):
         """
@@ -159,6 +175,7 @@ class Game:
                 description += exit + "\n"
         return description
 
+    # Modified to accommodate listed items - ST 1/30/24
     def describe_items(self) -> str:
         """
         Describe what items are in the current location.
@@ -166,13 +183,19 @@ class Game:
         description = ""
         if len(self.player.location.items) > 0:
             description = "You see:"
-            for item_name in self.player.location.items:
-                item = self.player.location.items[item_name]
-                description += "\n * " + item.description
-                if self.give_hints:
-                    special_commands = item.get_command_hints()
-                    for cmd in special_commands:
-                        description += "\n\t" + cmd
+            for curr_item in self.player.location.items:
+                curr_list = self.player.location.items[curr_item]
+                # Just to double check we have an item here
+                if len(curr_list) > 0:
+                    item = curr_list[0]  # get the Oth for descriptive purposes
+                    if len(curr_list) == 1:
+                        description += "\n * " + item.description
+                    else:
+                        description += "\n * " + len(curr_list) + " " + item.description + "s"
+                    if self.give_hints:
+                        special_commands = item.get_command_hints()
+                        for cmd in special_commands:
+                            description += "\n\t" + cmd
         return description
 
     def describe_characters(self) -> str:
@@ -432,3 +455,7 @@ class Game:
         with open(filename, 'r') as f:
             save_data = f.read()
             return cls.from_json(save_data, **kw)
+        
+    # NEW METHODS - ST 1/30/24
+    def get_container_tree(self):
+        self.containers.get_containment_tree()        

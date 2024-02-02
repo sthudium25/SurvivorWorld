@@ -6,6 +6,7 @@ connected to other locations and contain items that the player can interact
 with.  A connection to an adjacent location can be blocked (often introducing
 a puzzle for the player to solve before making progress).
 """
+import random
 
 from .base import Thing
 from .items import Item
@@ -169,28 +170,43 @@ class Location(Thing):
         else:
             return True
 
-    def get_item(self, name: str):
+    def get_item(self, name: str):  # ST updated 1/30/24
         """
-        Checks if the thing is at the location.
+        Gets an item by the provided name
         """
         # The character must be at the location
-        return self.items.get(name, None)
+        items = self.items.get(name, None)
+        if items:
+            return random.choice(items)
+        return None
 
-    def add_item(self, item):
+    def add_item(self, item):  # ST updated 1/30/24
         """
         Put an item in this location.
+        If an item with the same descriptor has already been added,
+        append to the list.
         """
-        self.items[item.name] = item
+        if item.name not in self.items:
+            self.items[item.name] = [item]
+        else:
+            self.items[item.name].append(item)
         item.location = self
         item.owner = None
 
-    def remove_item(self, item):
+    def remove_item(self, item):  # ST updated 1/30/24
         """
         Remove an item from this location (for instance, if the player picks
         it up and puts it in their inventory).
         """
-        self.items.pop(item.name)
-        item.location = None
+        # remove one of possibly many objects
+        item_count = len(self.items[item.name])
+        if item_count == 1:
+            self.items.pop(item.name)
+            item.location = None
+        else:
+            idx = random.choice(range(item_count))
+            removed = self.items[item.name].pop(idx)
+            removed.location = None
 
     def add_character(self, character):
         """

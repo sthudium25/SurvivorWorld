@@ -1,4 +1,5 @@
 from collections import defaultdict
+import itertools
 import json
 
 
@@ -8,7 +9,15 @@ class Thing:
     Characters.
     """
 
+    # Generate an id - ST 1/30/24
+    new_id = itertools.count(1)
+    _last_id = 0
+
     def __init__(self, name: str, description: str):
+        # TODO: identify things by an id - ST 1/30/24
+        self.id = next(Thing.new_id)
+        Thing._last_id = self.id
+
         # A short name for the thing
         self.name = name
 
@@ -25,12 +34,18 @@ class Thing:
         # implemented in the Parser.
         self.commands = set()
 
+    @classmethod
+    def get_current_id(cls):
+        # Return the next ID that will be assigned
+        return cls._last_id + 1
+
     def to_primitive(self):
         """
         Puts the main fields of this base class into a dictionary
         representation that can safely be converted to JSON
         """
         thing_data = {
+            "id": self.id,  # ST - 1/30/24
             "name": self.name,
             "description": self.description,
             "commands": list(self.commands),
@@ -73,6 +88,12 @@ class Thing:
         """
         return self.properties.get(property_name, None)
 
+    def has_property(self, property_name: str):  # Added by ST - 1/30/24
+        """
+        Checks if the item has the property
+        """
+        return property_name in self.properties
+
     def add_command_hint(self, command: str):
         """
         Adds a special command to this thing
@@ -90,3 +111,7 @@ class Thing:
         Returns a list of special commands associated with this object
         """
         return self.commands.discard(command)
+
+    # new methods developed by - ST 1/30/24
+    def get_id(self):
+        return self.id
