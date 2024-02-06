@@ -15,19 +15,38 @@ class Inventory:
         self.item_quantities = Counter()
 
     def add_item(self, item: Item):
-        self.item_quantities[item] += 1
+        self.item_quantities[item.name] += 1
         self.items[item.name].append(item)
 
     def get_item(self, item_name, which: int = 1):
-        item_idx = which - 1
-        requested_item = self._remove_item(item_name, item_idx)
-        return requested_item
+        """
+        Obtain an Item instance matching by name and index.
+        Does not remove the item
 
-    def _remove_item(self, item_name: str, idx: int):
-        # TODO: should the name or the Item itself be passed here?
-        n = self.item_quantities[item_name]
+        Args:
+            item_name (str): item name
+            which (int, optional): index of item. Defaults to 1.
 
-        if item_name in self.items and n > 0:
+        Returns:
+            Item: the instance of item_name
+        """
+        idx = which - 1
+        if self.check_inventory(item_name) and self.get_quantity(item_name) > 0:
+            print(f"found {item_name} in inventory")
+            try:
+                return self.items[item_name][idx]
+            except IndexError:
+                print(f"""There are only {self.get_quantity(item_name)}
+                            {item_name}s, not {idx}.""")
+                print("Returning the closest one")
+                return self.items[item_name][-1]
+        else:
+            return None
+
+    def remove_item(self, item_name: str, which: int = 1):
+        idx = which - 1
+        if self.check_inventory(item_name) and self.get_quantity(item_name) > 0:
+            print(f"found {item_name} in inventory")
             self.item_quantities[item_name] -= 1
             # just remove the first one?
             # TODO: how to specify which item to get?
@@ -36,7 +55,8 @@ class Inventory:
             try:
                 return self.items[item_name].pop(idx)
             except IndexError:
-                print(f"There are only {n} {item_name}s, not {idx}.")
+                print(f"""There are only {self.get_quantity(item_name)}
+                            {item_name}s, not {idx}.""")
                 print("Returning the closest one")
                 return self.items[item_name].pop(-1)
         else:
@@ -45,10 +65,22 @@ class Inventory:
     def get_quantity(self, item_name):
         return self.item_quantities[item_name]
 
-    def get_inventory_size(self):
-        return self.item_quantities.total()
+    def size(self):
+        """
+        Get the size of the inventory i.e. sum of all quantities
+
+        Returns:
+            int: total items in inventory
+        """
+        return sum(self.item_quantities.values())
 
     def view_inventory(self):
+        """
+        Get a Dict[str: List] representation of the inventory
+
+        Returns:
+            dict: the inventory
+        """
         return {name: item for name, item in self.items.items()}
 
     def check_inventory(self, item_name):

@@ -183,10 +183,10 @@ class Game:
         Describe what items are in the current location.
         """
         description = ""
-        if len(self.player.location.items) > 0:
+        if len(self.player.location.location_inventory.items) > 0:
             description = "You see:"
-            for curr_item in self.player.location.items:
-                curr_list = self.player.location.items[curr_item]
+            for curr_name, curr_list in \
+                    self.player.location.location_inventory.items.items():
                 # Just to double check we have an item here
                 if len(curr_list) > 0:
                     item = curr_list[0]  # get the Oth for descriptive purposes

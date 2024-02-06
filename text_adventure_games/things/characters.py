@@ -85,11 +85,11 @@ class Character(Thing):
         self.inventory.add_item(item)
         item.owner = self
 
-    def is_in_inventory(self, item: Item):
+    def is_in_inventory(self, item_name):
         """
         Checks if a character has the item in their inventory
         """
-        return self.inventory.check_inventory(item.name)
+        return self.inventory.check_inventory(item_name)
 
     def remove_from_inventory(self, item: Item):
         """
@@ -97,3 +97,12 @@ class Character(Thing):
         """
         item.owner = None
         self.inventory.get_item(item.name)
+
+    def view_inventory(self):
+        """
+        View the items in an inventory
+
+        Returns:
+            dict: items present in the inventory
+        """
+        return self.inventory.view_inventory()
