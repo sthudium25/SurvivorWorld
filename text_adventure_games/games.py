@@ -88,8 +88,10 @@ class Game:
                     self.parser.add_block(b)
                     seen_before[name] = True
             # Look at items in the location to see if they are containers
-            if len(location.items) > 0 and name not in seen_before:
-                for _, item_list in location.items.items():  # {name[str]: List[Item]}
+            if len(location.location_inventory.items) > 0 and \
+                    name not in seen_before:
+                # {name[str]: List[Item]}
+                for _, item_list in location.location_inventory.items.items():
                     for item in item_list:
                         if item.get_property("is_container"):
                             self.containers.add_container(item)

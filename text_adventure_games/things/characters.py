@@ -1,6 +1,7 @@
 from .base import Thing
 from .items import Item
-from .locations import Location
+# from .locations import Location
+from ..managers.inventory import Inventory
 
 
 class Character(Thing):
@@ -15,8 +16,7 @@ class Character(Thing):
       I do a job that many people shun because of my contact with death. I am
       very lonely and wish I had someone to talk to who isn't dead.")
     * A location (the place in the game where they currently are)
-    * An inventory of items that they are carrying (a dictionary mapping from
-      item name to Item instance)
+    * An inventory of items that they are carrying - instance of Inventory
     * TODO: A dictionary of items that they are currently wearing
     * TODO: A dictionary of items that they are currently weilding
     """
@@ -28,7 +28,9 @@ class Character(Thing):
         self.set_property("character_type", "notset")
         self.set_property("is_dead", False)
         self.persona = persona
-        self.inventory = {}
+
+        # ST - change 2/5/24
+        self.inventory = Inventory()
         self.location = None
 
     def to_primitive(self):
@@ -44,7 +46,7 @@ class Character(Thing):
         thing_data['persona'] = self.persona
 
         inventory = {}
-        for k, v in self.inventory.items():
+        for k, v in self.inventory.view_inventory():
             if hasattr(v, 'to_primitive'):
                 inventory[k] = v.to_primitive()
             else:
@@ -72,25 +74,26 @@ class Character(Thing):
         }
         return instance
 
-    def add_to_inventory(self, item):
+    def add_to_inventory(self, item: Item):
         """
+        Locations hold item instances, so we can access all that info.
         Add an item to the character's inventory.
         """
         if item.location is not None:
             item.location.remove_item(item)
             item.location = None
-        self.inventory[item.name] = item
+        self.inventory.add_item(item)
         item.owner = self
 
-    def is_in_inventory(self, item):
+    def is_in_inventory(self, item: Item):
         """
         Checks if a character has the item in their inventory
         """
-        return item.name in self.inventory
+        return self.inventory.check_inventory(item.name)
 
-    def remove_from_inventory(self, item):
+    def remove_from_inventory(self, item: Item):
         """
         Removes an item to a character's inventory.
         """
         item.owner = None
-        self.inventory.pop(item.name)
+        self.inventory.get_item(item.name)

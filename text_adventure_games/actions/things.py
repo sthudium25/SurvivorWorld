@@ -13,6 +13,9 @@ class Get(base.Action):
         super().__init__(game)
         self.character = self.parser.get_character(command)
         self.location = self.character.location
+
+        # TODO: Need to make item matching work with the
+        # new inventory/resource system
         self.item = self.parser.match_item(command, self.location.items)
 
     def check_preconditions(self) -> bool:
@@ -48,6 +51,9 @@ class Get(base.Action):
         Get's an item from the location and adds it to the character's
         inventory, assuming preconditions are met.
         """
+        # TODO: add logic to this apply for WHICH item to get
+        # item = self.location.remove_item(self.item)
+        # self.character.add_to_inventory(item)
         self.location.remove_item(self.item)
         self.character.add_to_inventory(self.item)
         description = "{character_name} got the {item_name}.".format(
