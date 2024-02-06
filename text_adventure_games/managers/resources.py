@@ -5,9 +5,9 @@ from collections import defaultdict
 
 class ResourceManager:
     """
-    This class handles the global resources of the world. 
+    This class handles the global resources of the world.
     It maintains resource quantities and any state changes due to replenishment
-    or removal. 
+    or removal.
     It also allows creation or removal of multiple resources in an easier
     fashion.
     """
@@ -15,11 +15,16 @@ class ResourceManager:
     def __init__(self):
         self.resources = defaultdict(list)
 
-    def create_item(self, item_class, name, description, quantity, **properties):
+    def create_item(self,
+                    item_class,
+                    name,
+                    description,
+                    quantity,
+                    **properties):
         if not isinstance(item_class, Item):
             print(f'{item_class} must be of things.Item. Creation failed!')
             return False
-        
+
         # Create instances and store them
         for _ in range(quantity):
             item = item_class(name, description)
