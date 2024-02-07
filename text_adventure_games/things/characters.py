@@ -2,6 +2,7 @@ from .base import Thing
 from .items import Item
 # from .locations import Location
 from ..managers.inventory import Inventory
+from ..managers.persona import PersonaManager
 
 
 class Character(Thing):
@@ -12,9 +13,8 @@ class Character(Thing):
     * A description ('You might want to talk to the gravedigger, specially if
       your looking for a friend, he might be odd but you will find a friend in
       him.')
-    * A persona written in the first person ("I am low paid labor in this town.
-      I do a job that many people shun because of my contact with death. I am
-      very lonely and wish I had someone to talk to who isn't dead.")
+    * A persona; Managed as a class containing personall traits and affinities
+        to other characters.
     * A location (the place in the game where they currently are)
     * An inventory of items that they are carrying - instance of Inventory
     * TODO: A dictionary of items that they are currently wearing
@@ -22,12 +22,12 @@ class Character(Thing):
     """
 
     def __init__(
-        self, name: str, description: str, persona: str,
+        self, name: str, description: str, persona: PersonaManager
     ):
         super().__init__(name, description)
         self.set_property("character_type", "notset")
         self.set_property("is_dead", False)
-        self.persona = persona
+        self.persona = persona if persona else PersonaManager()
 
         # ST - change 2/5/24
         self.inventory = Inventory()
@@ -43,6 +43,8 @@ class Character(Thing):
         serialization.
         """
         thing_data = super().to_primitive()
+
+        # TODO: how do we handle this now that Persona is a class?
         thing_data['persona'] = self.persona
 
         inventory = {}
