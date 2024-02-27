@@ -31,9 +31,9 @@ class BaseScale:
         # This wording was ranked most interpretable by GPT 3.5 and 4
         # over a number of trials
         return f"""On a scale from {self.min} to {self.max}, 
-                   where {self.min} is {self.min_desciptor}
-                   and {self.max} is {self.max_desciptor},
-                   a score of {self.set_point}"""
+        where {self.min} is {self.min_desciptor}
+        and {self.max} is {self.max_desciptor},
+        a score of {self.score}"""
 
     def update_score(self, delta: int):
         """
