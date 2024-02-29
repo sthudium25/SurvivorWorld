@@ -1,5 +1,9 @@
-from ..scales import traits, affinity
+"""
+Author: Samuel Thudium (sam.thudium1@gmail.com)
 
+File: agent/persona.py
+Description: Defines the Persona of an agent
+"""
 
 class Persona():
     """
@@ -18,11 +22,11 @@ class Persona():
         self.traits = {}
         self.affinities = {}
 
-    def add_trait(self, trait: traits.TraitScale):
+    def add_trait(self, trait):
         if trait.name not in self.traits:
             self.traits[trait.name] = trait
 
-    def add_affinity(self, affinity: affinity.AffinityScale):
+    def add_affinity(self, affinity):
         if affinity.target.id not in self.affinities:
             self.affinities[affinity.target.id] = affinity
 

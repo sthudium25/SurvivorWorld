@@ -2,7 +2,7 @@ from .base import Thing
 from .items import Item
 # from .locations import Location
 from ..managers.inventory import Inventory
-from ..managers.persona import PersonaManager
+from ..agent.persona import Persona
 
 
 class Character(Thing):
@@ -22,12 +22,12 @@ class Character(Thing):
     """
 
     def __init__(
-        self, name: str, description: str, persona: PersonaManager
+        self, name: str, description: str, persona: Persona
     ):
         super().__init__(name, description)
         self.set_property("character_type", "notset")
         self.set_property("is_dead", False)
-        self.persona = persona if persona else PersonaManager()
+        self.persona = persona if persona else Persona()
 
         # ST - change 2/5/24
         self.inventory = Inventory()
@@ -108,3 +108,8 @@ class Character(Thing):
             dict: items present in the inventory
         """
         return self.inventory.view_inventory()
+    
+    def update_character_affinity(Character):
+        """
+        """
+        pass

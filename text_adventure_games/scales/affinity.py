@@ -1,4 +1,4 @@
-from base import BaseScale
+from .base import BaseScale
 from ..things.characters import Character
 
 

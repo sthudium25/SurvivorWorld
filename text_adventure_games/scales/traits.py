@@ -6,7 +6,7 @@ Description: Defines a TraitScale, which is score between two anchor words.
 """
 
 from typing import List
-from base import BaseScale
+from .base import BaseScale
 from ..utils.gpt import gpt_agent as ga
 
 
