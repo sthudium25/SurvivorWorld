@@ -1,1 +1,0 @@
-TODO: move GPT prompts into this another text files
