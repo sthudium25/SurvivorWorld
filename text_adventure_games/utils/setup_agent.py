@@ -6,8 +6,8 @@ Description: helper methods for agent setup
 """
 
 import os
-import re
 import json
+from importlib.resources import files, as_file
 from typing import Dict, List, Literal
 import numpy as np
 import openai
@@ -15,12 +15,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # relative imports
 from ..agent.persona import Persona
-from ..scales import affinity, traits
-from gpt import gpt_agent as ga
+from ..scales import traits
+from .gpt import gpt_agent as ga
+from . import general
+# from . import consts
 
 
 def get_openai_key():
-    openai_api = os.getenv("OPENAI_API")
+    openai_api = os.getenv("OPENAI_API_KEY")
     if not openai_api:
         raise ValueError("You must add an OpenAI API key to your config file.")
     else:
@@ -33,10 +35,10 @@ def get_text_embedding(client, text, model="text-embedding-3-small"):
 
 
 def find_similar_character(query, characters, top_n=1):
-    client = openai.Client()
-    query_vec = np.array(get_text_embedding(client, query))
+    # client = openai.Client()
+    # query_vec = np.array(get_text_embedding(client, query))
 
-    sim = cosine_similarity(query_vec.reshape(1, -1),
+    sim = cosine_similarity(np.array(query).reshape(1, -1),
                             np.array([np.array(v) for v
                                       in characters.values()]))
     idx = sorted(enumerate(sim[0]),
@@ -55,8 +57,7 @@ def get_or_create_base_facts(description: str, make_new=False, model='gpt-3.5-tu
     else:
         requested_vector = get_text_embedding(client, description)
         try:
-            with open("../assets/character_traits.json", 'r') as f:
-                characters = json.load(f)
+            characters = general.get_character_facts()
         except FileNotFoundError:
             print("No character presets found. Defaulting to new character creation.")
             return ga.get_new_character_from_gpt(client, description, model)
@@ -85,20 +86,38 @@ def create_persona(facts: Dict,
         for score, named_trait in zip(monitored_traits.items(), scores):
             name, dichotomy = named_trait
             trait = traits.TraitScale(name, dichotomy, score=score)
+            # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model)
             p.add_trait(trait)
     elif archetype:
-        pass
+        profile = general.get_archetype_profiles(archetype)
+        for scale in profile['traits']:
+            low, high, target, name = scale['lowAnchor'], scale['highAnchor'], scale['targetScore'], scale["name"]
+            dichotomy = (low, high)
+            trait = traits.TraitScale(name, dichotomy, score=target)
+            # TODO: would be more cost/time effective to ask this to GPT once
+            trait.set_adjective(model=model)
+            p.add_trait(trait)
     else:
         raise ValueError("One of trait_scores or archetype must be specified.")
+    
+    return p
+    
+    # TODO: How do add affinities? We need the game information to know how many 
+    # characters exist in the world. This may need to happen later
+    # Maybe once characters are set, there is a start up sequence that sets 
+    # all "affinities" in each persona.
 
 
 def validate_goals(goals_dict):
     if "flex" not in goals_dict.keys():
         print("No flexible goal set.")
     if "short-term" not in goals_dict.keys():
-        goals_dict["short-term"] = "Gain the trust of others. Find allies to prevent yourself from being voted off the island."
+        # TODO: Modify this goal wording as needed
+        goals_dict["short-term"] = "Gain the trust of others. Find allies to prevent yourself\
+            from being voted off the island."        
     if "long-term" not in goals_dict.keys():
+        # TODO: Modify this goal wording as needed
         goals_dict["long-term"] = "Develop strong alliances. Position yourself to win the game of Survivor."
     return goals_dict
 

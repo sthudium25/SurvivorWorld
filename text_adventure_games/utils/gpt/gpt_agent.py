@@ -1,5 +1,14 @@
+"""
+Author: Samuel Thudium (sam.thudium1@gmail.com)
+
+File: gpt_agent.py
+Description: Methods that access the OPENAI API and make a call to GPT
+"""
+
 import openai
-import general
+
+# relative imports
+from .. import general
 
 def get_new_character_from_gpt(client, description, model):
 
@@ -34,7 +43,7 @@ Create a JSON structure from the output.
         max_tokens=200,
         top_p=1
     )
-    traits_json = general.extract_json_from_string(response.choices[0].messages.content)
+    traits_json = general.extract_json_from_string(response.choices[0].message.content)
     return traits_json
 
 def get_trait_continuum(low: str, high: str, mid: str = None, model='gpt-3.5-turbo'):
@@ -100,7 +109,7 @@ def get_target_adjective(low: str,
     """
 
     user_prompt = f"On a smooth transition scale from {low_int}={low} to {high_int}={high},\
-        give an adjective that represents a target score of {target}."
+        a target score of {target} is represented by the adjective:"
 
     client = openai.Client()
 
