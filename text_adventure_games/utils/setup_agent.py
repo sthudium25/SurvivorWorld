@@ -27,11 +27,6 @@ def get_openai_key():
         raise ValueError("You must add an OpenAI API key to your config file.")
     else:
         return openai_api
-    
-
-def get_text_embedding(client, text, model="text-embedding-3-small"):
-    text_vector = client.embeddings.create(input=[text], model=model).data[0].embedding
-    return text_vector
 
 
 def find_similar_character(query, characters, top_n=1):
@@ -55,7 +50,7 @@ def get_or_create_base_facts(description: str, make_new=False, model='gpt-3.5-tu
         return ga.get_new_character_from_gpt(client, description, model) 
     # Otherwise compare to premade characters
     else:
-        requested_vector = get_text_embedding(client, description)
+        requested_vector = ga.get_text_embedding(client, description)
         try:
             characters = general.get_character_facts()
         except FileNotFoundError:
@@ -64,7 +59,7 @@ def get_or_create_base_facts(description: str, make_new=False, model='gpt-3.5-tu
 
         embedded_characters = {}
         for i, c in enumerate(characters):
-            c_vec = get_text_embedding(client, c.__str__())
+            c_vec = ga.get_text_embedding(client, c.__str__())
             embedded_characters[i] = c_vec
 
         idx = find_similar_character(query=requested_vector,

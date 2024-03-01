@@ -8,6 +8,7 @@ Description: helper methods used throughout the project
 import os
 import re
 import json
+import string
 # from importlib.resources import files, as_file
 from typing import Dict
 
@@ -20,9 +21,9 @@ def extract_target_word(response):
     # For debugging purposes check when it fails to return only 1 word.
     if len(words) > 1:
         print("target word list returned is: ", words)
-        return words[0]
+        return words[0].strip(string.punctuation)
     else:
-        return words[0]
+        return words[0].strip(string.punctuation)
 
 
 def extract_enumerated_list(response):
