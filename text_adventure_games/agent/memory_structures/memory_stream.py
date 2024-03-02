@@ -27,8 +27,9 @@ from text_adventure_games.things.locations import Location
 @dataclass
 class ObservationNode:
     node_id: int  # TODO: should every node be unique, even across Agents?
-    node_tick: int  # The game tick on which this observation occurred
-    node_round: int
+    node_tick: int  # The round tick on which this observation occurred
+    node_level: int  # The observation level: 1 for novel, 2 for reflections, 3 for ????
+    node_round: int  # The round in which this occurred
     node_loc: str
     node_context: str
     subject: str
@@ -43,6 +44,7 @@ class ObservationNode:
 class MemoryStream:
     def __init__(self, agent_id):
         self.num_observations = 0
+        # TODO: this may be better as a dict of lists with keys as the round ID
         self.observations = []
         self.agent_id = agent_id  # would be good to store who this belongs to in case we need to reload a game
         self.obs_embeddings = {}
@@ -74,7 +76,7 @@ class MemoryStream:
         return self.observations[node_id]
     
     def add_dialogue(self,
-                     game_tick: int,
+                     round_tick: int,
                      game_round: int,
                      location: Location, 
                      dialogue: Dialogue,
@@ -89,13 +91,14 @@ class MemoryStream:
 
         # Get embedding of the dialoge
         dialogue_embedding = self.get_observation_embedding(dialogue)
-        embed_key = f"{node_id}_{game_tick}"
+        embed_key = f"{game_round}_{round_tick}"
         self.obs_embeddings[embed_key] = dialogue_embedding
 
         new_dialoge = ObservationNode(node_id,
-                                      game_tick,
+                                      round_tick,
                                       game_round,
                                       location.name,
+                                      node_level=1,
                                       node_context=spoken_word,
                                       subject=speaker,
                                       node_type="dialogue",
@@ -156,10 +159,10 @@ class MemoryStream:
         embedded_vector = ga.get_text_embedding(client, input)
         return embedded_vector
     
-    def get_similar_observations_by_subject(self, subject):
+    def get_observations_by_subject(self, subject):
         return self.nodes_by_subject[subject]
     
-    def get_similar_observations_by_type(self, obs_type):
+    def get_observations_by_type(self, obs_type):
         return self.nodes_by_type[obs_type]
     
     def get_most_recent_summary(self):
@@ -167,3 +170,7 @@ class MemoryStream:
         summary = f"The last {self.lookback} observations in chronological order you have made are:"
         for i, node in enumerate(nodes):
             summary += "\n{idx}. {desc}".format(idx=i, desc=node.node_description)
+
+    def get_embedding(self, round, tick):
+        embed_key = f"{round}_{tick}"
+        return self.obs_embeddings[embed_key]
