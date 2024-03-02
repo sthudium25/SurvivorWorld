@@ -164,4 +164,4 @@ cython_debug/
 
 # VSCode settings
 .vscode/*
-.vscode/
+**/.vscode/
