@@ -15,7 +15,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # relative imports
 from ..agent.persona import Persona
-from ..scales import traits
+from ..managers.scales import TraitScale
 from .gpt import gpt_agent as ga
 from . import general
 # from . import consts
@@ -77,10 +77,10 @@ def create_persona(facts: Dict,
 
     if trait_scores:
         scores = validate_trait_scores(trait_scores)
-        monitored_traits = traits.TraitScale.get_monitored_traits()
+        monitored_traits = TraitScale.get_monitored_traits()
         for score, named_trait in zip(monitored_traits.items(), scores):
             name, dichotomy = named_trait
-            trait = traits.TraitScale(name, dichotomy, score=score)
+            trait = TraitScale(name, dichotomy, score=score)
             # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model)
             p.add_trait(trait)
@@ -89,7 +89,7 @@ def create_persona(facts: Dict,
         for scale in profile['traits']:
             low, high, target, name = scale['lowAnchor'], scale['highAnchor'], scale['targetScore'], scale["name"]
             dichotomy = (low, high)
-            trait = traits.TraitScale(name, dichotomy, score=target)
+            trait = TraitScale(name, dichotomy, score=target)
             # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model=model)
             p.add_trait(trait)
