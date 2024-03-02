@@ -15,7 +15,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # relative imports
 from ..agent.persona import Persona
-from ..scales import traits
+from ..managers.scales import TraitScale
 from .gpt import gpt_agent as ga
 from . import general
 # from . import consts
@@ -27,11 +27,6 @@ def get_openai_key():
         raise ValueError("You must add an OpenAI API key to your config file.")
     else:
         return openai_api
-    
-
-def get_text_embedding(client, text, model="text-embedding-3-small"):
-    text_vector = client.embeddings.create(input=[text], model=model).data[0].embedding
-    return text_vector
 
 
 def find_similar_character(query, characters, top_n=1):
@@ -55,7 +50,7 @@ def get_or_create_base_facts(description: str, make_new=False, model='gpt-3.5-tu
         return ga.get_new_character_from_gpt(client, description, model) 
     # Otherwise compare to premade characters
     else:
-        requested_vector = get_text_embedding(client, description)
+        requested_vector = ga.get_text_embedding(client, description)
         try:
             characters = general.get_character_facts()
         except FileNotFoundError:
@@ -64,7 +59,7 @@ def get_or_create_base_facts(description: str, make_new=False, model='gpt-3.5-tu
 
         embedded_characters = {}
         for i, c in enumerate(characters):
-            c_vec = get_text_embedding(client, c.__str__())
+            c_vec = ga.get_text_embedding(client, c.__str__())
             embedded_characters[i] = c_vec
 
         idx = find_similar_character(query=requested_vector,
@@ -82,10 +77,10 @@ def create_persona(facts: Dict,
 
     if trait_scores:
         scores = validate_trait_scores(trait_scores)
-        monitored_traits = traits.TraitScale.get_monitored_traits()
+        monitored_traits = TraitScale.get_monitored_traits()
         for score, named_trait in zip(monitored_traits.items(), scores):
             name, dichotomy = named_trait
-            trait = traits.TraitScale(name, dichotomy, score=score)
+            trait = TraitScale(name, dichotomy, score=score)
             # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model)
             p.add_trait(trait)
@@ -94,7 +89,7 @@ def create_persona(facts: Dict,
         for scale in profile['traits']:
             low, high, target, name = scale['lowAnchor'], scale['highAnchor'], scale['targetScore'], scale["name"]
             dichotomy = (low, high)
-            trait = traits.TraitScale(name, dichotomy, score=target)
+            trait = TraitScale(name, dichotomy, score=target)
             # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model=model)
             p.add_trait(trait)

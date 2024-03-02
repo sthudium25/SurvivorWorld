@@ -131,3 +131,8 @@ def get_target_adjective(low: str,
 
     target_trait = general.extract_target_word(response.choices[0].message.content)
     return target_trait
+
+
+def get_text_embedding(client, text, model="text-embedding-3-small"):
+    text_vector = client.embeddings.create(input=[text], model=model).data[0].embedding
+    return text_vector

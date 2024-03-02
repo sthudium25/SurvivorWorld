@@ -12,7 +12,7 @@ class Persona():
 
     Traits (dict): {trait name: TraitScale}
     Affinities (dict): {target character id: AffinityScale}
-    Goals (dict): {maleable: generated ,
+    Goals (dict): {flex: generated,
                    short-term: do not get voted off at the next tribal,
                    long-term: win the game and 1M dollars}
     """
@@ -37,3 +37,23 @@ class Persona():
     def get_affinity_score(self, target_id: str):
         if target_id in self.affinities:
             return self.affinities[target_id].get_score()
+        
+    def get_trait_summary(self):
+        return [f"{tname} is {trait.adjective}" for tname, trait in self.traits.items()]
+    
+    def get_goal_summary(self):
+        goal_summary = ""
+        goal_summary += f"to accomplish {self.goals['flex']}"
+        goal_summary += f" but importantly must {self.goals['short-term']}."
+        goal_summary += f" You goal for the entire game is to {self.goals['long-term']}."
+        return goal_summary
+        
+    def get_personal_summary(self):
+        summary = "Your name is"
+        summary += f' {self.facts["Name"]} and you are {self.facts["Age"]} years old.'
+        summary += f' You enjoy {" ".join(self.facts["Likes"][:3])}'
+        summary += f' but dislike {" ". join(self.facts["Dislikes"][:3])}.'
+        summary += f' Back home in {self.facts["Home city"]} you work as a {self.facts["Occupation"]}.'
+        summary += f' Your {" ".join(self.get_trait_summary())}.'
+        summary += f' Your goals are {self.get_goal_summary()}'
+        return summary
