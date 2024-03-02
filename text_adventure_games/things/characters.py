@@ -32,6 +32,7 @@ class Character(Thing):
         # ST - change 2/5/24
         self.inventory = Inventory()
         self.location = None
+        self.alliance = []
 
     def to_primitive(self):
         """
@@ -113,3 +114,12 @@ class Character(Thing):
         """
         """
         pass
+
+    def get_alliance_summary(self):
+        alliance_summary = ""
+        alliance_summary += f"You are allied with {' '.join([char.name for char in self.alliance])}"
+        return alliance_summary
+
+    def get_character_summary(self):
+        persona_summary = self.persona.get_personal_summary()
+        alliance_summary = self.get_alliance_summary()
