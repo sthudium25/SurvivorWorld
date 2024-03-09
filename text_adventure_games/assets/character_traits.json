@@ -57,7 +57,7 @@
 {
   "Name": "John Mullen",
   "Age": 35,
-  "Likes": ["sports", "video games", "dogs", "Stargazing"],
+  "Likes": ["sports", "video games", "dogs"],
   "Dislikes": ["disorganization", "rude people", "late appointments"],
   "Occupation": "Architect",
   "Home city": "Kansas City, Missouri"
@@ -98,23 +98,23 @@
   "Name": "Carlos Rodriguez",
   "Age": 33,
   "Likes": ["soccer", "cooking", "music", "dancing"],
-  "Dislikes": ["traffic", "lack of punctuality", "negativity"],
+  "Dislikes": ["traffic", "microwaved food"],
   "Occupation": "Chef",
   "Home city": "Buenos Aires, Argentina"
 },
 {
   "Name": "Anna Ivanova",
   "Age": 22,
-  "Likes": ["ballet", "snowboarding", "reading", "classic music"],
-  "Dislikes": ["rudeness", "loud noise", "fast food"],
+  "Likes": ["ballet", "reading", "classic music"],
+  "Dislikes": ["days off", "competitive dance", "fast food"],
   "Occupation": "Ballet Dancer",
   "Home city": "Moscow, Russia"
 },
 {
   "Name": "David Nkosi",
   "Age": 26,
-  "Likes": ["sports", "wildlife", "photography", "community volunteering"],
-  "Dislikes": ["littering", "dishonesty", "prejudice"],
+  "Likes": ["surfing", "wildlife", "photography", "community volunteering"],
+  "Dislikes": ["rain", "mint-chip ice cream", "owls"],
   "Occupation": "Environmental Activist",
   "Home city": "Johannesburg, South Africa"
 }

@@ -6,10 +6,8 @@ Description: Defines Agent memory classes
 """
 
 # TODO: MemoryStream: list of ObservationNodes(Time, Place, Content, more?)
-    # TODO: Node creation
-        # TODO: node types (Dialogue, Action, Reflection, Event)
-    # TODO: summarization of latest events
-# TODO: split long and short-term memory structures like Joon Sung Park?
+# TODO: node types (Dialogue, Action, Reflection, Event)
+# TODO: summarization of latest events
 
 from __future__ import annotations
 from collections import defaultdict
@@ -19,19 +17,18 @@ import openai
 # from uuid import uuid4
 
 # Local imports
-from text_adventure_games.utils.gpt import gpt_agent as ga
+from text_adventure_games.gpt import gpt_agent as ga
 # from text_adventure_games.things.characters import Character
 from text_adventure_games.things.locations import Location
 
 
 @dataclass
 class ObservationNode:
-    node_id: int  # TODO: should every node be unique, even across Agents?
+    node_id: int  # TODO: unique to this agent
     node_tick: int  # The round tick on which this observation occurred
     node_level: int  # The observation level: 1 for novel, 2 for reflections, 3 for ????
     node_round: int  # The round in which this occurred
     node_loc: str
-    node_context: str
     subject: str
     node_type: str
     node_description: Optional[str] = field(default=None)
@@ -43,9 +40,16 @@ class ObservationNode:
 
 class MemoryStream:
     def __init__(self, agent_id):
+        """
+        Defines Agent's memory via a dict of ObservationNodes. These
+        are split by the round in which they occured.
+
+        Args:
+            agent_id (int): thing.Thing.id for this agent
+        """
         self.num_observations = 0
         # TODO: this may be better as a dict of lists with keys as the round ID
-        self.observations = []
+        self.observations = defaultdict(list)
         self.agent_id = agent_id  # would be good to store who this belongs to in case we need to reload a game
         self.obs_embeddings = {}
         self.nodes_by_subject = defaultdict(list)  # Nodes that appear to be related to the subject of the Observation
@@ -79,7 +83,7 @@ class MemoryStream:
                      round_tick: int,
                      game_round: int,
                      location: Location, 
-                     dialogue: Dialogue,
+                     dialogue: str,
                      description: str,
                      sentiment) -> None:
         
