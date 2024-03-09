@@ -3,6 +3,7 @@ from .items import Item
 # from .locations import Location
 from ..managers.inventory import Inventory
 from ..agent.persona import Persona
+from ..gpt.gpt_agent_cognition import AgentKani
 
 
 class Character(Thing):
@@ -22,12 +23,12 @@ class Character(Thing):
     """
 
     def __init__(
-        self, name: str, description: str, persona: Persona
+        self, name: str, description: str
     ):
         super().__init__(name, description)
+        # TODO: what to do with the character properties???
         self.set_property("character_type", "notset")
         self.set_property("is_dead", False)
-        self.persona = persona if persona else Persona()
 
         # ST - change 2/5/24
         self.inventory = Inventory()
@@ -110,16 +111,64 @@ class Character(Thing):
         """
         return self.inventory.view_inventory()
     
-    def update_character_affinity(Character):
+    def update_character_affinity(character):
         """
+        Update the probability that this character works/agrees with someone else.
         """
         pass
 
     def get_alliance_summary(self):
         alliance_summary = ""
-        alliance_summary += f"You are allied with {' '.join([char.name for char in self.alliance])}"
+        alliance_summary += f"You are allied with {' '.join([char.name for char in self.alliance])}."
         return alliance_summary
 
+
+class GenerativeAgent(Character):
+    
+    def __init__(self, persona: Persona):
+        super().__init__(persona.facts["name"], persona.summary)
+        # TODO: memory stream currently in persona but may be hard to access
+        self.persona = persona
+        self.persona.initialize_memory(self.id)
+
+        # Custom Kani class here? which could store this character's bio as "always_included"
+        # Route from this Kani to Reflect, Act, Perceive Kanis?
+        self.agent_ai = AgentKani(persona) # I don't really want to store the persona in two places
+
     def get_character_summary(self):
+        """
+        Get a summary of the traits for this agent
+
+        Returns:
+            str: a standard summary paragraph for this agent
+        """
         persona_summary = self.persona.get_personal_summary()
         alliance_summary = self.get_alliance_summary()
+        return persona_summary + ' ' + alliance_summary
+
+    def engage(self, round, tick, vote):
+        if vote:
+            # At end of round: agent votes and reflects
+            self.agent_ai.vote()
+            self.agent_ai.reflect()
+        elif tick == 0:
+            # At start of round: agent plans
+            self.agent_ai.plan()
+        
+        self.agent_ai.act()
+ 
+    # def reflect(self):
+    #     # Look back at observations from this round
+    #     pass
+
+    # def perceive(self):
+    #     # Collect the latest information about the location
+    #     pass
+
+    # def act(self):
+    #     # Intent determination here?
+    #     pass
+
+    
+
+    
