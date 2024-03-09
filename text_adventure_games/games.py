@@ -461,3 +461,39 @@ class Game:
     # NEW METHODS - ST 1/30/24
     def get_container_tree(self):
         self.containers.get_containment_tree()        
+
+
+# Override methods or implement a new class?
+class SurvivorGame(Game):
+    def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, max_ticks=5):
+        super().__init__(start_at, player, characters, custom_actions)
+        self.max_ticks_per_round = max_ticks
+    
+    # Override game loop 
+    def game_loop(self):
+        self.parser.parse_command("Come on in! Welcome to Survivor!")
+        round = 0
+        game_characters = self.characters + [self.player]
+        while True:
+            for tick in range(self.max_ticks_per_round):
+                for character in game_characters:  # naive ordering, not based on character initiative
+                    if tick == self.max_ticks_per_round - 1:
+                        vote = True
+                    else:
+                        vote = False
+                    if character.id == self.player.id:
+                        # Get human input
+                        command = input("\n> ")
+                    else:
+                        # Depending on the round, character.engage() should trigger different things
+                        # Planning occurs at beginning of round, reflection at end.
+                        # Action selection should happen in all(?) rounds except for the last one bc 
+                        # at end of round the only valid action is vote()
+                        command = character.engage(round, tick, vote)
+                    self.parser.parse_command(command, character, round, tick)
+
+            if self.is_game_over():
+                break
+
+            # Increment the rounds
+            round += 1
