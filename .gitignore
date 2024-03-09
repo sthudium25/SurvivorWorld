@@ -165,3 +165,7 @@ cython_debug/
 # VSCode settings
 .vscode/*
 **/.vscode/
+
+# Config
+config.*
+.config.*

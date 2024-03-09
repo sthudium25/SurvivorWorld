@@ -5,10 +5,11 @@ File: gpt_agent.py
 Description: Methods that access the OPENAI API and make a call to GPT
 """
 
+import re
 import openai
 
 # relative imports
-from .. import general
+from ..utils import general
 
 def get_new_character_from_gpt(client, description, model):
 
@@ -44,6 +45,7 @@ Create a JSON structure from the output.
         top_p=1
     )
     traits_json = general.extract_json_from_string(response.choices[0].message.content)
+    # TODO: check that at least "Name" is in the returned json.
     return traits_json
 
 def get_trait_continuum(low: str, high: str, mid: str = None, model='gpt-3.5-turbo'):
@@ -131,6 +133,51 @@ def get_target_adjective(low: str,
 
     target_trait = general.extract_target_word(response.choices[0].message.content)
     return target_trait
+
+
+def summarize_agent_facts(facts, model='gpt-4'):
+    """
+    Get a short summary of factual information about an agent
+
+    Args:
+        facts (Dict): facts about the agent
+    """
+    system_prompt = """You will get a dictionary of traits that tell you about a person. 
+    You should write a one sentence, information dense summary of the person.  
+
+    {
+    "Name": "John Mullen",
+    "Age": 35,
+    "Likes": ["sports", "video games", "dogs", "Stargazing"],
+    "Dislikes": ["disorganization", "rude people", "late appointments"],
+    "Occupation": "Architect",
+    "Home city": "Kansas City, Missouri"
+    }
+
+    Being succinct is key; do not list the person's likes and dislikes.
+"""
+    client = openai.Client()
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": facts
+            }   
+        ],
+        stop=".",
+        max_tokens=100,
+        presence_penalty=0.2,
+        temperature=1
+    )
+    summary = response.choices[0].message.content.lower()
+    summary = re.sub("summary:?", "", summary)
+    return summary
 
 
 def get_text_embedding(client, text, model="text-embedding-3-small"):

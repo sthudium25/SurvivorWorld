@@ -23,12 +23,13 @@ class Character(Thing):
     """
 
     def __init__(
-        self, name: str, description: str
+        self, name: str, description: str, persona: str
     ):
         super().__init__(name, description)
         # TODO: what to do with the character properties???
         self.set_property("character_type", "notset")
         self.set_property("is_dead", False)
+        self.persona = persona
 
         # ST - change 2/5/24
         self.inventory = Inventory()
@@ -126,14 +127,14 @@ class Character(Thing):
 class GenerativeAgent(Character):
     
     def __init__(self, persona: Persona):
-        super().__init__(persona.facts["name"], persona.summary)
+        super().__init__(persona.facts["name"], persona.summary, persona="see subclass")
         # TODO: memory stream currently in persona but may be hard to access
         self.persona = persona
         self.persona.initialize_memory(self.id)
 
         # Custom Kani class here? which could store this character's bio as "always_included"
         # Route from this Kani to Reflect, Act, Perceive Kanis?
-        self.agent_ai = AgentKani(persona) # I don't really want to store the persona in two places
+        self.agent_ai = AgentKani(persona)  # I don't really want to store the persona in two places
 
     def get_character_summary(self):
         """

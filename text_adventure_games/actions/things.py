@@ -16,7 +16,7 @@ class Get(base.Action):
 
         # TODO: Need to make item matching work with the
         # new inventory/resource system
-        self.item = self.parser.match_item(command, self.location.items)
+        self.item = self.parser.match_item(command, self.location.location_inventory)
 
     def check_preconditions(self) -> bool:
         """

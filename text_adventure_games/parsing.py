@@ -43,7 +43,7 @@ class Parser:
         self.game = game
         self.game.parser = self
 
-    def ok(self, description: str, character: Character):
+    def ok(self, description: str):
         """
         In the next homework, we'll replace this with a call to the OpenAI API
         in order to create more evocative descriptions.
@@ -72,12 +72,10 @@ class Parser:
         self.command_history.append(message)
         # CCB - todo - manage command_history size
 
-    def add_description_to_history(self, description: str, character: Character):
+    def add_description_to_history(self, description: str):
         message = {"role": "assistant", "content": description}
         self.command_history.append(message)
         # CCB - todo - manage command_history size
-        # TODO: ST to relay description to all characters in this location as a new ObservationNode
-        recipiants = self.get_characters_at_location(character.location)
 
     def add_action(self, action: actions.Action):
         """
@@ -170,7 +168,7 @@ class Parser:
         self.fail(f"No action found for {command}")
         return None
 
-    def parse_command(self, command: str, character: Character, round: int, tick: int):
+    def parse_command(self, command: str):
         # print("\n>", command, "\n", flush=True)
         # add this command to the history
         self.add_command_to_history(command)
@@ -222,14 +220,17 @@ class Parser:
     def get_character_location(self, character: Character) -> Location:
         return character.location
 
-    def match_item(self, command: str, item_dict: dict[str, Item]) -> Item:
+    def match_item(self, command: str, inventory) -> Item:
         """
         Check whether the name any of the items in this dictionary match the
         command. If so, return Item, else return None.
         """
-        for item_name in item_dict:
+        print("Inventory: ", inventory.view_inventory())
+        for item_name in inventory.items:
             if item_name in command:
-                item = item_dict[item_name]
+                # item = item_dict[item_name]
+                # Update to get items from Inventory()
+                item = inventory.get_item(item_name)
                 return item
         return None
 
@@ -240,10 +241,10 @@ class Parser:
         if character is None:
             character = self.game.player
         items_in_scope = {}
-        for item_name in character.location.items:
-            items_in_scope[item_name] = character.location.items[item_name]
-        for item_name in character.inventory:
-            items_in_scope[item_name] = character.inventory[item_name]
+        for item_name in character.location.location_inventory.items:
+            items_in_scope[item_name] = character.location.location_inventory.get_item(item_name)
+        for item_name in character.inventory.items:
+            items_in_scope[item_name] = character.inventory.get_item(item_name)
         return items_in_scope
 
     def get_direction(self, command: str, location: Location = None) -> str:
@@ -368,6 +369,9 @@ class GptParser(Parser):
         self.add_description_to_history(response)
         print(self.wrap_text(response) + '\n')
 
+        # TODO: ST to relay description to all characters in this location as a new ObservationNode
+        # recipiants = self.get_characters_at_location(character.location)
+
     def fail(self, description):
         self.command_history.append({"role": "assistant", "content": description})
         print("COMMAND FAILED")
@@ -464,10 +468,11 @@ class GptParser3(GptParser2):
         super().__init__(game, echo_commands, verbose)
         self.model = model
 
+    # TODO: Sam to override the parse command method
+    
     def extract_digit(self, text):
         # extracted_digit = list(filter(str.isdigit, text))
         # return extracted_digit[0]
-
         return re.findall(r"[-]?\d+", text)[0]
     
     def get_character(

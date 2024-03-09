@@ -6,7 +6,7 @@ Description: Defines the Persona of an agent
 """
 
 # local imports
-from memory_structures import memory_stream as ms
+from .memory_structures import memory_stream as ms
 from text_adventure_games.gpt.gpt_agent_setup import summarize_agent_facts
 
 

@@ -94,3 +94,5 @@ class Inventory:
             bool: True if found else False
         """
         return item_name in self.items
+    
+    

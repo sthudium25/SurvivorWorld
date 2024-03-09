@@ -17,7 +17,7 @@ import openai
 # from uuid import uuid4
 
 # Local imports
-from text_adventure_games.gpt import gpt_agent as ga
+from text_adventure_games.gpt import gpt_agent_setup as ga
 # from text_adventure_games.things.characters import Character
 from text_adventure_games.things.locations import Location
 
@@ -31,7 +31,7 @@ class ObservationNode:
     node_loc: str
     subject: str
     node_type: str
-    node_description: Optional[str] = field(default=None)
+    node_description: str
     embedding_key: int  # Immediately get and store the embedding for faster retrieval later?
     node_sentiment: int  # or could be float
     # agent_id: Optional[int] = field(default=None)  # ID of the agent making the observation, if relevant
