@@ -1,3 +1,4 @@
+from ..things.characters import Character
 from . import base
 from . import preconditions as P
 
@@ -8,9 +9,9 @@ class Eat(base.Action):
     ACTION_NAME = "eat"
     ACTION_DESCRIPTION = "Eat something"
 
-    def __init__(self, game, command: str):
+    def __init__(self, game, command: str, character: Character):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        self.character = character
         self.item = self.parser.match_item(
             command, self.parser.get_items_in_scope(self.character)
         )
@@ -65,9 +66,10 @@ class Drink(base.Action):
     ACTION_NAME = "drink"
     ACTION_DESCRIPTION = "Drink something"
 
-    def __init__(self, game, command: str):
+    def __init__(self, game, command: str, character: Character):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.item = self.parser.match_item(
             command, self.parser.get_items_in_scope(self.character)
         )
@@ -131,9 +133,10 @@ class Light(base.Action):
     ACTION_NAME = "light"
     ACTION_DESCRIPTION = "Light something flammable like a lamp or a candle"
 
-    def __init__(self, game, command: str):
+    def __init__(self, game, command: str, character: Character):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.item = self.parser.match_item(
             command, self.parser.get_items_in_scope(self.character)
         )

@@ -2,16 +2,17 @@ import random
 
 from . import base
 from . import preconditions as P
-from ..things import Item
+from ..things import Item, Character
 
 
 class Pick_Rose(base.Action):
     ACTION_NAME = "pick rose"
     ACTION_DESCRIPTION = "Pick a rose from a rosebush"
 
-    def __init__(self, game, command: str):
+    def __init__(self, game, command: str, character: Character):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.rosebush = self.parser.match_item(
             "rosebush", self.parser.get_items_in_scope(self.character)
         )
@@ -61,9 +62,10 @@ class Smell_Rose(base.Action):
     ACTION_NAME = "smell rose"
     ACTION_DESCRIPTION = "Smell the rose"
 
-    def __init__(self, game, command: str):
+    def __init__(self, game, command: str, character: Character):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.rose = self.parser.match_item(
             "rose", self.parser.get_items_in_scope(self.character)
         )

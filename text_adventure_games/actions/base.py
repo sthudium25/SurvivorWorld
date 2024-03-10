@@ -240,9 +240,11 @@ class ActionSequence(Action):
         self,
         game,
         command: str,
+        character: Character = None
     ):
         super().__init__(game)
         self.command = command
+        self.character = character
 
     def check_preconditions(self) -> bool:
         return True
@@ -251,7 +253,7 @@ class ActionSequence(Action):
         responses = []
         for cmd in self.command.split(","):
             cmd = cmd.strip()
-            responses.append(self.parser.parse_command(cmd))
+            responses.append(self.parser.parse_command(cmd, self.character))
         return responses
 
 
@@ -264,6 +266,7 @@ class Quit(Action):
         self,
         game,
         command: str,
+        character: Character = None
     ):
         super().__init__(game)
         self.command = command
@@ -289,6 +292,7 @@ class Describe(Action):
         self,
         game,
         command: str,
+        character: Character = None
     ):
         super().__init__(game)
         self.command = command

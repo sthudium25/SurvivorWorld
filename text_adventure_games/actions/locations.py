@@ -2,7 +2,7 @@ from . import base
 
 # from . import preconditions as P
 
-# from ..things import Character, Item  # , Location
+from ..things import Character  # Item  # , Location
 
 
 class Go(base.Action):
@@ -27,10 +27,11 @@ class Go(base.Action):
         self,
         game,
         command: str,
+        character: Character
         # location: Location, direction: str
     ):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        self.character = character  # self.parser.get_character(command)
         self.location = self.character.location
         self.direction = self.parser.get_direction(command, self.location)
         self.command = command

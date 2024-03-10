@@ -2,6 +2,7 @@ from . import base
 from . import preconditions as P
 from .consume import Drink, Eat
 from .rose import Smell_Rose
+from ..things import Character
 
 
 class Get(base.Action):
@@ -9,9 +10,10 @@ class Get(base.Action):
     ACTION_DESCRIPTION = "Get something and add it to the inventory"
     ACTION_ALIASES = ["take"]
 
-    def __init__(self, game, command: str):
+    def __init__(self, game, command: str, character: Character):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.location = self.character.location
         self.item = self.parser.match_item(command, self.location.items)
 
@@ -113,9 +115,11 @@ class Inventory(base.Action):
         self,
         game,
         command: str,
+        character: Character
     ):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
 
     def check_preconditions(self) -> bool:
         if self.character is None:
@@ -143,9 +147,11 @@ class Examine(base.Action):
         self,
         game,
         command: str,
+        character: Character
     ):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.matched_item = self.parser.match_item(
             command, self.parser.get_items_in_scope(self.character)
         )
@@ -171,8 +177,14 @@ class Give(base.Action):
     ACTION_DESCRIPTION = "Give something to someone"
     ACTION_ALIASES = ["hand"]
 
-    def __init__(self, game, command: str):
+    def __init__(self, 
+                 game, 
+                 command: str,
+                 character: Character):
         super().__init__(game)
+
+        # self.character = self.parser.get_character(command)
+        # self.character = character
         give_words = ["give", "hand"]
         command_before_word = ""
         command_after_word = command
@@ -182,8 +194,9 @@ class Give(base.Action):
                 command_before_word = parts[0]
             command_after_word = parts[1]
             break
-        self.giver = self.parser.get_character(command_before_word)
-        self.recipient = self.parser.get_character(command_after_word)
+        # self.giver = self.parser.get_character(command_before_word)
+        self.giver = character
+        self.recipient = self.parser.get_character(command_after_word, character=None)
         self.item = self.parser.match_item(command, self.giver.inventory)
 
     def check_preconditions(self) -> bool:
@@ -224,7 +237,7 @@ class Give(base.Action):
             command = "{name} eat {food}".format(
                 name=self.recipient.name, food=self.item.name
             )
-            eat = Eat(self.game, command)
+            eat = Eat(self.game, command, self.recipient)
             eat()
 
         if self.recipient.get_property("is_thisty") and self.item.get_property(
@@ -233,14 +246,14 @@ class Give(base.Action):
             command = "{name} drink {drink}".format(
                 name=self.recipient.name, drink=self.item.name
             )
-            drink = Drink(self.game, command)
+            drink = Drink(self.game, command, self.recipient)
             drink()
 
         if self.item.get_property("scent"):
             command = "{name} smell {thing}".format(
                 name=self.recipient.name, thing=self.item.name
             )
-            smell = Smell_Rose(self.game, command)
+            smell = Smell_Rose(self.game, command, self.recipient)
             smell()
 
 
@@ -248,10 +261,11 @@ class Unlock_Door(base.Action):
     ACTION_NAME = "unlock door"
     ACTION_DESCRIPTION = "Unlock a door"
 
-    def __init__(self, game, command):
+    def __init__(self, game, command, character):
         super().__init__(game)
         self.command = command
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.key = self.parser.match_item(
             "key", self.parser.get_items_in_scope(self.character)
         )
