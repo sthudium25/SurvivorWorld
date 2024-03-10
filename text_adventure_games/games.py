@@ -447,38 +447,48 @@ class SurvivorGame(Game):
     # Override game loop 
     def game_loop(self):
         # self.parser.parse_command("Come on in! Welcome to Survivor!")
-        self.parser.parse_command("look\n")
+        self.parser.parse_command("look\n", self.player)
         round = 0
         while True:
             for tick in range(self.max_ticks_per_round):
+                # Confirming Round increments and character movement
+                print(f"ROUND: {round}.{tick}")
+                self.view_character_locations()
                 for character in self.characters.values():  # naive ordering, not based on character initiative
                     print(f"Character: {character.name} (id: {character.id})")
                     # if tick == self.max_ticks_per_round - 1:
                     #     vote = True
                     # else:
                     #     vote = False
-                    if character.id == self.original_player_id:
-                        command = input("\n>")
-                    else:
-                        # set the current player to the game's "player" for description purposes
-                        self.player = character
-                        # Depending on the round, character.engage() should trigger different things
-                        # Planning occurs at beginning of round, reflection at end.
-                        # Action selection should happen in all(?) rounds except for the last one bc 
-                        # at end of round the only valid action is vote()
-                        # command = character.engage(round, 
-                        #                            tick, 
-                        #                            # vote
-                        #                            )
-                        command = input("\n>")
-                    self.parser.parse_command(command,
-                                            #   character,
-                                            #   round,
-                                            #   tick
-                                              )
+                    success = False
+                    # Only move on to the next character when current takes a successful action
+                    while not success:
+                        if character.id == self.original_player_id:
+                            command = input("\n>")
+                        else:
+                            # set the current player to the game's "player" for description purposes
+                            self.player = character
+                            # Depending on the round, character.engage() should trigger different things
+                            # Planning occurs at beginning of round, reflection at end.
+                            # Action selection should happen in all(?) rounds except for the last one bc 
+                            # at end of round the only valid action is vote()
+                            # command = character.engage(round, 
+                            #                            tick, 
+                            #                            # vote
+                            #                            )
+                            command = input("\n>")
+                        success = self.parser.parse_command(command,
+                                                            character,
+                                                            #   round,
+                                                            #   tick
+                                                            )
 
             if self.is_game_over():
                 break
 
             # Increment the rounds
             round += 1
+
+    def view_character_locations(self):
+        for name, char in self.characters.items():
+            print(f"{name} is in {char.location.name}\n")

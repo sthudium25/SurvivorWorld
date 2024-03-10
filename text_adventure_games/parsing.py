@@ -102,14 +102,14 @@ class Parser:
                 if not attr == actions.Action:
                     self.add_action(attr)
 
-    def determine_intent(self, command: str):
+    def determine_intent(self, command: str, character):
         """
         This function determines what command the player wants to do.
         Here we have implemented it with a simple keyword match. Later
         we will use AI to do more flexible matching.
         """
         # check which character is acting (defaults to the player)
-        character = self.get_character(command)
+        # character = self.get_character(command, character)  <-- don't need this if passing in the current character
         command = command.lower()
         if "," in command:
             # Let the player type in a comma separted sequence of commands
@@ -152,7 +152,7 @@ class Parser:
                     return action.action_name()
         return None
 
-    def parse_action(self, command: str) -> actions.Action:
+    def parse_action(self, command: str, character) -> actions.Action:
         """
         Routes an action described in a command to the right action class for
         performing the action.
@@ -160,26 +160,28 @@ class Parser:
         command = command.lower().strip()
         if command == "":
             return None
-        intent = self.determine_intent(command)
+        intent = self.determine_intent(command, character)
         if intent in self.actions:
             action = self.actions[intent]
-            return action(self.game, command)
+            return action(self.game, command, character)
         elif intent == "direction":
-            return actions.Go(self.game, command)
+            return actions.Go(self.game, command, character)
         elif intent == "take":
-            return actions.Get(self.game, command)
+            return actions.Get(self.game, command, character)
         self.fail(f"No action found for {command}")
         return None
 
-    def parse_command(self, command: str):
+    def parse_command(self, command: str, character: Character):
         # print("\n>", command, "\n", flush=True)
         # add this command to the history
         self.add_command_to_history(command)
-        action = self.parse_action(command)
+        action = self.parse_action(command, character)
         if not action:
             self.fail("I'm not sure what you want to do.")
+            return False
         else:
             action()
+            return True
 
     @staticmethod
     def split_command(command: str, keyword: str) -> tuple[str, str]:
@@ -208,7 +210,8 @@ class Parser:
 
         return (before_keyword, after_keyword)
 
-    def get_character(self, command: str) -> Character:
+    def get_character(self, command: str, character: Character) -> Character:
+        # ST 3/10 - add character arg for sake of override in GptParser3
         """
         This method tries to match a character's name in the command.
         If no names are matched, it returns the default value.
@@ -407,7 +410,7 @@ class GptParser2(GptParser):
         self.command_descriptions = command_descriptions
         return self
 
-    def determine_intent(self, command):
+    def determine_intent(self, command, character: Character):
         """
         Given a user's command, this method returns the ACTION_NAME of
         the intended action.  
@@ -428,7 +431,7 @@ Focus on matching the action to the verb in the command. Here are some examples 
 \"go fishing\" ==> \"catch fish\"\n\
 You must only return the single number whose corresponding text best matches the given command:\n"
         prompt_end = "The best match is number: "
-        total_prompt = prompt_beg+choices+prompt_end
+        total_prompt = prompt_beg + choices + prompt_end
         
         response = self.client.chat.completions.create(
             model="gpt-4",
@@ -468,12 +471,21 @@ class GptParser3(GptParser2):
 
         return re.findall(r"[-]?\d+", text)[0]
     
+    def get_characters_and_find_current(self, character):
+        current_idx = -999
+        chars = {}
+        for i, char in enumerate(list(self.game.characters)):
+            chars[i] = char
+            if char == character.name:
+                current_idx = i
+        return chars, current_idx
+    
     def get_character(
-        self, command: str, hint: str = None, split_words=None, position=None
+        self, command: str, character: Character = None, hint: str = None, split_words=None, position=None
     ) -> Character:
         """
         This method tries to match a character's name in the command.
-        If no names are matched, it defaults to `game.player`. 
+        If no names are matched, it defaults to the passed character. 
         Args:
             hint: A hint about the role of character we're looking for 
                   (e.g. "giver" or "recipent")
@@ -482,15 +494,15 @@ class GptParser3(GptParser2):
         """
 
         system_prompt = "Given a command, return the character who can be described as: \"{h}\". ".format(h=hint)
-        system_prompt += "Unless specified, assume \"0: The player\" performs all actions.\nChoose from the following characters:\n"
         # Create an enumerated dict of the characters in the game
-        chars = {i: c for i, c in enumerate(list(self.game.characters))}
-        
+        chars, curr_idx = self.get_characters_and_find_current(character)
+
+        system_prompt += f"Unless specified, assume \"{curr_idx}: {character.name}\" performs all actions.\nChoose from the following characters:\n"
         # Format the characters into a list structure for the system prompt
         system_prompt += "{c}".format(c='\n'.join([str(i)+": "+str(c) for i, c in chars.items()]))
 
         system_prompt += "\nYou must only return the single number whose corresponding character is performing the action.\n\
-If no command is given, return \"0: The player\""
+If no command is given, return \"{curr_idx}: {character.name}\""
         # if hint:
         #     system_prompt += "As a hint, in the given command, the subject can be described as: \"{h}\". ".format(h=hint)
         #     system_prompt += "If there are no good matches, the action is performed by the game player, so you should return 0.\n"
