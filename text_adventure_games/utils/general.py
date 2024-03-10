@@ -11,9 +11,16 @@ import json
 import string
 # from importlib.resources import files, as_file
 from typing import Dict
+from openai import OpenAI
 
 # Relative imports
 from . import consts
+
+
+def set_up_openai_client(org="Penn"):
+    key = consts.get_openai_api_key(org)
+    client = OpenAI(api_key=key)
+    return client
 
 
 def extract_target_word(response):
