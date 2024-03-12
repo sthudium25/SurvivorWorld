@@ -10,8 +10,9 @@ import re
 import json
 import string
 # from importlib.resources import files, as_file
-from typing import Dict
+from typing import Dict, Literal
 from openai import OpenAI
+from kani.engines.openai import OpenAIEngine
 
 # Relative imports
 from . import consts
@@ -21,6 +22,11 @@ def set_up_openai_client(org="Penn"):
     key = consts.get_openai_api_key(org)
     client = OpenAI(api_key=key)
     return client
+
+def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):
+    key = consts.get_openai_api_key(org)
+    engine = OpenAIEngine(key, model=model, **kwargs)
+    return engine
 
 
 def extract_target_word(response):
