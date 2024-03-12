@@ -7,6 +7,7 @@ the most potential for improvement using modern natural language processing.
 The implementation that I have given below only uses simple keyword matching.
 """
 
+from collections import defaultdict
 import inspect
 import textwrap
 import re
@@ -17,7 +18,8 @@ from openai import OpenAI
 
 from .things import Character, Item, Location
 from . import actions, blocks
-from .utils.general import set_up_openai_client
+from .utils.general import set_up_openai_client, set_up_kani_engine
+from .gpt.parser_kani import DescriptorKani
 
 
 class Parser:
@@ -32,6 +34,7 @@ class Parser:
         # A list of the commands that the player has issued,
         # and the respones given to the player.
         self.command_history = []
+        self.character_histories = defaultdict(list)
 
         # Build default scope of actions
         self.actions = game.default_actions()
@@ -46,13 +49,13 @@ class Parser:
         # Print the user's commands
         self.echo_commands = echo_commands
 
-    def ok(self, description: str):
+    def ok(self, description: str, character: Character):
         """
         In the next homework, we'll replace this with a call to the OpenAI API
         in order to create more evocative descriptions.
         """
         print(Parser.wrap_text(description))
-        self.add_description_to_history(description)
+        self.add_description_to_history(description, character)
 
     def fail(self, description: str):
         """
@@ -71,14 +74,18 @@ class Parser:
         return "\n".join(wrapped_lines)
 
     def add_command_to_history(self, command: str):
+        """Add command strings as <USER> ChatMessages to the game history"""
+
         message = {"role": "user", "content": command}
         self.command_history.append(message)
         # CCB - todo - manage command_history size
 
-    def add_description_to_history(self, description: str):
+    def add_description_to_history(self, description: str, character: Character):
         message = {"role": "assistant", "content": description}
         self.command_history.append(message)
         # CCB - todo - manage command_history size
+        # ST - Create character-specific command histories
+        character.memory.append(message)
 
     def add_action(self, action: actions.Action):
         """
@@ -289,7 +296,11 @@ class GptParser(Parser):
         # self.max_tokens = 4096
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
 
-    def gpt_describe(self, system_instructions, command_history):
+    def gpt_describe(self, 
+                     system_instructions, 
+                     character,
+                     # command_history
+                     ):
         """
         Generate a description with GPT.  This takes two arguments:
         * The system instructions, which is the prompt that describes 
@@ -306,7 +317,8 @@ class GptParser(Parser):
                 "role": "system",
                 "content": system_instructions
             }]
-            context = self.limit_context_length(command_history, self.max_tokens)
+            # context = self.limit_context_length(command_history, self.max_tokens)
+            context = self.limit_context_length(character.memory, self.max_tokens)
             messages.extend(context)
             if self.verbose:
                 print(json.dumps(messages, indent=2))
@@ -324,6 +336,18 @@ class GptParser(Parser):
         except Exception as e:
             return f"Something went wrong with GPT: {e}"
         
+    # def gpt_describe(self, system_instructions, character):
+    #     engine = set_up_kani_engine()
+    #     narrator_ai = DescriptorKani(character, 
+    #                                  engine=engine,
+    #                                  system_prompt=system_instructions,
+    #                                  desired_response_tokens=256)
+    #     for mem in character.memory:
+    #         narrator_ai.add_to_history(mem)
+
+    #     response = narrator_ai.chat_round_str(f"Describe the current setting for {character.name}")
+    #     return response
+        
     def limit_context_length(self, command_history, max_tokens, max_turns=1000):
         """
         This method limits the length of the command_history 
@@ -331,7 +355,7 @@ class GptParser(Parser):
         The least recent messages are disregarded from the context. 
         This function is non-destructive and doesn't modify command_history.
         """
-        encoding = tiktoken.get_encoding("cl100k_base")
+        # encoding = tiktoken.get_encoding("cl100k_base")
 
         if len(command_history) > max_turns:
             adj_command_history = command_history[-max_turns:]
@@ -340,7 +364,7 @@ class GptParser(Parser):
             adj_command_history = command_history[:]
 
         commands = [i['content'] for i in adj_command_history]
-        command_lengths = [len(encoding.encode(i)) for i in commands]
+        command_lengths = [len(self.tokenizer.encode(i)) for i in commands]
         command_lengths.reverse()
         cum_list_lengths = np.cumsum(command_lengths)
         for index, i in enumerate(cum_list_lengths):
@@ -351,23 +375,24 @@ class GptParser(Parser):
                 return command_history[-index + 1:]
         return command_history  
 
-    def ok(self, description):
+    def ok(self, description, character: Character):
         """
         In this homework, we'll replace this with a call to the OpenAI API
         in order to create more evocative descriptions.  For this part, 
         all you need to do is create your own system instructions.   
         """
-        self.command_history.append({"role": "assistant", "content": description})
-        
+        # self.command_history.append({"role": "assistant", "content": description})
+        self.add_description_to_history(description, character)
+
         system_instructions = """You are the narrator for a text adventure game. 
         You create short, evocative descriptions of the scenes in the game.
-        Include descriptions of the items and exits available to the Player."""
+        Include descriptions of the items and exits available to the current player."""
         
-        response = self.gpt_describe(system_instructions, self.command_history)
-        self.add_description_to_history(response)
+        response = self.gpt_describe(system_instructions, character)
+        self.add_description_to_history(response, character)
         print(self.wrap_text(response) + '\n')
 
-    def fail(self, description):
+    def fail(self, description, character):
         """
         In this homework, we'll replace this with a call to the OpenAI API
         in order to create more useful error messages descriptions.  You should
@@ -381,7 +406,7 @@ class GptParser(Parser):
 The player entered a command that failed in the game. \
 Try to help the player understand why the command failed."
 
-        response = self.gpt_describe(system_instructions, self.command_history)
+        response = self.gpt_describe(system_instructions, character)
         if self.verbose:
             print("GPT's Error Description:")
         # self.add_description_to_history(response)
