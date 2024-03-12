@@ -1,5 +1,5 @@
 from SurvivorWorld.text_adventure_games import games, things, actions, blocks
-
+from SurvivorWorld.text_adventure_games.things.characters import GenerativeAgent
 
 class ActionCastle(games.Game):
     def __init__(
@@ -681,6 +681,68 @@ def build_game(type=1) -> games.Game:
         game = ActionCastle(cottage, player, characters, custom_actions, gametype=type)
     else:
         game = ActionCastleSurvivor(cottage, player, characters, custom_actions)
+    return game
+
+def build_mini_game() -> games.Game:
+    cottage = things.Location("Cottage", "You are standing in a small cottage.")
+    garden_path = things.Location(
+        "Garden Path",
+        "You are standing on a lush garden path. There is a cottage here.",
+    )
+    fishing_pond = things.Location(
+        "Fishing Pond", "You are at the edge of a small fishing pond."
+    )
+    cottage.add_connection("out", garden_path)
+    garden_path.add_connection("south", fishing_pond)
+
+    # Gettable Items
+    fishing_pole = things.Item(
+        "pole",
+        "a fishing pole",
+        "A SIMPLE FISHING POLE.",
+    )
+    fishing_pond.add_item(fishing_pole)
+
+    # Troll
+    troll = GenerativeAgent(
+        name="troll",
+        description="A mean troll",
+        persona="I am hungry. The guard promised to feed me if I guard the drawbridge and keep people out of the castle.",
+    )
+    troll.set_property("is_hungry", True)
+    troll.set_property("character_type", "troll")
+    fishing_pond.add_character(troll)
+
+    # Mother
+    mother = GenerativeAgent(
+        name="mother",
+        description="A motherly figure",
+        persona="I am a mother and I will do anything to protect my child",
+    )
+    mother.set_property("emotional_state", "happy")
+    mother.set_property("is_married", True)
+    mother.set_property("character_type", "human")
+    cottage.add_character(mother)
+
+    # Player
+    player = GenerativeAgent(
+        name="The player",
+        description="You are a simple peasant destined for greatness.",
+        persona="I am on an adventure.",
+    )
+    player.set_property("character_type", "human")
+
+    # Player's lamp
+    lamp = things.Item("lamp", "a lamp", "A LAMP.")
+    lamp.set_property("is_lightable", True)
+    lamp.set_property("is_lit", False)
+    lamp.add_command_hint("light lamp")
+    player.add_to_inventory(lamp)
+
+    # The Game
+    characters = [troll, mother]
+    custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
+    game = ActionCastleSurvivor(cottage, player, characters, custom_actions)
     return game
 
 
