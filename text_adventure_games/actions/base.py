@@ -270,6 +270,7 @@ class Quit(Action):
     ):
         super().__init__(game)
         self.command = command
+        self.character = character
 
     def check_preconditions(self) -> bool:
         return True
@@ -279,7 +280,8 @@ class Quit(Action):
             self.game.game_over = True
             if not self.game.game_over_description:
                 self.game.game_over_description = "The End"
-            return self.parser.ok(self.game.game_over_description)
+            # return self.parser.ok(self.game.game_over_description)    
+            return self.parser.ok(self.game.game_over_description, self.character)
         return self.parser.fail("Game already ended.")
 
 
@@ -296,9 +298,10 @@ class Describe(Action):
     ):
         super().__init__(game)
         self.command = command
+        self.character = character
 
     def check_preconditions(self) -> bool:
         return True
 
     def apply_effects(self):
-        self.parser.ok(self.game.describe())
+        self.parser.ok(self.game.describe(), self.character)

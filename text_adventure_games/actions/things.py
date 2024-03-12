@@ -55,7 +55,8 @@ class Get(base.Action):
         description = "{character_name} got the {item_name}.".format(
             character_name=self.character.name, item_name=self.item.name
         )
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)
 
 
 class Drop(base.Action):
@@ -103,7 +104,8 @@ class Drop(base.Action):
             item_name=self.item.name,
             location=self.location.name,
         )
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)
 
 
 class Inventory(base.Action):
@@ -129,13 +131,15 @@ class Inventory(base.Action):
     def apply_effects(self):
         if len(self.character.inventory) == 0:
             description = f"{self.character.name}'s inventory is empty."
-            self.parser.ok(description)
+            # self.parser.ok(description)
+            self.parser.ok(description, self.character)
         else:
             description = f"{self.character.name}'s inventory contains:\n"
             for item_name in self.character.inventory:
                 item = self.character.inventory[item_name]
                 description += "* {item}\n".format(item=item.description)
-            self.parser.ok(description)
+            # self.parser.ok(description)
+            self.parser.ok(description, self.character)
 
 
 class Examine(base.Action):
@@ -165,11 +169,14 @@ class Examine(base.Action):
         """The player wants to examine an item"""
         if self.matched_item:
             if self.matched_item.examine_text:
-                self.parser.ok(self.matched_item.examine_text)
+                # self.parser.ok(self.matched_item.examine_text)
+                self.parser.ok(self.matched_item.examine_text, self.character)
             else:
-                self.parser.ok(self.matched_item.description)
+                # self.parser.ok(self.matched_item.description)
+                self.parser.ok(self.matched_item.description, self.character)
         else:
-            self.parser.ok("You don't see anything special.")
+            # self.parser.ok("You don't see anything special.")
+            self.parser.ok("You don't see anything special.", self.character)
 
 
 class Give(base.Action):
@@ -229,7 +236,7 @@ class Give(base.Action):
             item_name=self.item.name,
             recipient=self.recipient.name.capitalize(),
         )
-        self.parser.ok(description)
+        self.parser.ok(description, self.character)
 
         if self.recipient.get_property("is_hungry") and self.item.get_property(
             "is_food"
@@ -281,4 +288,5 @@ class Unlock_Door(base.Action):
 
     def apply_effects(self):
         self.door.set_property("is_locked", False)
-        self.parser.ok("Door is unlocked")
+        # self.parser.ok("Door is unlocked")
+        self.parser.ok("Door is unlocked", self.character)

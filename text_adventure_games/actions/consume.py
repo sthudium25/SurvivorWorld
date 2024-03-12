@@ -59,7 +59,8 @@ class Eat(base.Action):
             description += " The {food} is poisonous. {name} died.".format(
                 food=self.item.name, name=self.character.name.capitalize()
             )
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)
 
 
 class Drink(base.Action):
@@ -106,27 +107,31 @@ class Drink(base.Action):
         description = "{name} drinks the {drink}.".format(
             name=self.character.name.capitalize(), drink=self.item.name
         )
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)
 
         if self.item.get_property("taste"):
             description = " It tastes {taste}".format(
                 taste=self.item.get_property("taste")
             )
-            self.parser.ok(description)
+            # self.parser.ok(description)
+            self.parser.ok(description, self.character)
 
         if self.item.get_property("is_poisonous"):
             self.character.set_property("is_dead", True)
             description = "The {drink} is poisonous. {name} died.".format(
                 drink=self.item.name, name=self.character.name.capitalize()
             )
-            self.parser.ok(description)
+            # self.parser.ok(description)
+            self.parser.ok(description, self.character)
 
         if self.item.get_property("is_alcohol"):
             self.character.set_property("is_drink", True)
             description = "{name} is now drunk from {drink}.".format(
                 drink=self.item.name, name=self.character.name.capitalize()
             )
-            self.parser.ok(description)
+            # self.parser.ok(description)
+            self.parser.ok(description, self.character)
 
 
 class Light(base.Action):
@@ -171,4 +176,5 @@ class Light(base.Action):
         description = "{name} lights the {item}. It glows.".format(
             name=self.character.name, item=self.item.name
         )
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)

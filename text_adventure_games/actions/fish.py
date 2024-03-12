@@ -1,3 +1,4 @@
+from text_adventure_games.things.characters import Character
 from . import base
 from . import preconditions as P
 from ..things import Item
@@ -8,9 +9,10 @@ class Catch_Fish(base.Action):
     ACTION_DESCRIPTION = "Catch fish with a pole"
     ACTION_ALIASES = ["go fishing"]
 
-    def __init__(self, game, command: str):
+    def __init__(self, game, command: str, character: Character):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.pond = self.character.location
         self.pole = False
         if " with pole" in command:
@@ -72,4 +74,5 @@ class Catch_Fish(base.Action):
             ]
         )
         description = d.format(character_name=self.character.name)
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)

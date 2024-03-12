@@ -99,7 +99,8 @@ class Go(base.Action):
         if to_loc.get_property("game_over") and is_main_player:
             self.game.game_over = True
             self.game.game_over_description = to_loc.description
-            self.parser.ok(to_loc.description)
+            # self.parser.ok(to_loc.description)
+            self.parser.ok(to_loc.description), self.character
         else:
-            action = base.Describe(self.game, command=self.command)
+            action = base.Describe(self.game, command=self.command, character=self.character)
             action()

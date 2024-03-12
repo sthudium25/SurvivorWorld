@@ -51,7 +51,8 @@ class Pick_Rose(base.Action):
         self.character.add_to_inventory(rose)
         d = "{character_name} picked the lone rose from the rosebush"
         description = d.format(character_name=self.character.name)
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)
         return rose
 
 
@@ -135,10 +136,12 @@ class Smell_Rose(base.Action):
             character_name=self.character.name.capitalize(),
             scent=self.rose.get_property("scent"),
         )
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)
 
         self.character.set_property("emotional_state", "happy")
         description = "{character_name} is happy.".format(
             character_name=self.character.name.capitalize()
         )
-        self.parser.ok(description)
+        # self.parser.ok(description)
+        self.parser.ok(description, self.character)
