@@ -33,6 +33,31 @@ class AgentKani(Kani):
     # build system prompt with override get_prompt() asking Gpt4 
         
     @ai_function
-    def act(self):
-        pass
+    async def act(self, loc_description):
+        """
+        Select an action that furthers the goals of the agent.
+        """
+        action_engine = OpenAIEngine(API_KEY, MODEL)
 
+        # Need to figure out what to pass to this model as context
+        # What portion of the AgentKanis chat history do we pass?
+        action_ai = ActionKani(action_engine, system_prompt='', chat_history=self.chat_history)
+
+        # TODO: Update this prompt to be more robust
+        return await action_ai.chat_round_str("Given the context, choose an action...")
+    
+    def get_relevant_observations(self, lookups):
+        # Keyword lookups: These should return ranked lists of observations
+        # Ranking taking into account: recency, cosine similarity 
+        for loc in lookups["location"]:
+            loc_obs = self.persona.memory.get_obs_by_loc(loc)
+        
+        for character in lookups["characters"]:
+            char_obs = self.persona.memory.get_obs_by_character(character)
+
+        for item in lookups["items"]:
+            item_obs = self.persona.memory.get_obs_by_item(item)
+
+
+class ActionKani(Kani):
+    pass
