@@ -18,9 +18,9 @@ from kani.engines.openai import OpenAIEngine
 from . import consts
 
 
-def set_up_openai_client(org="Penn"):
+def set_up_openai_client(org="Penn", **kwargs):
     key = consts.get_openai_api_key(org)
-    client = OpenAI(api_key=key)
+    client = OpenAI(api_key=key, **kwargs)
     return client
 
 def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):

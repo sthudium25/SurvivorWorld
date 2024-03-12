@@ -1,5 +1,6 @@
 import tiktoken
-from openai import OpenAI
+from openai import 
+from ..utils.general import set_up_openai_client
 
 
 class Dialogue:
@@ -12,9 +13,8 @@ class Dialogue:
             participants (List(Character)): sorted list of 
             characters by initiative.
         """
+        self.client = set_up_openai_client(org='Helicone', base_url="https://oai.hconeai.com/v1")
         self.verbose = False
-        self.client = OpenAI(base_url="https://oai.hconeai.com/v1",
-                             api_key="sk-helicone-cp-esmpxtq-jpjevdq-q5w4saq-wwfbntq",)
         self.gpt_model = "gpt-4"
         self.max_output_tokens = 256 # You get to pick this
         self.max_tokens = 8192-self.max_output_tokens # GPT-4's max total tokens
