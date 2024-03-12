@@ -1,6 +1,7 @@
 from .base import Thing
 from .items import Item
 from .locations import Location
+from ..gpt.agent_kani import AgentKani
 
 
 class Character(Thing):
@@ -30,6 +31,7 @@ class Character(Thing):
         self.persona = persona
         self.inventory = {}
         self.location = None
+        self.memory = []
 
     def to_primitive(self):
         """
@@ -100,14 +102,14 @@ class GenerativeAgent(Character):
     
     def __init__(self, name: str, description: str, persona: str):
         super().__init__(name, description, persona)
-        #super().__init__(persona.facts["name"], persona.summary, persona="see subclass")
+        # super().__init__(persona.facts["name"], persona.summary, persona="see subclass")
         # TODO: memory stream currently in persona but may be hard to access
         # self.persona = persona
         # self.persona.initialize_memory(self.id)
 
         # Custom Kani class here? which could store this character's bio as "always_included"
         # Route from this Kani to Reflect, Act, Perceive Kanis?
-        self.agent_ai = AgentKani(persona)  # I don't really want to store the persona in two places
+        # self.agent_ai = AgentKani(persona, name)  # I don't really want to store the persona in two places
 
     def get_character_summary(self):
         """
@@ -120,7 +122,12 @@ class GenerativeAgent(Character):
         alliance_summary = self.get_alliance_summary()
         return persona_summary + ' ' + alliance_summary
 
-    def engage(self, round, tick, vote):
+    def engage(self, game, round, tick, 
+               # vote
+               ):
+        location_description = self.perceive(game)
+        print(f"{self.name} memories:")
+        print(self.get_memories())
         # if vote:
         #     # At end of round: agent votes and reflects
         #     self.agent_ai.vote()
@@ -128,18 +135,29 @@ class GenerativeAgent(Character):
         # elif tick == 0:
         #     # At start of round: agent plans
         #     self.agent_ai.plan()
-        
-        self.agent_ai.full_round()
+        return input("\n>")
+        #self.agent_ai.full_round("Select an action to take.")
         # need to access the game history if this player is in the same as the last one
         # need to describe a new setting if this player is in a different location
  
+    def perceive(self, game):
+        # Collect the latest information about the location
+        location_description = game.describe()
+        self.memory.append({"role": "user", "content": location_description})
+        print(f"{self.name} has {len(self.memory)} memories.")
+        # It would be helpful to get lists of 
+        # * Item names, Character names, and the location
+        # These could be passed to Kani to help retrieve the relevant ObservationNodes
+        return location_description
+
+    def get_memories(self):
+        return [m['content'] for m in self.memory]
+
     # def reflect(self):
     #     # Look back at observations from this round
     #     pass
 
-    # def perceive(self):
-    #     # Collect the latest information about the location
-    #     pass
+    
 
     # def act(self):
     #     # Intent determination here?
