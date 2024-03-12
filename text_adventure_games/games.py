@@ -1,6 +1,5 @@
 from .things import Location, Character
 from . import parsing, actions, blocks
-from .managers import containment
 
 import json
 import inspect
@@ -36,10 +35,6 @@ class Game:
         # Records history of commands, states, and descriptions
         self.game_history = []
 
-        # State Managers
-        # 1. Containment
-        self.containers = containment.ContainmentManager()
-
         self.game_over = False
         self.game_over_description = None
 
@@ -73,6 +68,7 @@ class Game:
 
         # Add custom actions to parser
         if custom_actions:
+            print("Adding custom actions")
             for ca in custom_actions:
                 if inspect.isclass(ca) and issubclass(ca, actions.Action):
                     self.parser.add_action(ca)
@@ -87,19 +83,9 @@ class Game:
                 for b in location.blocks:
                     self.parser.add_block(b)
                     seen_before[name] = True
-            # Look at items in the location to see if they are containers
-            if len(location.location_inventory.items) > 0 and \
-                    name not in seen_before:
-                # {name[str]: List[Item]}
-                for _, item_list in location.location_inventory.items.items():
-                    for item in item_list:
-                        if item.get_property("is_container"):
-                            self.containers.add_container(item)
-                        if item.has_property("is_contained"):
-                            # Get the container Item
-                            container = item.get_property("is_contained")
-                            # add the item to the containment manater
-                            self.containers.add_item(container, item)
+
+    def set_parser(self, parser: parsing.Parser):
+        self.parser = parser
 
     def game_loop(self):
         """
@@ -177,27 +163,20 @@ class Game:
                 description += exit + "\n"
         return description
 
-    # Modified to accommodate listed items - ST 1/30/24
     def describe_items(self) -> str:
         """
         Describe what items are in the current location.
         """
         description = ""
-        if len(self.player.location.location_inventory.items) > 0:
-            description = "You see:"
-            for curr_name, curr_list in \
-                    self.player.location.location_inventory.items.items():
-                # Just to double check we have an item here
-                if len(curr_list) > 0:
-                    item = curr_list[0]  # get the Oth for descriptive purposes
-                    if len(curr_list) == 1:
-                        description += "\n * " + item.description
-                    else:
-                        description += "\n * " + len(curr_list) + " " + item.description + "s"
-                    if self.give_hints:
-                        special_commands = item.get_command_hints()
-                        for cmd in special_commands:
-                            description += "\n\t" + cmd
+        if len(self.player.location.items) > 0:
+            description = f"{self.player.name} sees:"
+            for item_name in self.player.location.items:
+                item = self.player.location.items[item_name]
+                description += "\n * " + item.description
+                if self.give_hints:
+                    special_commands = item.get_command_hints()
+                    for cmd in special_commands:
+                        description += "\n\t" + cmd
         return description
 
     def describe_characters(self) -> str:
@@ -457,7 +436,65 @@ class Game:
         with open(filename, 'r') as f:
             save_data = f.read()
             return cls.from_json(save_data, **kw)
-        
-    # NEW METHODS - ST 1/30/24
-    def get_container_tree(self):
-        self.containers.get_containment_tree()        
+
+
+# Override methods or implement a new class?
+class SurvivorGame(Game):
+    def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, max_ticks=5):
+        super().__init__(start_at, player, characters, custom_actions)
+        self.max_ticks_per_round = max_ticks
+        self.original_player_id = self.player.id
+    
+    # Override game loop 
+    def game_loop(self):
+        # self.parser.parse_command("Come on in! Welcome to Survivor!")
+        # self.parser.parse_command("look\n", self.player)
+        round = 0
+        while True:
+            for tick in range(self.max_ticks_per_round):
+                # Confirming Round increments and character movement
+                print(f"ROUND: {round}.{tick}")
+                self.view_character_locations()
+                for character in self.characters.values():  # naive ordering, not based on character initiative
+                    print(f"Character: {character.name} (id: {character.id})")
+                    # if tick == self.max_ticks_per_round - 1:
+                    #     vote = True
+                    # else:
+                    #     vote = False
+                    success = False
+                    # Only move on to the next character when current takes a successful action
+                    while not success:
+                        if character.id == self.original_player_id:
+                            command = character.engage(self,
+                                                       round, 
+                                                       tick, 
+                                                       # vote
+                                                       )
+                        else:
+                            # set the current player to the game's "player" for description purposes
+                            self.player = character
+                            # Depending on the round, character.engage() should trigger different things
+                            # Planning occurs at beginning of round, reflection at end.
+                            # Action selection should happen in all(?) rounds except for the last one bc 
+                            # at end of round the only valid action is vote()
+                            command = character.engage(self,
+                                                       round, 
+                                                       tick, 
+                                                       # vote
+                                                       )
+                            # command = input("\n>")
+                        success = self.parser.parse_command(command,
+                                                            character,
+                                                            #   round,
+                                                            #   tick
+                                                            )
+
+            if self.is_game_over():
+                break
+
+            # Increment the rounds
+            round += 1
+
+    def view_character_locations(self):
+        for name, char in self.characters.items():
+            print(f"{name} is in {char.location.name}\n")

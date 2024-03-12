@@ -159,5 +159,13 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# R Studio logs
+# Mac logs
 .RHistory
+
+# VSCode settings
+.vscode/*
+**/.vscode/
+
+# config files
+config.*
+.config.*

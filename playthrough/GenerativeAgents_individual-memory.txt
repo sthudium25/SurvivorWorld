@@ -1,0 +1,339 @@
+ROUND: 0.0
+The player is in Cottage
+
+troll is in Fishing Pond
+
+mother is in Cottage
+
+Character: The player (id: 7)
+The player has 1 memories.
+The player memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\nCharacters:\n * A motherly figure\n']
+Chosen Command: go
+Found connections:  {0: ('out', 'Garden Path')}
+GPTParse selected direction: 0
+Appended {'role': 'user', 'content': 'The cottage is a cozy, quaint little place, filled with the scent of freshly baked bread and the warmth of a crackling fireplace. The wooden walls are adorned with hand-stitched tapestries, depicting scenes of pastoral life. A sturdy oak table sits in the middle of the room, laden with various trinkets and tools. \n\nTo the north, a small window reveals a lush garden path, dappled with sunlight and sprinkled with a myriad of vibrant flowers. The door leading out to this serene escape is slightly ajar, a gentle breeze rustling the curtains hanging on either side.\n\nIn the corner of the room, a motherly figure is humming a soft lullaby, her hands busy with knitting needles and a ball of wool. Her kind eyes, filled with wisdom and warmth, welcome you. \n\nItems:\n * A ball of wool\n * Knitting needles\n * A loaf of freshly baked bread\n * Various trinkets on the table\n\nExits:\n * The door to the garden path'} to The player's memory.
+The cottage is a cozy, quaint little place, filled with the scent of freshly
+baked bread and the warmth of a crackling fireplace. The wooden walls are
+adorned with hand-stitched tapestries, depicting scenes of pastoral life. A
+sturdy oak table sits in the middle of the room, laden with various trinkets and
+tools.
+
+To the north, a small window reveals a lush garden path, dappled with sunlight
+and sprinkled with a myriad of vibrant flowers. The door leading out to this
+serene escape is slightly ajar, a gentle breeze rustling the curtains hanging on
+either side.
+
+In the corner of the room, a motherly figure is humming a soft lullaby, her
+hands busy with knitting needles and a ball of wool. Her kind eyes, filled with
+wisdom and warmth, welcome you.
+
+Items:
+ * A ball of wool
+ * Knitting needles
+ * A loaf of freshly baked bread
+ * Various trinkets on the table
+
+Exits:
+ * The door to the garden path
+
+Character: troll (id: 5)
+troll has 1 memories.
+troll memories:
+['You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a fishing pole\n\n']
+Chosen Command: get
+GPTParse selected item: 0
+Appended {'role': 'user', 'content': "You find yourself standing at the edge of a serene fishing pond, its surface as smooth as glass, reflecting the soft hues of the setting sun. The air is filled with the sweet scent of water lilies that dot the pond. To the north, a narrow garden path, lined with a riot of colorful flowers, meanders into the distance.\n\nAs a troll, your keen eyes spot a lone fishing pole resting against a nearby tree. It's a simple rod, its wooden handle worn smooth from use, and a line ending in a hook, devoid of bait. \n\nExits: To the north, the garden path awaits, a kaleidoscope of colors leading to unknown adventures."} to troll's memory.
+You find yourself standing at the edge of a serene fishing pond, its surface as
+smooth as glass, reflecting the soft hues of the setting sun. The air is filled
+with the sweet scent of water lilies that dot the pond. To the north, a narrow
+garden path, lined with a riot of colorful flowers, meanders into the distance.
+
+As a troll, your keen eyes spot a lone fishing pole resting against a nearby
+tree. It's a simple rod, its wooden handle worn smooth from use, and a line
+ending in a hook, devoid of bait.
+
+Exits: To the north, the garden path awaits, a kaleidoscope of colors leading to
+unknown adventures.
+
+Character: mother (id: 6)
+mother has 1 memories.
+mother memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\n\n']
+Chosen Command: go
+Found connections:  {0: ('out', 'Garden Path')}
+GPTParse selected direction: 0
+Appended {'role': 'user', 'content': "The cottage is cozy and warm, filled with the scent of freshly baked bread. The wooden beams overhead are aged and worn, whispering tales of the countless years they've seen. A crackling fire dances in the stone hearth, casting flickering shadows across the room. A sturdy oak table sits in the middle, laden with a half-eaten loaf of bread, a block of cheese, and a flagon of ale. \n\nTo your left, a wooden ladder leads up to a loft, where a straw mattress and a worn blanket suggest a simple sleeping area. To your right, a small window reveals a charming garden, brimming with colorful flowers and buzzing bees. A worn path, lined with cobblestones, meanders through the garden and disappears into a dense forest beyond.\n\nItems: \n- Loaf of Bread\n- Block of Cheese\n- Flagon of Ale\n\nExits: \n- Door leading to the Garden Path\n- Ladder to the Loft"} to mother's memory.
+The cottage is cozy and warm, filled with the scent of freshly baked bread. The
+wooden beams overhead are aged and worn, whispering tales of the countless years
+they've seen. A crackling fire dances in the stone hearth, casting flickering
+shadows across the room. A sturdy oak table sits in the middle, laden with a
+half-eaten loaf of bread, a block of cheese, and a flagon of ale.
+
+To your left, a wooden ladder leads up to a loft, where a straw mattress and a
+worn blanket suggest a simple sleeping area. To your right, a small window
+reveals a charming garden, brimming with colorful flowers and buzzing bees. A
+worn path, lined with cobblestones, meanders through the garden and disappears
+into a dense forest beyond.
+
+Items:
+- Loaf of Bread
+- Block of Cheese
+- Flagon of Ale
+
+Exits:
+- Door leading to the Garden Path
+- Ladder to the Loft
+
+ROUND: 0.1
+The player is in Garden Path
+
+troll is in Fishing Pond
+
+mother is in Garden Path
+
+Character: The player (id: 7)
+The player has 3 memories.
+The player memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\nCharacters:\n * A motherly figure\n', 'The cottage is a cozy, quaint little place, filled with the scent of freshly baked bread and the warmth of a crackling fireplace. The wooden walls are adorned with hand-stitched tapestries, depicting scenes of pastoral life. A sturdy oak table sits in the middle of the room, laden with various trinkets and tools. \n\nTo the north, a small window reveals a lush garden path, dappled with sunlight and sprinkled with a myriad of vibrant flowers. The door leading out to this serene escape is slightly ajar, a gentle breeze rustling the curtains hanging on either side.\n\nIn the corner of the room, a motherly figure is humming a soft lullaby, her hands busy with knitting needles and a ball of wool. Her kind eyes, filled with wisdom and warmth, welcome you. \n\nItems:\n * A ball of wool\n * Knitting needles\n * A loaf of freshly baked bread\n * Various trinkets on the table\n\nExits:\n * The door to the garden path', 'You are standing on a lush garden path. There is a cottage here.\nExits:\nIn to Cottage\nSouth to Fishing Pond\n\n\nCharacters:\n * You are a simple peasant destined for greatness.\n']
+Chosen Command: pick rose
+GPTParse selected item: -999
+COMMAND FAILED
+I'm sorry, but your command to "pick a flower" failed because you are currently
+inside the cottage. You must first move to the garden path outside the cottage
+to interact with the flowers. To do this, you can use the command "go to garden
+path". Once there, you can try to pick a flower again.
+
+Character: troll (id: 5)
+troll has 3 memories.
+troll memories:
+['You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a fishing pole\n\n', "You find yourself standing at the edge of a serene fishing pond, its surface as smooth as glass, reflecting the soft hues of the setting sun. The air is filled with the sweet scent of water lilies that dot the pond. To the north, a narrow garden path, lined with a riot of colorful flowers, meanders into the distance.\n\nAs a troll, your keen eyes spot a lone fishing pole resting against a nearby tree. It's a simple rod, its wooden handle worn smooth from use, and a line ending in a hook, devoid of bait. \n\nExits: To the north, the garden path awaits, a kaleidoscope of colors leading to unknown adventures.", 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\n\n\n']
+Chosen Command: catch fish
+COMMAND FAILED
+I'm sorry, but you can't go fishing without bait. You'll need to find something
+to attract the fish. Try looking around for something you can use.
+
+Character: mother (id: 6)
+mother has 3 memories.
+mother memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\n\n', "The cottage is cozy and warm, filled with the scent of freshly baked bread. The wooden beams overhead are aged and worn, whispering tales of the countless years they've seen. A crackling fire dances in the stone hearth, casting flickering shadows across the room. A sturdy oak table sits in the middle, laden with a half-eaten loaf of bread, a block of cheese, and a flagon of ale. \n\nTo your left, a wooden ladder leads up to a loft, where a straw mattress and a worn blanket suggest a simple sleeping area. To your right, a small window reveals a charming garden, brimming with colorful flowers and buzzing bees. A worn path, lined with cobblestones, meanders through the garden and disappears into a dense forest beyond.\n\nItems: \n- Loaf of Bread\n- Block of Cheese\n- Flagon of Ale\n\nExits: \n- Door leading to the Garden Path\n- Ladder to the Loft", 'You are standing on a lush garden path. There is a cottage here.\nExits:\nIn to Cottage\nSouth to Fishing Pond\n\n\nCharacters:\n * You are a simple peasant destined for greatness.\n']
+Chosen Command: go
+Found connections:  {0: ('in', 'Cottage'), 1: ('south', 'Fishing Pond')}
+GPTParse selected direction: 1
+Appended {'role': 'user', 'content': 'The garden path is a riot of colors, a vibrant tapestry woven by nature herself. The path, lined with cobblestones, is nestled between a riotous array of flowers in full bloom. Their fragrance is intoxicating, a sweet perfume that fills the air. Bees hum busily, flitting from flower to flower in a never-ending dance of life. \n\nThe path leads south, where the gentle babbling of a stream suggests a fishing pond. To the north, the path leads back to a small, cozy cottage, its wooden door inviting and welcoming. The cottage, with its thatched roof and smoke curling from the chimney, is a picture of rustic charm.\n\nItems:\n- A sturdy fishing rod leaning against the cottage wall\n- A woven basket filled with ripe, juicy apples\n\nExits:\n- Door leading into the Cottage\n- Path leading South to the Fishing Pond\n\nCharacters:\n- You, a simple peasant with dreams of adventure and a destiny that awaits.'} to mother's memory.
+The garden path is a riot of colors, a vibrant tapestry woven by nature herself.
+The path, lined with cobblestones, is nestled between a riotous array of flowers
+in full bloom. Their fragrance is intoxicating, a sweet perfume that fills the
+air. Bees hum busily, flitting from flower to flower in a never-ending dance of
+life.
+
+The path leads south, where the gentle babbling of a stream suggests a fishing
+pond. To the north, the path leads back to a small, cozy cottage, its wooden
+door inviting and welcoming. The cottage, with its thatched roof and smoke
+curling from the chimney, is a picture of rustic charm.
+
+Items:
+- A sturdy fishing rod leaning against the cottage wall
+- A woven basket filled with ripe, juicy apples
+
+Exits:
+- Door leading into the Cottage
+- Path leading South to the Fishing Pond
+
+Characters:
+- You, a simple peasant with dreams of adventure and a destiny that awaits.
+
+ROUND: 0.2
+The player is in Garden Path
+
+troll is in Fishing Pond
+
+mother is in Fishing Pond
+
+Character: The player (id: 7)
+The player has 4 memories.
+The player memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\nCharacters:\n * A motherly figure\n', 'The cottage is a cozy, quaint little place, filled with the scent of freshly baked bread and the warmth of a crackling fireplace. The wooden walls are adorned with hand-stitched tapestries, depicting scenes of pastoral life. A sturdy oak table sits in the middle of the room, laden with various trinkets and tools. \n\nTo the north, a small window reveals a lush garden path, dappled with sunlight and sprinkled with a myriad of vibrant flowers. The door leading out to this serene escape is slightly ajar, a gentle breeze rustling the curtains hanging on either side.\n\nIn the corner of the room, a motherly figure is humming a soft lullaby, her hands busy with knitting needles and a ball of wool. Her kind eyes, filled with wisdom and warmth, welcome you. \n\nItems:\n * A ball of wool\n * Knitting needles\n * A loaf of freshly baked bread\n * Various trinkets on the table\n\nExits:\n * The door to the garden path', 'You are standing on a lush garden path. There is a cottage here.\nExits:\nIn to Cottage\nSouth to Fishing Pond\n\n\nCharacters:\n * You are a simple peasant destined for greatness.\n', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n']
+Chosen Command: describe
+Appended {'role': 'user', 'content': "You now stand at the edge of a serene fishing pond, its still waters reflecting the soft hues of the setting sun. Lily pads dot the surface, and a weeping willow drapes its slender branches over the water's edge, creating a tranquil haven. \n\nTo the north, the garden path winds its way back to the inviting warmth of the cottage. \n\nOn the ground, a fish lies lifeless, its scales still glistening under the fading light. The smell of decay hangs heavy in the air, a stark contrast to the otherwise fresh, earthy scent of the pond.\n\nSuddenly, a mean troll lumbers into view from behind the willow tree. His eyes, full of malice, are fixed on you. His massive form casts a long shadow, adding an ominous tone to the peaceful setting.\n\nItems:\n * A dead fish\n * A fishing rod\n\nExits:\n * North to the garden path"} to The player's memory.
+You now stand at the edge of a serene fishing pond, its still waters reflecting
+the soft hues of the setting sun. Lily pads dot the surface, and a weeping
+willow drapes its slender branches over the water's edge, creating a tranquil
+haven.
+
+To the north, the garden path winds its way back to the inviting warmth of the
+cottage.
+
+On the ground, a fish lies lifeless, its scales still glistening under the
+fading light. The smell of decay hangs heavy in the air, a stark contrast to the
+otherwise fresh, earthy scent of the pond.
+
+Suddenly, a mean troll lumbers into view from behind the willow tree. His eyes,
+full of malice, are fixed on you. His massive form casts a long shadow, adding
+an ominous tone to the peaceful setting.
+
+Items:
+ * A dead fish
+ * A fishing rod
+
+Exits:
+ * North to the garden path
+
+Character: troll (id: 5)
+troll has 4 memories.
+troll memories:
+['You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a fishing pole\n\n', "You find yourself standing at the edge of a serene fishing pond, its surface as smooth as glass, reflecting the soft hues of the setting sun. The air is filled with the sweet scent of water lilies that dot the pond. To the north, a narrow garden path, lined with a riot of colorful flowers, meanders into the distance.\n\nAs a troll, your keen eyes spot a lone fishing pole resting against a nearby tree. It's a simple rod, its wooden handle worn smooth from use, and a line ending in a hook, devoid of bait. \n\nExits: To the north, the garden path awaits, a kaleidoscope of colors leading to unknown adventures.", 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\n\n\n', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a dead fish\n\teat fish\nCharacters:\n * A motherly figure\n']
+Chosen Command: catch fish
+COMMAND FAILED
+You attempt to use the fishing pole to catch a fish. However, you realize that
+the hook at the end of the line is bare. You'll need to find some bait before
+you can go fishing. Try looking around for something you could use.
+
+Character: mother (id: 6)
+mother has 5 memories.
+mother memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\n\n', "The cottage is cozy and warm, filled with the scent of freshly baked bread. The wooden beams overhead are aged and worn, whispering tales of the countless years they've seen. A crackling fire dances in the stone hearth, casting flickering shadows across the room. A sturdy oak table sits in the middle, laden with a half-eaten loaf of bread, a block of cheese, and a flagon of ale. \n\nTo your left, a wooden ladder leads up to a loft, where a straw mattress and a worn blanket suggest a simple sleeping area. To your right, a small window reveals a charming garden, brimming with colorful flowers and buzzing bees. A worn path, lined with cobblestones, meanders through the garden and disappears into a dense forest beyond.\n\nItems: \n- Loaf of Bread\n- Block of Cheese\n- Flagon of Ale\n\nExits: \n- Door leading to the Garden Path\n- Ladder to the Loft", 'You are standing on a lush garden path. There is a cottage here.\nExits:\nIn to Cottage\nSouth to Fishing Pond\n\n\nCharacters:\n * You are a simple peasant destined for greatness.\n', 'The garden path is a riot of colors, a vibrant tapestry woven by nature herself. The path, lined with cobblestones, is nestled between a riotous array of flowers in full bloom. Their fragrance is intoxicating, a sweet perfume that fills the air. Bees hum busily, flitting from flower to flower in a never-ending dance of life. \n\nThe path leads south, where the gentle babbling of a stream suggests a fishing pond. To the north, the path leads back to a small, cozy cottage, its wooden door inviting and welcoming. The cottage, with its thatched roof and smoke curling from the chimney, is a picture of rustic charm.\n\nItems:\n- A sturdy fishing rod leaning against the cottage wall\n- A woven basket filled with ripe, juicy apples\n\nExits:\n- Door leading into the Cottage\n- Path leading South to the Fishing Pond\n\nCharacters:\n- You, a simple peasant with dreams of adventure and a destiny that awaits.', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n']
+Chosen Command: describe
+Appended {'role': 'user', 'content': "The fishing pond is a tranquil oasis, nestled amidst the verdant greenery. The water is clear and calm, reflecting the azure sky above. Reeds and lily pads dot the surface, providing shelter for the pond's inhabitants. A few ducks paddle lazily, leaving gentle ripples in their wake. \n\nOn the bank, a dead fish lies, its silver scales glinting in the sunlight. Its lifeless eyes stare blankly, a grim reminder of the circle of life. Nearby, a mean troll lurks, his grotesque features twisted in a permanent scowl. His beady eyes dart around suspiciously, as if guarding a precious secret.\n\nItems:\n- Dead Fish\n- Fishing Rod (from the garden path)\n\nExits:\n- Path leading North to the Garden Path\n\nCharacters:\n- Mean Troll, who seems to be guarding something. Approach with caution."} to mother's memory.
+The fishing pond is a tranquil oasis, nestled amidst the verdant greenery. The
+water is clear and calm, reflecting the azure sky above. Reeds and lily pads dot
+the surface, providing shelter for the pond's inhabitants. A few ducks paddle
+lazily, leaving gentle ripples in their wake.
+
+On the bank, a dead fish lies, its silver scales glinting in the sunlight. Its
+lifeless eyes stare blankly, a grim reminder of the circle of life. Nearby, a
+mean troll lurks, his grotesque features twisted in a permanent scowl. His beady
+eyes dart around suspiciously, as if guarding a precious secret.
+
+Items:
+- Dead Fish
+- Fishing Rod (from the garden path)
+
+Exits:
+- Path leading North to the Garden Path
+
+Characters:
+- Mean Troll, who seems to be guarding something. Approach with caution.
+
+ROUND: 0.3
+The player is in Garden Path
+
+troll is in Fishing Pond
+
+mother is in Fishing Pond
+
+Character: The player (id: 7)
+The player has 6 memories.
+The player memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\nCharacters:\n * A motherly figure\n', 'The cottage is a cozy, quaint little place, filled with the scent of freshly baked bread and the warmth of a crackling fireplace. The wooden walls are adorned with hand-stitched tapestries, depicting scenes of pastoral life. A sturdy oak table sits in the middle of the room, laden with various trinkets and tools. \n\nTo the north, a small window reveals a lush garden path, dappled with sunlight and sprinkled with a myriad of vibrant flowers. The door leading out to this serene escape is slightly ajar, a gentle breeze rustling the curtains hanging on either side.\n\nIn the corner of the room, a motherly figure is humming a soft lullaby, her hands busy with knitting needles and a ball of wool. Her kind eyes, filled with wisdom and warmth, welcome you. \n\nItems:\n * A ball of wool\n * Knitting needles\n * A loaf of freshly baked bread\n * Various trinkets on the table\n\nExits:\n * The door to the garden path', 'You are standing on a lush garden path. There is a cottage here.\nExits:\nIn to Cottage\nSouth to Fishing Pond\n\n\nCharacters:\n * You are a simple peasant destined for greatness.\n', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n', "You now stand at the edge of a serene fishing pond, its still waters reflecting the soft hues of the setting sun. Lily pads dot the surface, and a weeping willow drapes its slender branches over the water's edge, creating a tranquil haven. \n\nTo the north, the garden path winds its way back to the inviting warmth of the cottage. \n\nOn the ground, a fish lies lifeless, its scales still glistening under the fading light. The smell of decay hangs heavy in the air, a stark contrast to the otherwise fresh, earthy scent of the pond.\n\nSuddenly, a mean troll lumbers into view from behind the willow tree. His eyes, full of malice, are fixed on you. His massive form casts a long shadow, adding an ominous tone to the peaceful setting.\n\nItems:\n * A dead fish\n * A fishing rod\n\nExits:\n * North to the garden path", 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n']
+Chosen Command: go
+Found connections:  {0: ('in', 'Cottage'), 1: ('south', 'Fishing Pond')}
+GPTParse selected direction: 0
+Appended {'role': 'user', 'content': 'You stand on the muddy banks of a small fishing pond, its surface rippling gently with the evening breeze. The air is filled with the chorus of chirping crickets and the distant hoot of an owl, creating a soothing symphony of nature. \n\nTo the north, a well-trodden garden path leads back to the cozy cottage, its windows glowing warmly in the encroaching dusk. \n\nAt your feet, a fish lies lifeless, its once vibrant scales now dull and lifeless. The smell of decay is pungent, tainting the otherwise fresh, damp scent of the pond.\n\nSuddenly, a mean troll emerges from the undergrowth, his grotesque features twisted into a snarl. His hulking figure looms ominously, casting a foreboding shadow across the tranquil scene.\n\nItems:\n * A dead fish\n * A discarded fishing rod\n\nExits:\n * North to the garden path'} to The player's memory.
+You stand on the muddy banks of a small fishing pond, its surface rippling
+gently with the evening breeze. The air is filled with the chorus of chirping
+crickets and the distant hoot of an owl, creating a soothing symphony of nature.
+
+To the north, a well-trodden garden path leads back to the cozy cottage, its
+windows glowing warmly in the encroaching dusk.
+
+At your feet, a fish lies lifeless, its once vibrant scales now dull and
+lifeless. The smell of decay is pungent, tainting the otherwise fresh, damp
+scent of the pond.
+
+Suddenly, a mean troll emerges from the undergrowth, his grotesque features
+twisted into a snarl. His hulking figure looms ominously, casting a foreboding
+shadow across the tranquil scene.
+
+Items:
+ * A dead fish
+ * A discarded fishing rod
+
+Exits:
+ * North to the garden path
+
+Character: troll (id: 5)
+troll has 5 memories.
+troll memories:
+['You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a fishing pole\n\n', "You find yourself standing at the edge of a serene fishing pond, its surface as smooth as glass, reflecting the soft hues of the setting sun. The air is filled with the sweet scent of water lilies that dot the pond. To the north, a narrow garden path, lined with a riot of colorful flowers, meanders into the distance.\n\nAs a troll, your keen eyes spot a lone fishing pole resting against a nearby tree. It's a simple rod, its wooden handle worn smooth from use, and a line ending in a hook, devoid of bait. \n\nExits: To the north, the garden path awaits, a kaleidoscope of colors leading to unknown adventures.", 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\n\n\n', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a dead fish\n\teat fish\nCharacters:\n * A motherly figure\n', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a dead fish\n\teat fish\nCharacters:\n * A motherly figure\n']
+Chosen Command: inventory
+Appended {'role': 'user', 'content': 'You find yourself at the edge of a tranquil fishing pond, its calm waters reflecting the dappled sunlight filtering through the overhead canopy of leaves. The gentle hum of insects and the occasional splash of a jumping fish are the only sounds that break the silence.\n\nAs a troll, your eyes immediately land on a dead fish, its silver scales glinting in the sunlight, washed up on the pebbly shore. It might not be the freshest meal, but it could satiate your hunger.\n\nIn the vicinity, a motherly figure is visible. She is seated on a weathered wooden bench, her hands busy knitting a vibrant scarf. Her kind eyes and warm smile radiate a sense of comfort and familiarity.\n\nExits: To the north, a garden path, lined with lush greenery and blooming flowers, beckons you to explore further.'} to troll's memory.
+You find yourself at the edge of a tranquil fishing pond, its calm waters
+reflecting the dappled sunlight filtering through the overhead canopy of leaves.
+The gentle hum of insects and the occasional splash of a jumping fish are the
+only sounds that break the silence.
+
+As a troll, your eyes immediately land on a dead fish, its silver scales
+glinting in the sunlight, washed up on the pebbly shore. It might not be the
+freshest meal, but it could satiate your hunger.
+
+In the vicinity, a motherly figure is visible. She is seated on a weathered
+wooden bench, her hands busy knitting a vibrant scarf. Her kind eyes and warm
+smile radiate a sense of comfort and familiarity.
+
+Exits: To the north, a garden path, lined with lush greenery and blooming
+flowers, beckons you to explore further.
+
+Character: mother (id: 6)
+mother has 7 memories.
+mother memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\n\n', "The cottage is cozy and warm, filled with the scent of freshly baked bread. The wooden beams overhead are aged and worn, whispering tales of the countless years they've seen. A crackling fire dances in the stone hearth, casting flickering shadows across the room. A sturdy oak table sits in the middle, laden with a half-eaten loaf of bread, a block of cheese, and a flagon of ale. \n\nTo your left, a wooden ladder leads up to a loft, where a straw mattress and a worn blanket suggest a simple sleeping area. To your right, a small window reveals a charming garden, brimming with colorful flowers and buzzing bees. A worn path, lined with cobblestones, meanders through the garden and disappears into a dense forest beyond.\n\nItems: \n- Loaf of Bread\n- Block of Cheese\n- Flagon of Ale\n\nExits: \n- Door leading to the Garden Path\n- Ladder to the Loft", 'You are standing on a lush garden path. There is a cottage here.\nExits:\nIn to Cottage\nSouth to Fishing Pond\n\n\nCharacters:\n * You are a simple peasant destined for greatness.\n', 'The garden path is a riot of colors, a vibrant tapestry woven by nature herself. The path, lined with cobblestones, is nestled between a riotous array of flowers in full bloom. Their fragrance is intoxicating, a sweet perfume that fills the air. Bees hum busily, flitting from flower to flower in a never-ending dance of life. \n\nThe path leads south, where the gentle babbling of a stream suggests a fishing pond. To the north, the path leads back to a small, cozy cottage, its wooden door inviting and welcoming. The cottage, with its thatched roof and smoke curling from the chimney, is a picture of rustic charm.\n\nItems:\n- A sturdy fishing rod leaning against the cottage wall\n- A woven basket filled with ripe, juicy apples\n\nExits:\n- Door leading into the Cottage\n- Path leading South to the Fishing Pond\n\nCharacters:\n- You, a simple peasant with dreams of adventure and a destiny that awaits.', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n', "The fishing pond is a tranquil oasis, nestled amidst the verdant greenery. The water is clear and calm, reflecting the azure sky above. Reeds and lily pads dot the surface, providing shelter for the pond's inhabitants. A few ducks paddle lazily, leaving gentle ripples in their wake. \n\nOn the bank, a dead fish lies, its silver scales glinting in the sunlight. Its lifeless eyes stare blankly, a grim reminder of the circle of life. Nearby, a mean troll lurks, his grotesque features twisted in a permanent scowl. His beady eyes dart around suspiciously, as if guarding a precious secret.\n\nItems:\n- Dead Fish\n- Fishing Rod (from the garden path)\n\nExits:\n- Path leading North to the Garden Path\n\nCharacters:\n- Mean Troll, who seems to be guarding something. Approach with caution.", 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n']
+Chosen Command: get
+GPTParse selected item: -999
+COMMAND FAILED
+You are standing on a lush garden path. There is a cottage here.
+Exits:
+In to Cottage
+South to Fishing Pond
+
+
+Characters:
+ * You are a simple peasant destined for greatness.
+
+
+COMMAND FAILED
+I don't see it.
+
+ROUND: 0.4
+The player is in Cottage
+
+troll is in Fishing Pond
+
+mother is in Fishing Pond
+
+Character: The player (id: 7)
+The player has 8 memories.
+The player memories:
+['You are standing in a small cottage.\nExits:\nOut to Garden Path\n\n\nCharacters:\n * A motherly figure\n', 'The cottage is a cozy, quaint little place, filled with the scent of freshly baked bread and the warmth of a crackling fireplace. The wooden walls are adorned with hand-stitched tapestries, depicting scenes of pastoral life. A sturdy oak table sits in the middle of the room, laden with various trinkets and tools. \n\nTo the north, a small window reveals a lush garden path, dappled with sunlight and sprinkled with a myriad of vibrant flowers. The door leading out to this serene escape is slightly ajar, a gentle breeze rustling the curtains hanging on either side.\n\nIn the corner of the room, a motherly figure is humming a soft lullaby, her hands busy with knitting needles and a ball of wool. Her kind eyes, filled with wisdom and warmth, welcome you. \n\nItems:\n * A ball of wool\n * Knitting needles\n * A loaf of freshly baked bread\n * Various trinkets on the table\n\nExits:\n * The door to the garden path', 'You are standing on a lush garden path. There is a cottage here.\nExits:\nIn to Cottage\nSouth to Fishing Pond\n\n\nCharacters:\n * You are a simple peasant destined for greatness.\n', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n', "You now stand at the edge of a serene fishing pond, its still waters reflecting the soft hues of the setting sun. Lily pads dot the surface, and a weeping willow drapes its slender branches over the water's edge, creating a tranquil haven. \n\nTo the north, the garden path winds its way back to the inviting warmth of the cottage. \n\nOn the ground, a fish lies lifeless, its scales still glistening under the fading light. The smell of decay hangs heavy in the air, a stark contrast to the otherwise fresh, earthy scent of the pond.\n\nSuddenly, a mean troll lumbers into view from behind the willow tree. His eyes, full of malice, are fixed on you. His massive form casts a long shadow, adding an ominous tone to the peaceful setting.\n\nItems:\n * A dead fish\n * A fishing rod\n\nExits:\n * North to the garden path", 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n', 'You stand on the muddy banks of a small fishing pond, its surface rippling gently with the evening breeze. The air is filled with the chorus of chirping crickets and the distant hoot of an owl, creating a soothing symphony of nature. \n\nTo the north, a well-trodden garden path leads back to the cozy cottage, its windows glowing warmly in the encroaching dusk. \n\nAt your feet, a fish lies lifeless, its once vibrant scales now dull and lifeless. The smell of decay is pungent, tainting the otherwise fresh, damp scent of the pond.\n\nSuddenly, a mean troll emerges from the undergrowth, his grotesque features twisted into a snarl. His hulking figure looms ominously, casting a foreboding shadow across the tranquil scene.\n\nItems:\n * A dead fish\n * A discarded fishing rod\n\nExits:\n * North to the garden path', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\nmother sees:\n * a dead fish\n\teat fish\nCharacters:\n * A mean troll\n']
+Chosen Command: inventory
+Appended {'role': 'user', 'content': "You find yourself standing at the edge of a tranquil fishing pond, its calm surface disturbed only by the occasional leap of a fish. The setting sun paints the sky in hues of orange and purple, casting long shadows that dance on the water's surface.\n\nTo the north, a worn garden path, lined with wildflowers, meanders back towards the comforting sight of the cottage, its windows casting a warm, inviting glow in the encroaching twilight.\n\nLying on the muddy bank, a fish gasps its last breaths, its once vibrant scales now dulled by the harsh reality of nature's cycle. The smell of decay begins to permeate the air, a stark contrast to the otherwise fresh, earthy scent of the pond.\n\nSuddenly, from the thick undergrowth, a mean troll lumbers into view. His grotesque features are twisted into a malicious grin, and his hulking figure casts an ominous shadow over the peaceful scene.\n\nItems:\n * A lifeless fish\n * A worn-out fishing rod\n\nExits:\n * North to the garden path"} to The player's memory.
+You find yourself standing at the edge of a tranquil fishing pond, its calm
+surface disturbed only by the occasional leap of a fish. The setting sun paints
+the sky in hues of orange and purple, casting long shadows that dance on the
+water's surface.
+
+To the north, a worn garden path, lined with wildflowers, meanders back towards
+the comforting sight of the cottage, its windows casting a warm, inviting glow
+in the encroaching twilight.
+
+Lying on the muddy bank, a fish gasps its last breaths, its once vibrant scales
+now dulled by the harsh reality of nature's cycle. The smell of decay begins to
+permeate the air, a stark contrast to the otherwise fresh, earthy scent of the
+pond.
+
+Suddenly, from the thick undergrowth, a mean troll lumbers into view. His
+grotesque features are twisted into a malicious grin, and his hulking figure
+casts an ominous shadow over the peaceful scene.
+
+Items:
+ * A lifeless fish
+ * A worn-out fishing rod
+
+Exits:
+ * North to the garden path
+
+Character: troll (id: 5)
+troll has 7 memories.
+troll memories:
+['You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a fishing pole\n\n', "You find yourself standing at the edge of a serene fishing pond, its surface as smooth as glass, reflecting the soft hues of the setting sun. The air is filled with the sweet scent of water lilies that dot the pond. To the north, a narrow garden path, lined with a riot of colorful flowers, meanders into the distance.\n\nAs a troll, your keen eyes spot a lone fishing pole resting against a nearby tree. It's a simple rod, its wooden handle worn smooth from use, and a line ending in a hook, devoid of bait. \n\nExits: To the north, the garden path awaits, a kaleidoscope of colors leading to unknown adventures.", 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\n\n\n', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a dead fish\n\teat fish\nCharacters:\n * A motherly figure\n', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a dead fish\n\teat fish\nCharacters:\n * A motherly figure\n', 'You find yourself at the edge of a tranquil fishing pond, its calm waters reflecting the dappled sunlight filtering through the overhead canopy of leaves. The gentle hum of insects and the occasional splash of a jumping fish are the only sounds that break the silence.\n\nAs a troll, your eyes immediately land on a dead fish, its silver scales glinting in the sunlight, washed up on the pebbly shore. It might not be the freshest meal, but it could satiate your hunger.\n\nIn the vicinity, a motherly figure is visible. She is seated on a weathered wooden bench, her hands busy knitting a vibrant scarf. Her kind eyes and warm smile radiate a sense of comfort and familiarity.\n\nExits: To the north, a garden path, lined with lush greenery and blooming flowers, beckons you to explore further.', 'You are at the edge of a small fishing pond.\nExits:\nNorth to Garden Path\n\ntroll sees:\n * a dead fish\n\teat fish\nCharacters:\n * A motherly figure\n']
+COMMAND FAILED

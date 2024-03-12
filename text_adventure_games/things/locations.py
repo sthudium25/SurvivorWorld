@@ -6,7 +6,7 @@ connected to other locations and contain items that the player can interact
 with.  A connection to an adjacent location can be blocked (often introducing
 a puzzle for the player to solve before making progress).
 """
-from ..managers.inventory import Inventory
+
 from .base import Thing
 from .items import Item
 
@@ -35,10 +35,9 @@ class Location(Thing):
         # Dictionary mapping from a direction to a Block.
         self.blocks = {}
 
-        # ST - modified 2/5/24
-        # Dictionary mapping from item name to the item ids with that name
-        # in this location
-        self.location_inventory = Inventory()
+        # Dictionary mapping from item name to Item objects present in this
+        # location
+        self.items = {}
 
         # Dictionary mapping from item name to Character objects present in
         # this location
@@ -72,8 +71,7 @@ class Location(Thing):
                 connections[k] = v
         thing_data['connections'] = connections
 
-        items = {k: Item.to_primitive(v) for k, v
-                 in self.location_inventory.view_inventory()}
+        items = {k: Item.to_primitive(v) for k, v in self.items.items()}
         thing_data['items'] = items
 
         characters = {}
@@ -171,41 +169,28 @@ class Location(Thing):
         else:
             return True
 
-    def get_item(self, name: str):  # ST updated 1/30/24
+    def get_item(self, name: str):
         """
-        Gets an item by the provided name
+        Checks if the thing is at the location.
         """
         # The character must be at the location
-        item = self.location_inventory.get_item(name)
-        if item:
-            return item
-        else:
-            return None
+        return self.items.get(name, None)
 
-    def add_item(self, item: Item):  # ST updated 1/30/24
+    def add_item(self, item):
         """
         Put an item in this location.
-        If an item with the same descriptor has already been added,
-        append to the list.
         """
+        self.items[item.name] = item
         item.location = self
         item.owner = None
-        self.location_inventory.add_item(item)
 
-    # ST updated 1/30/24
-    def remove_item(self, item_name, which: int = 1) -> Item:
+    def remove_item(self, item):
         """
         Remove an item from this location (for instance, if the player picks
         it up and puts it in their inventory).
-
-        Args:
-            item_name (str): the name of the item to be removed
-            which (int, optional): which of many items to get. Defaults to 1.
         """
-        requested_item = self.location_inventory.get_item(item_name, which)
-        if requested_item:
-            requested_item.location = None
-        return requested_item
+        self.items.pop(item.name)
+        item.location = None
 
     def add_character(self, character):
         """

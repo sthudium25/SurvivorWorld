@@ -240,9 +240,11 @@ class ActionSequence(Action):
         self,
         game,
         command: str,
+        character: Character = None
     ):
         super().__init__(game)
         self.command = command
+        self.character = character
 
     def check_preconditions(self) -> bool:
         return True
@@ -251,7 +253,7 @@ class ActionSequence(Action):
         responses = []
         for cmd in self.command.split(","):
             cmd = cmd.strip()
-            responses.append(self.parser.parse_command(cmd))
+            responses.append(self.parser.parse_command(cmd, self.character))
         return responses
 
 
@@ -264,9 +266,11 @@ class Quit(Action):
         self,
         game,
         command: str,
+        character: Character = None
     ):
         super().__init__(game)
         self.command = command
+        self.character = character
 
     def check_preconditions(self) -> bool:
         return True
@@ -276,7 +280,8 @@ class Quit(Action):
             self.game.game_over = True
             if not self.game.game_over_description:
                 self.game.game_over_description = "The End"
-            return self.parser.ok(self.game.game_over_description)
+            # return self.parser.ok(self.game.game_over_description)    
+            return self.parser.ok(self.game.game_over_description, self.character)
         return self.parser.fail("Game already ended.")
 
 
@@ -289,12 +294,14 @@ class Describe(Action):
         self,
         game,
         command: str,
+        character: Character = None
     ):
         super().__init__(game)
         self.command = command
+        self.character = character
 
     def check_preconditions(self) -> bool:
         return True
 
     def apply_effects(self):
-        self.parser.ok(self.game.describe())
+        self.parser.ok(self.game.describe(), self.character)
