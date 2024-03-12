@@ -68,6 +68,7 @@ class Game:
 
         # Add custom actions to parser
         if custom_actions:
+            print("Adding custom actions")
             for ca in custom_actions:
                 if inspect.isclass(ca) and issubclass(ca, actions.Action):
                     self.parser.add_action(ca)
@@ -168,7 +169,7 @@ class Game:
         """
         description = ""
         if len(self.player.location.items) > 0:
-            description = "You see:"
+            description = f"{self.player.name} sees:"
             for item_name in self.player.location.items:
                 item = self.player.location.items[item_name]
                 description += "\n * " + item.description
@@ -447,7 +448,7 @@ class SurvivorGame(Game):
     # Override game loop 
     def game_loop(self):
         # self.parser.parse_command("Come on in! Welcome to Survivor!")
-        self.parser.parse_command("look\n", self.player)
+        # self.parser.parse_command("look\n", self.player)
         round = 0
         while True:
             for tick in range(self.max_ticks_per_round):
@@ -464,7 +465,11 @@ class SurvivorGame(Game):
                     # Only move on to the next character when current takes a successful action
                     while not success:
                         if character.id == self.original_player_id:
-                            command = input("\n>")
+                            command = character.engage(self,
+                                                       round, 
+                                                       tick, 
+                                                       # vote
+                                                       )
                         else:
                             # set the current player to the game's "player" for description purposes
                             self.player = character
@@ -472,11 +477,12 @@ class SurvivorGame(Game):
                             # Planning occurs at beginning of round, reflection at end.
                             # Action selection should happen in all(?) rounds except for the last one bc 
                             # at end of round the only valid action is vote()
-                            # command = character.engage(round, 
-                            #                            tick, 
-                            #                            # vote
-                            #                            )
-                            command = input("\n>")
+                            command = character.engage(self,
+                                                       round, 
+                                                       tick, 
+                                                       # vote
+                                                       )
+                            # command = input("\n>")
                         success = self.parser.parse_command(command,
                                                             character,
                                                             #   round,
