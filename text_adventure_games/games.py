@@ -454,9 +454,10 @@ class SurvivorGame(Game):
             for tick in range(self.max_ticks_per_round):
                 # Confirming Round increments and character movement
                 print(f"ROUND: {round}.{tick}")
-                self.view_character_locations()
                 for character in self.characters.values():  # naive ordering, not based on character initiative
                     print(f"Character: {character.name} (id: {character.id})")
+                    # set the current player to the game's "player" for description purposes
+                    self.player = character
                     # if tick == self.max_ticks_per_round - 1:
                     #     vote = True
                     # else:
@@ -471,8 +472,6 @@ class SurvivorGame(Game):
                                                        # vote
                                                        )
                         else:
-                            # set the current player to the game's "player" for description purposes
-                            self.player = character
                             # Depending on the round, character.engage() should trigger different things
                             # Planning occurs at beginning of round, reflection at end.
                             # Action selection should happen in all(?) rounds except for the last one bc 
