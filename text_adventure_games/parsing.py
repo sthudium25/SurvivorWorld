@@ -13,13 +13,16 @@ import textwrap
 import re
 import json
 import tiktoken
+import spacy
 import numpy as np
+from jellyfish import jaro_winkler_similarity
 from openai import OpenAI
 
 from .things import Character, Item, Location
 from . import actions, blocks
 from .utils.general import set_up_openai_client, set_up_kani_engine
 from .gpt.parser_kani import DescriptorKani
+from .gpt.gpt_helpers import gpt_get_summary_description_of_action
 
 
 class Parser:
@@ -45,17 +48,17 @@ class Parser:
         # A pointer to the game.
         self.game = game
         self.game.parser = self
-
+        self.perspective = "3rd"
         # Print the user's commands
         self.echo_commands = echo_commands
 
-    def ok(self, description: str, character: Character):
+    def ok(self, command: str, description: str, character: Character):
         """
         In the next homework, we'll replace this with a call to the OpenAI API
         in order to create more evocative descriptions.
         """
         print(Parser.wrap_text(description))
-        self.add_description_to_history(description, character)
+        self.add_description_to_history(command, description, character)
 
     def fail(self, description: str):
         """
@@ -75,17 +78,18 @@ class Parser:
 
     def add_command_to_history(self, command: str):
         """Add command strings as <USER> ChatMessages to the game history"""
-
         message = {"role": "user", "content": command}
         self.command_history.append(message)
-        # CCB - todo - manage command_history size
 
-    def add_description_to_history(self, description: str, character: Character):
+    def add_description_to_history(self, description: str):
+        """
+        Append an evocative description of the game actions to the oracle narrative.
+
+        Args:
+            description (str): a description of the actions, outcomes, setting, etc.
+        """
         message = {"role": "assistant", "content": description}
         self.command_history.append(message)
-        # CCB - todo - manage command_history size
-        # ST - Create character-specific command histories
-        character.memory.append(message)
 
     def add_action(self, action: actions.Action):
         """
@@ -229,6 +233,15 @@ class Parser:
             if name.lower() in command:
                 return self.game.characters[name]
         return self.game.player
+    
+    def check_if_character_exists(self, name):
+        nchar = len(name)
+        threshold = max(0.75, (nchar - 2 / nchar))
+        for char in self.game.characters:
+            # Heuristic that this name is PROBABLY a character in the game
+            if jaro_winkler_similarity(char.name.lower(), name.lower()) > threshold:
+                return True
+        return False
 
     def get_character_location(self, character: Character) -> Location:
         return character.location
@@ -283,6 +296,25 @@ class Parser:
                 if exit.lower() in command:
                     return exit
         return None
+    
+    def get_characters_in_view(self, character: Character):
+        # TODO: it would be nicer to have characters listed in the location object
+        # however this is more state to maintain.
+        """
+        Given a character, identifies the other characters in the game that are in the same location
+
+        Args:
+            character (Character): the current character
+
+        Returns:
+            list: characters in view of the current character
+        """
+        chars_in_view = []
+        loc_id = character.location.id
+        for char in self.game.characters:
+            if char.location.id == loc_id:
+                chars_in_view.append(char)
+        return chars_in_view
 
 
 class GptParser(Parser):
@@ -295,13 +327,77 @@ class GptParser(Parser):
         self.max_tokens = 8192 - self.max_output_tokens  # GPT-4's max total tokens
         # self.max_tokens = 4096
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
+        self.nlp = spacy.load('en_core_web_sm')
+
+    def gpt_pick_an_option(self, instructions, options, input_str):
+        """
+        CREDIT: Dr. Chris Callison-Burch (UPenn)
+        This function calls GPT to choose one option from a set of options.
+        Its arguments are:
+        * instructions - the system instructions
+        * options - a dictionary of option_descriptions -> option_names
+        * input_str - the user input which we are trying to match to one of the options
+
+        The function generates an enumerated list of option descriptions
+        that are shown to GPT. It then returns a number (which I match with a
+        regex, in case it generates more text than is necessary), and then
+        returns the option name.
+        """
+        options_list = list(options.keys())
+        choices_str = ""
+        # Create a numbered list of options
+        for i, option in enumerate(options_list):
+            choices_str += "{i}. {option}\n".format(i=i, option=option)
+
+        # Call the OpenAI API
+        response = self.client.chat.completions.create(
+            model=self.gpt_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "{instructions}\n\n{choices_str}\nReturn just the number.".format(
+                        instructions=instructions, choices_str=choices_str
+                    ),
+                },
+                {"role": "user", "content": input_str},
+            ],
+            temperature=1,
+            max_tokens=256,
+            top_p=0,
+            frequency_penalty=0,
+            presence_penalty=0,
+        )
+        content = response.choices[0].message.content
+
+        if self.verbose:
+            v = "{instructions}\n\n{choices_str}\nReturn just the number.\n---\n> {input_str}"
+            print(
+                v.format(
+                    instructions=instructions,
+                    choices_str=choices_str,
+                    input_str=input_str,
+                )
+            )
+            print("---\nGPT's response was:", content)
+
+        # Use regular expressions to match a number returned by OpenAI and select that option.
+        pattern = r"\d+"
+        matches = re.findall(pattern, content)
+        if matches:
+            index = int(matches[0])
+            if index >= len(options_list):
+                return None
+            option = options_list[index]
+            return options[option]
+        else:
+            return None
 
     def gpt_describe(self, 
                      system_instructions, 
-                     character,
-                     # command_history
+                     command_history
                      ):
         """
+        TODO: should the context for each description be more limited to focus on recent actions?
         Generate a description with GPT.  This takes two arguments:
         * The system instructions, which is the prompt that describes 
           how you'd like GPT to behave.
@@ -318,7 +414,7 @@ class GptParser(Parser):
                 "content": system_instructions
             }]
             # context = self.limit_context_length(command_history, self.max_tokens)
-            context = self.limit_context_length(character.memory, self.max_tokens)
+            context = self.limit_context_length(command_history, self.max_tokens)
             messages.extend(context)
             if self.verbose:
                 print(json.dumps(messages, indent=2))
@@ -355,61 +451,130 @@ class GptParser(Parser):
         The least recent messages are disregarded from the context. 
         This function is non-destructive and doesn't modify command_history.
         """
-        # encoding = tiktoken.get_encoding("cl100k_base")
+        total_tokens = 0
+        limited_history = []
 
-        if len(command_history) > max_turns:
-            adj_command_history = command_history[-max_turns:]
-        else:
-            # print(f"history not greater than {max_turns}")
-            adj_command_history = command_history[:]
-
-        commands = [i['content'] for i in adj_command_history]
-        command_lengths = [len(self.tokenizer.encode(i)) for i in commands]
-        command_lengths.reverse()
-        cum_list_lengths = np.cumsum(command_lengths)
-        for index, i in enumerate(cum_list_lengths):
-            # print("Total token length so far:", i)
-            if i > max_tokens:
-                # print("returning truncated history of length:")
-                # print(len(command_history[-index + 1:]))
-                return command_history[-index + 1:]
-        return command_history  
-
-    def ok(self, description, character: Character):
+        for message in reversed(command_history):
+            msg_tokens = len(self.tokenizer.encode(message["content"]))
+            if total_tokens + msg_tokens > max_tokens:
+                break
+            total_tokens += msg_tokens
+            limited_history.append(message)
+            if len(limited_history) >= max_turns:
+                break
+        return list(reversed(limited_history)) 
+    
+    def create_action_statement(self, command: str, description: str, character: Character):
+        outcome = f"ACTOR: {character.name}; ACTION: {command}; OUTCOME: {description}"
+        summary = gpt_get_summary_description_of_action(outcome, self.client, self.model, max_tokens=100)
+        return summary
+    
+    def extract_keywords(self, text):
+        doc = self.nlp(text)
+        keys = defaultdict(list)
+        for w in doc:
+            if "subj" in w.dep_:
+                if self.check_if_character_exists(w.text):
+                    keys['characters'].append(w.text)
+                else:
+                    keys['misc_deps'].append(w.text)
+            if "obj" in w.dep_:
+                if self.check_if_character_exists(w.text):
+                    keys['characters'].append(w.text)
+                else:
+                    keys['objects'].append(w.text)
+        return keys
+    
+    def add_command_to_history(self, summary, keywords, character, success):
         """
-        In this homework, we'll replace this with a call to the OpenAI API
-        in order to create more evocative descriptions.  For this part, 
-        all you need to do is create your own system instructions.   
-        """
-        # self.command_history.append({"role": "assistant", "content": description})
-        self.add_description_to_history(description, character)
+        Add a summarized command and outcome to the command history
+        Thenn add memories to character memory
 
-        system_instructions = """You are the narrator for a text adventure game. 
-        You create short, evocative descriptions of the scenes in the game.
-        Include descriptions of the items and exits available to the current player."""
+        Args:
+            summary (str): a summary of an action and its outcome
+            keywords (dict): keywords extracted from the summary
+            character (Character): the current character
+            success (bool???): the success status of the action
+        """
+        # This is a user or agent-supplied command so it should be logged as a ChatMessage.user
+        super().add_command_to_history(summary)
+        chars_in_view = self.get_characters_in_view(character)
+        for char in chars_in_view:
+            char.memory.add(summary, keywords, character.location, success)
+
+    def ok(self, command: str, description: str, character: Character) -> None:
+        """
+        Logs a successful command and the description of its outcome.
+
+        Args:
+            command (str): the input command given by the character
+            description (str): the description of the command's outcome
+            character (Character): the current character
+
+        Returns:
+            None
+
+        Example: 
+            command: "Get the pole"
+            description: "The troll got the pole"
+            character: troll
+        """
+        # ST - 3/14/24:
+        # TODO: May want to do some form of CLIN-style connection between COMMAND and DESCRIPTION
+
+        # FIRST: we add summarize the action and send it as a memory to the appropriate characters
+        summary_of_action = self.create_action_statement(command, description, character)
+        keywords = self.extract_keywords(summary_of_action)
+        self.add_command_to_history(summary_of_action, keywords, character, success=True)
+
+        # system_instructions = """You are the narrator for a text adventure game. 
+        # You create short, evocative descriptions of the scenes in the game.
+        # Include descriptions of the items and exits available to the current player."""
+
+        # SECOND: we describe what has happened in the console
+        system_instructions = "".join(
+            [
+                "You are the narrator for a text adventure game. You create short, ",
+                "evocative descriptions of the game. The player can be described in ",
+                f"the {self.perspective} person, and you should use present tense. ",
+                "If the command is 'look' the describe the game location and its characters and items. ",
+                "Focus on describing the most recent events."
+            ]
+        )
         
-        response = self.gpt_describe(system_instructions, character)
-        self.add_description_to_history(response, character)
+        response = self.gpt_describe(system_instructions, self.command_history)
+        self.add_description_to_history(response)
         print(self.wrap_text(response) + '\n')
 
-    def fail(self, description, character):
+    def fail(self, command, description, character):
         """
-        In this homework, we'll replace this with a call to the OpenAI API
-        in order to create more useful error messages descriptions.  You should
-        do the same steps as for the ok() command, but optionally customize 
-        the system_instructions to tell the user that their command failed.
+        Commands that do not pass all preconditions lead to a failure.
+        They are logged by this method. 
+        Failed commands are still added to the global command history and 
+        to the memories of characters in view.
+
+        Args:
+            command (_type_): _description_
+            description (_type_): _description_
+            character (_type_): _description_
         """
-        self.command_history.append({"role": "assistant", "content": description})
-        print("COMMAND FAILED")
+        # FIRST: we add summarize the action and send it as a memory to the appropriate characters
+        summary_of_action = self.create_action_statement(command, description, character)
+        keywords = self.extract_keywords(summary_of_action)
+        self.add_command_to_history(summary_of_action, keywords, character, success=False)
         
-        system_instructions = "You are the narrator for a text adventure game. \
-The player entered a command that failed in the game. \
-Try to help the player understand why the command failed."
+        system_instructions = "".join(
+            [
+                "You are the narrator for a text adventure game. ",
+                f"{character.name} entered a command that failed in the game. ",
+                f"Try to help {character.name} understand why the command failed."
+            ]
+        )
 
         response = self.gpt_describe(system_instructions, character)
         if self.verbose:
             print("GPT's Error Description:")
-        # self.add_description_to_history(response)
+        self.add_description_to_history(response)
         print(self.wrap_text(response) + '\n')
 
     
@@ -436,6 +601,7 @@ class GptParser2(GptParser):
         return self
 
     def determine_intent(self, command, character: Character):
+        # TODO: could make this a more succinct prompt for sake of token costs
         """
         Given a user's command, this method returns the ACTION_NAME of
         the intended action.  
@@ -496,12 +662,12 @@ class GptParser3(GptParser2):
 
         return re.findall(r"[-]?\d+", text)[0]
     
-    def get_characters_and_find_current(self, character):
+    def get_characters_and_find_current(self, character=None):
         current_idx = -999
         chars = {}
         for i, char in enumerate(list(self.game.characters)):
             chars[i] = char
-            if char == character.name:
+            if character and char == character.name:
                 current_idx = i
         return chars, current_idx
     
@@ -520,9 +686,12 @@ class GptParser3(GptParser2):
 
         system_prompt = "Given a command, return the character who can be described as: \"{h}\". ".format(h=hint)
         # Create an enumerated dict of the characters in the game
-        chars, curr_idx = self.get_characters_and_find_current(character)
 
-        system_prompt += f"Unless specified, assume \"{curr_idx}: {character.name}\" performs all actions.\nChoose from the following characters:\n"
+        chars, curr_idx = self.get_characters_and_find_current(character)
+        if character:
+            system_prompt += f"Unless specified, assume \"{curr_idx}: {character.name}\" performs all actions.\nChoose from the following characters:\n"
+        else:
+            system_prompt += "Choose from the following characters:\n"
         # Format the characters into a list structure for the system prompt
         system_prompt += "{c}".format(c='\n'.join([str(i)+": "+str(c) for i, c in chars.items()]))
 
