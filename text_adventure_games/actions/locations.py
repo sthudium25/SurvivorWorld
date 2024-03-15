@@ -100,7 +100,7 @@ class Go(base.Action):
             self.game.game_over = True
             self.game.game_over_description = to_loc.description
             # self.parser.ok(to_loc.description)
-            self.parser.ok(to_loc.description), self.character
+            self.parser.ok(to_loc.description, self.character)
         else:
             action = base.Describe(self.game, command=self.command, character=self.character)
             action()

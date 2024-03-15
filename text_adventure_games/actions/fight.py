@@ -1,3 +1,4 @@
+from text_adventure_games.things.characters import Character
 from . import base
 from .things import Drop
 from . import preconditions as P
@@ -11,10 +12,13 @@ class Attack(base.Action):
     def __init__(
         self,
         game,
-        command: str
+        command: str,
+        character: Character
     ):
         super().__init__(game)
-        attack_words = ["attack", "hit"]
+        self.command = command
+        # self.character = character
+        attack_words = ["attack", "hit", "strike", "punch", "thwack"]
         command_before_word = ""
         command_after_word = command
         for word in attack_words:
@@ -23,8 +27,9 @@ class Attack(base.Action):
                 command_before_word = parts[0]
                 command_after_word = parts[1]
                 break
-        self.attacker = self.parser.get_character(command_before_word)
-        self.victim = self.parser.get_character(command_after_word)
+        # self.attacker = self.parser.get_character(command_before_word)
+        self.attacker = character
+        self.victim = self.parser.get_character(command_after_word, character=None)
         self.weapon = self.parser.match_item(command, self.attacker.inventory)
 
     def check_preconditions(self) -> bool:
@@ -39,14 +44,14 @@ class Attack(base.Action):
         """
         if not self.was_matched(self.attacker):
             description = "The attacker couldn't be found."
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.attacker)
             return False
         if not self.was_matched(self.victim):
-            description = "The character you won't to attack wasn't matched."
-            self.parser.fail(description)
+            description = f"{self.victim} could not be found"
+            self.parser.fail(self.command, description, self.attacker)
             return False
         if not self.attacker.location.here(self.victim):
-            description = "The two characters must be in the same location."
+            description = f"{self.attacker.name} tried to attack {self.victim.name} but {self.victim.name} is NOT found at {self.attacker.location}"
             self.parser.fail(description)
             return False
         if not self.was_matched(
@@ -55,24 +60,23 @@ class Attack(base.Action):
                 name=self.attacker.name
             ),
         ):
+            self.parser.fail(self.command, description, self.attacker)
             return False
         if not self.attacker.is_in_inventory(self.weapon):
-            description = "{name} doesn't have the {weapom}.".format(
-                name=self.attacker.name, weapon=self.weapon.name
-            )
-            self.parser.fail(description)
+            description = f"{self.attacker.name} doesn't have the {self.weapon.name}."
+            self.parser.fail(self.command, description, self.attacker)
             return False
         if not self.weapon.get_property("is_weapon"):
             description = "{item} is not a weapon".format(item=self.weapon.name)
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.attacker)
             return False
         if self.victim.get_property("is_unconscious"):
             description = "{name} is already unconscious".format(name=self.victim.name)
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.attacker)
             return False
         if self.victim.get_property("is_dead"):
             description = "{name} is already dead".format(name=self.victim.name)
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.attacker)
             return False
         return True
 
@@ -89,25 +93,25 @@ class Attack(base.Action):
             victim=self.victim.name,
             weapon=self.weapon.name,
         )
-        self.parser.ok(description)
+        self.parser.ok(self.command, description, self.attacker)
 
         if self.weapon.get_property("is_fragile"):
             description = "The fragile weapon broke into pieces."
             self.attacker.remove_from_inventory(self.weapon)
-            self.parser.ok(description)
+            self.parser.ok(self.command, description, self.attacker)
 
         if self.victim.get_property("is_invulerable"):
             description = "The attack has no effect on {name}.".format(
                 name=self.victim.name
             )
-            self.parser.ok(description)
+            self.parser.ok(self.command, description, self.attacker)
         else:
             # the victim is knocked unconscious
             self.victim.set_property("is_unconscious", True)
             description = "{name} was knocked unconscious.".format(
                 name=self.victim.name.capitalize()
             )
-            self.parser.ok(description)
+            self.parser.ok(self.command, description, self.attacker)
 
             # the victim drops their inventory
             items = list(self.victim.inventory.keys())

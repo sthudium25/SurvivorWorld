@@ -73,7 +73,7 @@ class Action:
                 name=thing.name.capitalize(), loc=location.name
             )
             if describe_error:
-                self.parser.fail(message)
+                self.parser.fail(f"Check {thing.name} is in {location.name}", message, thing)
             return False
         else:
             return True
@@ -90,7 +90,7 @@ class Action:
                 location_name=location.name.capitalize(), direction=direction
             )
             if describe_error:
-                self.parser.fail(message)
+                self.parser.fail(f"go {direction} from {location.name}", message, location)
             return False
         else:
             return True
@@ -104,7 +104,7 @@ class Action:
         if location.is_blocked(direction):
             message = location.get_block_description(direction)
             if describe_error:
-                self.parser.fail(message)
+                self.parser.fail(f"go {direction} from {location.name}", message, location)
             return True
         else:
             return False
@@ -130,7 +130,7 @@ class Action:
                         value=property_value,
                     )
                 if describe_error:
-                    self.parser.fail(error_message)
+                    self.parser.fail(f"Check {thing.name} property value", error_message, thing)
             return False
         else:
             if display_message_upon is True:
@@ -141,7 +141,7 @@ class Action:
                         value=property_value,
                     )
                 if describe_error:
-                    self.parser.fail(error_message)
+                    self.parser.fail(f"Check {thing.name} property value", error_message, thing)
             return True
 
     def has_property(
@@ -162,7 +162,7 @@ class Action:
                         name=thing.name.capitalize(), property_name=property_name
                     )
                 if describe_error:
-                    self.parser.fail(error_message)
+                    self.parser.fail(f"Check for {thing.name} property", error_message, thing)
             return False
         else:
             if display_message_upon is True:
@@ -171,7 +171,7 @@ class Action:
                         name=thing.name.capitalize(), property_name=property_name
                     )
                 if describe_error:
-                    self.parser.fail(error_message)
+                    self.parser.fail(f"Check for {thing.name} property", error_message, thing)
             return True
 
     def loc_has_item(
@@ -188,7 +188,7 @@ class Action:
                 loc=location.name, item=item.name
             )
             if describe_error:
-                self.parser.fail(message)
+                self.parser.fail(f"Get {item.name}", message, location)
             return False
 
     def is_in_inventory(
@@ -202,7 +202,7 @@ class Action:
                 name=character.name.capitalize(), item_name=item.name
             )
             if describe_error:
-                self.parser.fail(message)
+                self.parser.fail("check inventory", message, character)
             return False
         else:
             return True
@@ -220,7 +220,7 @@ class Action:
             if not error_message:
                 message = "Something was not matched by the self.parser."
             if describe_error:
-                self.parser.fail(error_message)
+                self.parser.fail("Unknown command", error_message, thing)
             return False
         else:
             return True
@@ -281,8 +281,8 @@ class Quit(Action):
             if not self.game.game_over_description:
                 self.game.game_over_description = "The End"
             # return self.parser.ok(self.game.game_over_description)    
-            return self.parser.ok(self.game.game_over_description, self.character)
-        return self.parser.fail("Game already ended.")
+            return self.parser.ok(self.command, self.game.game_over_description, self.character)
+        return self.parser.fail(self.command, "Game already ended.", self.character)
 
 
 class Describe(Action):
@@ -304,4 +304,4 @@ class Describe(Action):
         return True
 
     def apply_effects(self):
-        self.parser.ok(self.game.describe(), self.character)
+        self.parser.ok(self.command, self.game.describe(), self.character)
