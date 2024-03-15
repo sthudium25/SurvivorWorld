@@ -18,6 +18,8 @@ import numpy as np
 from jellyfish import jaro_winkler_similarity
 from openai import OpenAI
 
+from text_adventure_games.things.base import Thing
+
 from .things import Character, Item, Location
 from . import actions, blocks
 from .utils.general import set_up_openai_client, set_up_kani_engine
@@ -502,7 +504,7 @@ class GptParser(Parser):
         for char in chars_in_view:
             char.memory.add(summary, keywords, character.location, success)
 
-    def ok(self, command: str, description: str, character: Character) -> None:
+    def ok(self, command: str, description: str, thing: Thing) -> None:
         """
         Logs a successful command and the description of its outcome.
 
@@ -523,9 +525,10 @@ class GptParser(Parser):
         # TODO: May want to do some form of CLIN-style connection between COMMAND and DESCRIPTION
 
         # FIRST: we add summarize the action and send it as a memory to the appropriate characters
-        summary_of_action = self.create_action_statement(command, description, character)
-        keywords = self.extract_keywords(summary_of_action)
-        self.add_command_to_history(summary_of_action, keywords, character, success=True)
+        if isinstance(thing, Character):
+            summary_of_action = self.create_action_statement(command, description, thing)
+            keywords = self.extract_keywords(summary_of_action)
+            self.add_command_to_history(summary_of_action, keywords, thing, success=True)
 
         # system_instructions = """You are the narrator for a text adventure game. 
         # You create short, evocative descriptions of the scenes in the game.
@@ -546,7 +549,7 @@ class GptParser(Parser):
         self.add_description_to_history(response)
         print(self.wrap_text(response) + '\n')
 
-    def fail(self, command, description, character):
+    def fail(self, command, description, thing):
         """
         Commands that do not pass all preconditions lead to a failure.
         They are logged by this method. 
@@ -559,19 +562,20 @@ class GptParser(Parser):
             character (_type_): _description_
         """
         # FIRST: we add summarize the action and send it as a memory to the appropriate characters
-        summary_of_action = self.create_action_statement(command, description, character)
-        keywords = self.extract_keywords(summary_of_action)
-        self.add_command_to_history(summary_of_action, keywords, character, success=False)
+        if isinstance(thing, Character):
+            summary_of_action = self.create_action_statement(command, description, thing)
+            keywords = self.extract_keywords(summary_of_action)
+            self.add_command_to_history(summary_of_action, keywords, thing, success=False)
         
         system_instructions = "".join(
             [
                 "You are the narrator for a text adventure game. ",
-                f"{character.name} entered a command that failed in the game. ",
-                f"Try to help {character.name} understand why the command failed."
+                f"{thing.name} entered a command that failed in the game. ",
+                f"Try to help {thing.name} understand why the command failed."
             ]
         )
 
-        response = self.gpt_describe(system_instructions, character)
+        response = self.gpt_describe(system_instructions, self.command_history)
         if self.verbose:
             print("GPT's Error Description:")
         self.add_description_to_history(response)
