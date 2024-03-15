@@ -20,7 +20,11 @@ from . import consts
 
 def set_up_openai_client(org="Penn", **kwargs):
     key = consts.get_openai_api_key(org)
-    client = OpenAI(api_key=key, **kwargs)
+    params = {"api_key": key}
+    if org == "Helicone":
+        base_url = consts.get_helicone_base_path()
+        params.update({"base_url": base_url})
+    client = OpenAI(params, **kwargs)
     return client
 
 def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):

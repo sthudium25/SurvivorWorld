@@ -12,15 +12,7 @@ def get_root_dir():
     root = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir))
     return root
 
-def get_openai_api_key(organization):
-    # TODO: Specify Helicone vs Personal API key
-    """
-    Get the OpenAI API key from config file.
-
-    Args:
-        path (str, optional): path to location of config file. Defaults to '.'.
-    """
-    
+def get_config_file():
     config_path = os.path.join(get_root_dir(), "config.json")
     if not os.path.exists(config_path):
         print("visible config not found, trying invisible option")
@@ -30,6 +22,18 @@ def get_openai_api_key(organization):
 
     with open(config_path, 'r') as cfg:
         config_vars = json.load(cfg)
+    return config_vars
+
+def get_openai_api_key(organization):
+    # TODO: Specify Helicone vs Personal API key
+    """
+    Get the OpenAI API key from config file.
+
+    Args:
+        organization (str, optional): The organizational API KEY to get
+    """
+    
+    config_vars = get_config_file()
     
     for org in config_vars["organizations"]:
         if organization in org:
@@ -39,6 +43,28 @@ def get_openai_api_key(organization):
     
     # If no matches found for org
     print(f"{organization} not found in list of valid orgs. You may not have a key set up for {organization}.")
+    return None
+
+def get_helicone_base_path(organization="Helicone"):
+    # TODO: Specify Helicone vs Personal API key
+    """
+    Get the BASE URL for HELICONE from config file.
+
+    Args:
+        organization (str, optional): The organizational base url to get
+    """
+    if organization != "Helicone":
+        raise ValueError("Method only valid for organization == 'Helicone'.")
+    
+    config_vars = get_config_file()
+    
+    for org in config_vars["organizations"]:
+        if organization in org:
+            base_url = org[organization].get("HELICONE_BASE_URL", None)
+            return base_url
+    
+    # If no matches found for org
+    print(f"{organization} not found in list of valid orgs. You may not have a base url set up for {organization}.")
     return None
     
 
