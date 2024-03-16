@@ -24,7 +24,7 @@ class Eat(base.Action):
         * The item must be food
         * The food must be in character's inventory
         """
-        if not self.was_matched(self.item):
+        if not self.was_matched(self.character, self.item):
             return False
         elif not self.item.get_property("is_food"):
             description = "That's not edible."
@@ -84,7 +84,7 @@ class Drink(base.Action):
         * The item must be a drink
         * The drink must be in character's inventory
         """
-        if not self.was_matched(self.item):
+        if not self.was_matched(self.character, self.item):
             return False
         elif not self.item.get_property("is_drink"):
             description = "That's not drinkable."
@@ -157,7 +157,7 @@ class Light(base.Action):
         * The item must be in character's inventory
         * The item must be lightable
         """
-        if not self.was_matched(self.item):
+        if not self.was_matched(self.character, self.item):
             return False
         if not self.is_in_inventory(self.character, self.item):
             return False

@@ -26,7 +26,7 @@ class Get(base.Action):
         * The item must be at the location
         * The item must be gettable
         """
-        if not self.was_matched(self.item, "I don't see it."):
+        if not self.was_matched(self.character, self.item, "I don't see it."):
             message = f"I don't see {self.item.name} in {self.location.name}."
             self.parser.fail(self.command, message, self.character)
             return False
@@ -83,7 +83,7 @@ class Drop(base.Action):
         Preconditions:
         * The item must be in the character's inventory
         """
-        if not self.was_matched(self.item, "I don't see it."):
+        if not self.was_matched(self.character, self.item, "I don't see it."):
             return False
         if not self.character.is_in_inventory(self.item):
             d = "{character_name} does not have the {item_name}."
@@ -218,7 +218,7 @@ class Give(base.Action):
         * The item must be in the giver's inventory
         * The character must be at the same location as the recipient
         """
-        if not self.was_matched(self.item, "I don't see it."):
+        if not self.was_matched(self.character, self.item, "I don't see it."):
             return False
         if not self.giver.is_in_inventory(self.item):
             return False

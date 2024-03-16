@@ -42,11 +42,11 @@ class Attack(base.Action):
         * The weapon have the property 'is_weapon'
         * The victim must not already be dead or unconscious
         """
-        if not self.was_matched(self.attacker):
+        if not self.was_matched(self.attacker, self.attacker):
             description = "The attacker couldn't be found."
             self.parser.fail(self.command, description, self.attacker)
             return False
-        if not self.was_matched(self.victim):
+        if not self.was_matched(self.attacker, self.victim):
             description = f"{self.victim} could not be found"
             self.parser.fail(self.command, description, self.attacker)
             return False
@@ -55,6 +55,7 @@ class Attack(base.Action):
             self.parser.fail(description)
             return False
         if not self.was_matched(
+            self.attacker,
             self.weapon,
             error_message="{name} doesn't have a weapon.".format(
                 name=self.attacker.name

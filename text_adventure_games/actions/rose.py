@@ -25,7 +25,7 @@ class Pick_Rose(base.Action):
         * The rose bush has to have a rose.
         * The character must be at the location of the rosebush.
         """
-        if not self.was_matched(self.rosebush, "There's no rosebush here."):
+        if not self.was_matched(self.character, self.rosebush, "There's no rosebush here."):
             return False
         if not self.rosebush.get_property("has_rose"):
             description = "The rosebush is bare."

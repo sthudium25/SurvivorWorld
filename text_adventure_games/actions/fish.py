@@ -36,7 +36,7 @@ class Catch_Fish(base.Action):
         * The character must be at the pond
         * The character must have a fishing pole in their inventory
         """
-        if not self.was_matched(self.pond, "There's no pond here."):
+        if not self.was_matched(self.character, self.pond, "There's no pond here."):
             return False
         if not self.pond.get_property("has_fish"):
             self.parser.fail(self.command, "The pond has no fish.", self.character)
