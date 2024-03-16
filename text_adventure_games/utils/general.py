@@ -20,11 +20,12 @@ from . import consts
 
 def set_up_openai_client(org="Penn", **kwargs):
     key = consts.get_openai_api_key(org)
-    params = {"api_key": key}
+    params = kwargs.copy()
+    params.update({"api_key": key})
     if org == "Helicone":
         base_url = consts.get_helicone_base_path()
         params.update({"base_url": base_url})
-    client = OpenAI(params, **kwargs)
+    client = OpenAI(**params)
     return client
 
 def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):
@@ -97,3 +98,25 @@ def get_character_facts():
     with open(asset_path, 'r') as f:
         characters = json.load(f)
     return characters
+
+
+def parse_location_description(text):
+    by_description_type = re.split('\n+', text)
+    new_observations = {}
+    if len(by_description_type) >= 1:
+        desc_type, loc = map(lambda x: x.strip(), by_description_type[0].split(":"))
+        new_observations[desc_type] = [loc]
+        for description in by_description_type[1:]:
+            if description:
+                try: 
+                    desc_type, player, observed = map(lambda x: x.strip(), description.split(":"))
+                except ValueError:
+                    # Likely not enough values to unpack
+                    desc_type = description.split(":")[0]
+                    new_observations[desc_type] = [f'No {desc_type} here']
+                    continue
+                if "(" in observed:
+                    new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(';') if obs]
+                else:
+                    new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(',') if obs]
+    return new_observations
