@@ -300,24 +300,30 @@ class Parser:
                     return exit
         return None
     
-    def get_characters_in_view(self, character: Character):
-        # TODO: it would be nicer to have characters listed in the location object
-        # however this is more state to maintain.
-        """
-        Given a character, identifies the other characters in the game that are in the same location
+    # def get_characters_in_view(self, character: Character):
+    #     # TODO: it would be nicer to have characters listed in the location object
+    #     # however this is more state to maintain.
+    #     """
+    #     Given a character, identifies the other characters in the game that are in the same location
 
-        Args:
-            character (Character): the current character
+    #     Args:
+    #         character (Character): the current character
 
-        Returns:
-            list: characters in view of the current character
-        """
-        chars_in_view = []
-        loc_id = character.location.id
-        for char in self.game.characters.values():
-            if char.location.id == loc_id:
-                chars_in_view.append(char)
-        return chars_in_view
+    #     Returns:
+    #         list: characters in view of the current character
+    #     """
+    #     chars_in_view = []
+    #     loc_id = character.location.id
+    #     print("location id to match: ", loc_id)
+    #     for char in self.game.characters.values():
+    #         print(f"{char.name} loc id: ", char.location.id)
+    #         if char.location.id == loc_id:
+    #             chars_in_view.append(char)
+    #     if len(chars_in_view) > 0:
+    #         print("Characters in view of ", character.name)
+    #         for c in chars_in_view:
+    #             print(c.name)
+    #     return chars_in_view
 
 
 class GptParser(Parser):
@@ -501,8 +507,8 @@ class GptParser(Parser):
         """
         # This is a user or agent-supplied command so it should be logged as a ChatMessage.user
         super().add_command_to_history(summary)
-        chars_in_view = self.get_characters_in_view(character)
-        for char in chars_in_view:
+        for char in character.chars_in_viewrs_in_view:
+            print(f'passing {character.name}\'s action to {char.name}')
             char.memory.add_memory(summary.lower(), 
                                    keywords, 
                                    character.location, 
