@@ -120,3 +120,29 @@ def parse_location_description(text):
                 else:
                     new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(',') if obs]
     return new_observations
+
+
+def find_difference_in_dict_lists(dict1, dict2):
+    if dict1 is None:
+        if dict2 is None:
+            raise TypeError(f"{type(dict2)} is not comparable.")
+        else:
+            return dict2
+
+    diff = {}
+    # Iterate through each key and value in the second dictionary
+    for key, value2 in dict2.items():
+        for description2 in value2:
+            # Check if the key exists in the first dictionary
+            if key in dict1:
+                # If the key exists, compare the lists
+                # value1 = dict1[key]
+                if any([description2 == desc1 for desc1 in dict1[key]]):
+                    continue
+                    # If the value was not matched by anything in dict1[key]
+                else:
+                    diff[key] = description2
+            else:
+                # If the key doesn't exist in the first dictionary, add it to the difference
+                diff[key] = value2
+    return diff
