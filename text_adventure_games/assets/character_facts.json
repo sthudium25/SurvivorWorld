@@ -1,0 +1,121 @@
+[{
+    "Name": "Sarah Thompson",
+    "Age": 35,
+    "Likes": ["fitness", "traveling", "painting"],
+    "Dislikes": ["dishonesty", "waste of food", "traffic jams", "neglecting environment"],
+    "Occupation": "Marketing Manager",
+    "Home city": "Chicago, Illinois"
+  },
+  {
+    "Name": "Michael Stevens",
+    "Age": 28,
+    "Likes": ["sports", "hiking", "grilling", "classic cars"],
+    "Dislikes": ["laziness", "telemarketers", "rudeness", "heavy traffic"],
+    "Occupation": "Software Engineer",
+    "Home city": "Austin, Texas"
+  },
+  {
+    "Name": "Jacob Harrison",
+    "Age": 25,
+    "Likes": ["coffee brewing", "indie music", "baking", "dogs", "reading"],
+    "Dislikes": ["rude customers", "early mornings", "negativity", "instant coffee"],
+    "Occupation": "Barista",
+    "Home city": "Philadelphia, Pennsylvania"
+  },
+  {
+    "Name": "Linda Patterson",
+    "Age": 32,
+    "Likes": ["wildlife observation", "hiking", "camping", "photography", "astronomy"],
+    "Dislikes": ["pollution", "deforestation", "littering", "illegal hunting"],
+    "Occupation": "National Parks Ranger",
+    "Home city": "Jackson, Wyoming"
+  },
+  {
+    "Name": "Anou Savanh",
+    "Age": 24,
+    "Likes": ["academic research", "philosophy", "traditional Laotian music", "origami", "global cuisine"],
+    "Dislikes": ["dishonesty", "crowded places", "procrastination", "cold weather"],
+    "Occupation": "Graduate Student",
+    "Home city": "Vientiane, Laos"
+  },
+  {
+    "Name": "Thomas Johnson",
+    "Age": 27,
+    "Likes": ["Book clubs", "classical music", "museums", "traveling"],
+    "Dislikes": ["rudeness", "litters", "smoking"],
+    "Occupation": "Librarian",
+    "Home city": "New York, New York"
+  },
+  {
+    "Name": "Alice Thompson",
+    "Age": 40,
+    "Likes": ["gardening", "cooking", "camping", "yoga"],
+    "Dislikes": ["negativity", "fast food", "noise"],
+    "Occupation": "Nurse",
+    "Home city": "Portland, Oregon"
+  },
+  {
+    "Name": "John Mullen",
+    "Age": 35,
+    "Likes": ["sports", "video games", "dogs", "Stargazing"],
+    "Dislikes": ["disorganization", "rude people", "late appointments"],
+    "Occupation": "Architect",
+    "Home city": "Kansas City, Missouri"
+  },
+  {
+    "Name": "Emma Davis",
+    "Age": 50,
+    "Likes": ["theater", "opera", "social work", "healthy food"],
+    "Dislikes": ["disrespect", "irresponsibility", "waste of time"],
+    "Occupation": "Social Worker",
+    "Home city": "San Francisco, California"
+  },
+  {
+    "Name": "Nihar Choudhury",
+    "Age": 30,
+    "Likes": ["Coding", "cricket", "playing guitar", "photography"],
+    "Dislikes": ["miscommunication", "lazy behavior", "dishonesty"],
+    "Occupation": "Software Developer",
+    "Home city": "Bangalore, India"
+  },
+  {
+    "Name": "Fatima Al-Hakim",
+    "Age": 28,
+    "Likes": ["literature", "cultural festivals", "calligraphy", "traveling"],
+    "Dislikes": ["impatience", "injustice", "disorder"],
+    "Occupation": "Teacher",
+    "Home city": "Cairo, Egypt"
+  },
+  {
+    "Name": "Li Wei",
+    "Age": 38,
+    "Likes": ["calligraphy", "martial arts", "tea ceremony", "hiking"],
+    "Dislikes": ["gossip", "rush", "impatience"],
+    "Occupation": "Acupuncturist",
+    "Home city": "Shanghai, China"
+  },
+  {
+    "Name": "Carlos Rodriguez",
+    "Age": 33,
+    "Likes": ["soccer", "cooking", "music", "dancing"],
+    "Dislikes": ["traffic", "lack of punctuality", "negativity"],
+    "Occupation": "Chef",
+    "Home city": "Buenos Aires, Argentina"
+  },
+  {
+    "Name": "Anna Ivanova",
+    "Age": 22,
+    "Likes": ["ballet", "snowboarding", "reading", "classic music"],
+    "Dislikes": ["rudeness", "loud noise", "fast food"],
+    "Occupation": "Ballet Dancer",
+    "Home city": "Moscow, Russia"
+  },
+  {
+    "Name": "David Nkosi",
+    "Age": 26,
+    "Likes": ["sports", "wildlife", "photography", "community volunteering"],
+    "Dislikes": ["littering", "dishonesty", "prejudice"],
+    "Occupation": "Environmental Activist",
+    "Home city": "Johannesburg, South Africa"
+  }
+  ]
