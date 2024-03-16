@@ -3,7 +3,9 @@ from .items import Item
 from .locations import Location
 from ..gpt.agent_kani import AgentKani
 from ..gpt.gpt_helpers import gpt_get_action_importance
-from ..utils.general import parse_location_description
+from ..utils.general import (parse_location_description, 
+                             find_difference_in_dict_lists)
+from ..agent.memory_stream import MemoryStream, MemoryType
 
 
 class Character(Thing):
@@ -105,9 +107,12 @@ class GenerativeAgent(Character):
     def __init__(self, name: str, description: str, persona: str):
         super().__init__(name, description, persona)
         # super().__init__(persona.facts["name"], persona.summary, persona="see subclass")
-        # TODO: memory stream currently in persona but may be hard to access
+        
+        # Set the Agent's persona:
         # self.persona = persona
-        # self.persona.initialize_memory(self.id)
+
+        # Initialize Agent's memory
+        self.memory = MemoryStream(self.id)
 
         # Custom Kani class here? which could store this character's bio as "always_included"
         # Route from this Kani to Reflect, Act, Perceive Kanis?
@@ -128,8 +133,8 @@ class GenerativeAgent(Character):
                # vote
                ):
         self.percieve_location(game)
+        print(f"{self.name} has: {self.memory.num_observations} memories")
                 
-        print(self.get_memories())
         # if vote:
         #     # At end of round: agent votes and reflects
         #     self.agent_ai.vote()
@@ -155,40 +160,76 @@ class GenerativeAgent(Character):
     def percieve_location(self, game):
         """
         Gather rudimentary information about the current location of the Agent
-        and store these observations as new memories.
+        and store these observations as new memories (of type MemoryType.ACTION).
 
         Args:
             game (games.Game): the current game object
         """
         location_description = self.perceive(game)
         location_observations = parse_location_description(location_description)
-        for observations in location_observations.values():
+
+        # check for differences between observations
+        diffs_perceived = find_difference_in_dict_lists(self.last_location_observations,
+                                                        location_observations)
+
+        # Replace the last perception with the current one
+        self.last_location_observations = location_observations.copy()
+
+        # Create new observations from the differences
+        print(f"{self.name} observes:")
+        for observations in diffs_perceived.values():
             for statement in observations:
                 action_statement = game.parser.create_action_statement(command="describe",
                                                                        description=statement,
                                                                        character=self)
+                
                 importance_score = gpt_get_action_importance(action_statement,
                                                              game.parser.client, 
                                                              game.parser.model, 
                                                              max_tokens=10)
                 keywords = game.parser.extract_keywords(action_statement)
+                print(action_statement)
 
                 self.memory.add_memory(description=action_statement,
                                        keywords=keywords,
                                        location=self.location,
                                        success_status=True,
                                        memory_importance=importance_score,
-                                       memory_type=1,
+                                       memory_type=MemoryType.ACTION,
                                        agent_name=self.name)
+        self.chars_in_view = self.get_characters_in_view(game)
+                
+    def get_characters_in_view(self, game):
+        # TODO: it would be nicer to have characters listed in the location object
+        # however this is more state to maintain.
+        """
+        Given a character, identifies the other characters in the game that are in the same location
 
-    def get_memories(self):
-        return [m['content'] for m in self.memory]
+        Args:
+            character (Character): the current character
+
+        Returns:
+            list: characters in view of the current character
+        """
+        chars_in_view = []
+        for char in game.characters.values():
+            print(f"{char.name} loc id: ", char.location.id)
+            if char.location.id == self.location.id:
+                chars_in_view.append(char)
+
+        # DEBUG: 
+        if len(chars_in_view) > 0:
+            print("Characters in view of ", self.name)
+            for c in chars_in_view:
+                print(c.name)
+        return chars_in_view
+
+    # def get_memories(self):
+    #     return [m['content'] for m in self.memory]
 
     # def reflect(self):
     #     # Look back at observations from this round
     #     pass
-
-    
 
     # def act(self):
     #     # Intent determination here?
