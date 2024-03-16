@@ -4,14 +4,16 @@ Author: Samuel Thudium (sam.thudium1@gmail.com)
 File: gpt_agent.py
 Description: Methods that access the OPENAI API and make a call to GPT
 """
-
+# TODO: These clients all use personal API KEYS; should confirm what HELICONE can be used for.
 import re
 import openai
 
 # relative imports
 from ..utils import general
 
-def get_new_character_from_gpt(client, description, model):
+def get_new_character_from_gpt(description, model):
+
+    client = general.set_up_openai_client(org="Penn")
 
     system_prompt = """
 You are a character generator. You should fill in the following character information\
@@ -69,7 +71,7 @@ def get_trait_continuum(low: str, high: str, mid: str = None, model='gpt-3.5-tur
         user_prompt += f"Provide a list of 15 adjectives that range from\
         'Low: {low}' to 'High: {high}' with a smooth transition in between."
 
-    client = openai.Client()
+    client = general.set_up_openai_client(org="Penn")
 
     response = client.chat.completions.create(
         model=model,
@@ -113,7 +115,7 @@ def get_target_adjective(low: str,
     user_prompt = f"On a smooth transition scale from {low_int}={low} to {high_int}={high},\
         a target score of {target} is represented by the adjective:"
 
-    client = openai.Client()
+    client = general.set_up_openai_client(org="Penn")
 
     response = client.chat.completions.create(
         model=model,
@@ -156,7 +158,7 @@ def summarize_agent_facts(facts, model='gpt-4'):
 
     Being succinct is key; do not list the person's likes and dislikes.
 """
-    client = openai.Client()
+    client = general.set_up_openai_client(org="Penn")
 
     response = client.chat.completions.create(
         model=model,
@@ -180,6 +182,7 @@ def summarize_agent_facts(facts, model='gpt-4'):
     return summary
 
 
-def get_text_embedding(client, text, model="text-embedding-3-small"):
+def get_text_embedding(text, model="text-embedding-3-small"):
+    client = general.set_up_openai_client(org="Penn")
     text_vector = client.embeddings.create(input=[text], model=model).data[0].embedding
     return text_vector
