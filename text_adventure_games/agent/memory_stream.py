@@ -52,12 +52,12 @@ class MemoryStream:
         self.num_observations = 0
         self.observations = []
         self.agent_id = agent_id  # would be good to store who this belongs to in case we need to reload a game
-        self.obs_embeddings = {}  # keys are the index of the observation
+        self.memory_embeddings = {}  # keys are the index of the observation
         self.character_nodes = defaultdict(list)  # Nodes that appear to be related to a character
         self.object_nodes = defaultdict(list)
         self.misc_keyword_nodes = defaultdict(list)
 
-        # Attributes denoting the memory features of the agent
+        # Attributes defining the memory features of the agent
         self.lookback = 5  # The number of observations immediately available without retrieval
         self.gamma = 0.95  # The decay factor for memory importance
         self.reflection_capacity = 2  # The number of reflections to make after each round
@@ -70,7 +70,7 @@ class MemoryStream:
         self.similarity_alpha = 1
 
         # Set up a client for this instance
-        self.client = set_up_openai_client(org="Helicone")
+        self.client = set_up_openai_client(org="Penn")
 
     def get_observation(self, node_id):
         """
@@ -93,9 +93,10 @@ class MemoryStream:
                    memory_type,
                    agent_name):
         
-        if memory_type not in MemoryType._member_names_:
-            raise ValueError(f"Memories must be created with valid type; one of {MemoryType._member_names_}")
-        
+        if not isinstance(memory_type, MemoryType):
+            valid_types = [type.name for type in MemoryType]
+            raise ValueError(f"Memories must be created with valid type; one of {valid_types}")
+            
         # Get the next node id
         node_id = self.num_observations + 1
         
@@ -104,9 +105,9 @@ class MemoryStream:
 
         # Embed the description
         memory_embedding = self.get_observation_embedding(description)
-        self.obs_embedding[node_id] = memory_embedding
+        self.memory_embeddings[node_id] = memory_embedding
 
-        if memory_type == 1:  # ACTION
+        if memory_type == MemoryType.ACTION:
             new_memory = self.add_action(node_id,
                                          description,
                                          location,
@@ -161,7 +162,7 @@ class MemoryStream:
         Returns:
             ndarray: an embedding vector
         """
-        embedded_vector = ga.get_text_embedding(self.client, text)
+        embedded_vector = ga.get_text_embedding(text)
         return embedded_vector
     
     def get_observations_by_subject(self, subject):
