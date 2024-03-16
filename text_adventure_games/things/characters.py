@@ -2,6 +2,8 @@ from .base import Thing
 from .items import Item
 from .locations import Location
 from ..gpt.agent_kani import AgentKani
+from ..gpt.gpt_helpers import gpt_get_action_importance
+from ..utils.general import parse_location_description
 
 
 class Character(Thing):
@@ -125,8 +127,8 @@ class GenerativeAgent(Character):
     def engage(self, game, round, tick, 
                # vote
                ):
-        location_description = self.perceive(game)
-        print(f"{self.name} memories:")
+        self.percieve_location(game)
+                
         print(self.get_memories())
         # if vote:
         #     # At end of round: agent votes and reflects
@@ -136,19 +138,48 @@ class GenerativeAgent(Character):
         #     # At start of round: agent plans
         #     self.agent_ai.plan()
         return input("\n>")
-        #self.agent_ai.full_round("Select an action to take.")
+        # self.agent_ai.full_round("Select an action to take.")
         # need to access the game history if this player is in the same as the last one
         # need to describe a new setting if this player is in a different location
  
     def perceive(self, game):
         # Collect the latest information about the location
         location_description = game.describe()
-        self.memory.append({"role": "user", "content": location_description})
-        print(f"{self.name} has {len(self.memory)} memories.")
+        # self.memory.append({"role": "user", "content": location_description})
+        # print(f"{self.name} has {len(self.memory)} memories.")
         # It would be helpful to get lists of 
         # * Item names, Character names, and the location
         # These could be passed to Kani to help retrieve the relevant ObservationNodes
         return location_description
+    
+    def percieve_location(self, game):
+        """
+        Gather rudimentary information about the current location of the Agent
+        and store these observations as new memories.
+
+        Args:
+            game (games.Game): the current game object
+        """
+        location_description = self.perceive(game)
+        location_observations = parse_location_description(location_description)
+        for observations in location_observations.values():
+            for statement in observations:
+                action_statement = game.parser.create_action_statement(command="describe",
+                                                                       description=statement,
+                                                                       character=self)
+                importance_score = gpt_get_action_importance(action_statement,
+                                                             game.parser.client, 
+                                                             game.parser.model, 
+                                                             max_tokens=10)
+                keywords = game.parser.extract_keywords(action_statement)
+
+                self.memory.add_memory(description=action_statement,
+                                       keywords=keywords,
+                                       location=self.location,
+                                       success_status=True,
+                                       memory_importance=importance_score,
+                                       memory_type=1,
+                                       agent_name=self.name)
 
     def get_memories(self):
         return [m['content'] for m in self.memory]
