@@ -5,22 +5,36 @@ File: agent/persona.py
 Description: Defines the Persona of an agent
 """
 
+# local imports
+from . import memory_stream as ms
+from text_adventure_games.gpt.gpt_agent_setup import summarize_agent_facts
+
+
 class Persona():
     """
     Class to handle a character's persona.
-    If will hold their Traits and Affinities
+    It will hold their Traits and Affinities
 
     Traits (dict): {trait name: TraitScale}
     Affinities (dict): {target character id: AffinityScale}
     Goals (dict): {flex: generated,
                    short-term: do not get voted off at the next tribal,
                    long-term: win the game and 1M dollars}
+    Facts (dict)
+    summary: str
     """
     def __init__(self, facts, goals):
+        # Agent traits
         self.facts = facts
         self.goals = goals
         self.traits = {}
         self.affinities = {}
+        self.summary = summarize_agent_facts(self.facts)
+
+    # NOTE: Removing this for now -- memory stored in GenerativeAgent()
+    # def initialize_memory(self, agent_id):
+    #     # Agent Memory
+    #     self.memory = ms.MemoryStream(agent_id)
 
     def add_trait(self, trait):
         if trait.name not in self.traits:
