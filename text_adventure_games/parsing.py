@@ -507,7 +507,7 @@ class GptParser(Parser):
         """
         # This is a user or agent-supplied command so it should be logged as a ChatMessage.user
         super().add_command_to_history(summary)
-        for char in character.chars_in_viewrs_in_view:
+        for char in character.chars_in_view:
             print(f'passing {character.name}\'s action to {char.name}')
             char.memory.add_memory(summary.lower(), 
                                    keywords, 
