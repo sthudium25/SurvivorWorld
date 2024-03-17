@@ -113,6 +113,7 @@ class GenerativeAgent(Character):
 
         # Initialize Agent's memory
         self.memory = MemoryStream(self.id)
+        self.last_location_observations = None
 
         # Custom Kani class here? which could store this character's bio as "always_included"
         # Route from this Kani to Reflect, Act, Perceive Kanis?
