@@ -20,7 +20,12 @@ from . import consts
 
 def set_up_openai_client(org="Penn", **kwargs):
     key = consts.get_openai_api_key(org)
-    client = OpenAI(api_key=key, **kwargs)
+    params = kwargs.copy()
+    params.update({"api_key": key})
+    if org == "Helicone":
+        base_url = consts.get_helicone_base_path()
+        params.update({"base_url": base_url})
+    client = OpenAI(**params)
     return client
 
 def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):
@@ -93,3 +98,51 @@ def get_character_facts():
     with open(asset_path, 'r') as f:
         characters = json.load(f)
     return characters
+
+
+def parse_location_description(text):
+    by_description_type = re.split('\n+', text)
+    new_observations = {}
+    if len(by_description_type) >= 1:
+        desc_type, loc = map(lambda x: x.strip(), by_description_type[0].split(":"))
+        new_observations[desc_type] = [loc]
+        for description in by_description_type[1:]:
+            if description:
+                try: 
+                    desc_type, player, observed = map(lambda x: x.strip(), description.split(":"))
+                except ValueError:
+                    # Likely not enough values to unpack
+                    desc_type = description.split(":")[0]
+                    new_observations[desc_type] = [f'No {desc_type} here']
+                    continue
+                if "(" in observed:
+                    new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(';') if obs]
+                else:
+                    new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(',') if obs]
+    return new_observations
+
+
+def find_difference_in_dict_lists(dict1, dict2):
+    if dict1 is None:
+        if dict2 is None:
+            raise TypeError(f"{type(dict2)} is not comparable.")
+        else:
+            return dict2
+
+    diff = {}
+    # Iterate through each key and value in the second dictionary
+    for key, value2 in dict2.items():
+        for description2 in value2:
+            # Check if the key exists in the first dictionary
+            if key in dict1:
+                # If the key exists, compare the lists
+                # value1 = dict1[key]
+                if any([description2 == desc1 for desc1 in dict1[key]]):
+                    continue
+                    # If the value was not matched by anything in dict1[key]
+                else:
+                    diff[key] = description2
+            else:
+                # If the key doesn't exist in the first dictionary, add it to the difference
+                diff[key] = value2
+    return diff

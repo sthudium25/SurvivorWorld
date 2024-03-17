@@ -12,6 +12,7 @@ class Get(base.Action):
 
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
+        self.command = command
         # self.character = self.parser.get_character(command)
         self.character = character
         self.location = self.character.location
@@ -25,23 +26,23 @@ class Get(base.Action):
         * The item must be at the location
         * The item must be gettable
         """
-        if not self.was_matched(self.item, "I don't see it."):
-            message = "I don't see it."
-            self.parser.fail(message)
+        if not self.was_matched(self.character, self.item, "I don't see it."):
+            message = f"I don't see {self.item.name} in {self.location.name}."
+            self.parser.fail(self.command, message, self.character)
             return False
         if not self.location.here(self.character):
-            message = "{name} is not here.".format(name=self.character.name)
-            self.parser.fail(message)
+            message = "{name} is not in {loc}.".format(name=self.character.name, loc=self.location.name)
+            self.parser.fail(self.command, message, self.character)
             return False
         if not self.location.here(self.item):
-            message = "There is no {name} here.".format(name=self.item.name)
-            self.parser.fail(message)
+            message = "There is no {name} in {loc}.".format(name=self.item.name, loc=self.location.name)
+            self.parser.fail(self.command, message, self.character)
             return False
         if not self.item.get_property("gettable"):
             error_message = "{name} is not {property_name}.".format(
                 name=self.item.name.capitalize(), property_name="gettable"
             )
-            self.parser.fail(error_message)
+            self.parser.fail(self.command, message, self.character)
             return False
         return True
 
@@ -56,7 +57,7 @@ class Get(base.Action):
             character_name=self.character.name, item_name=self.item.name
         )
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)
 
 
 class Drop(base.Action):
@@ -68,9 +69,12 @@ class Drop(base.Action):
         self,
         game,
         command: str,
+        character: Character
     ):
         super().__init__(game)
-        self.character = self.parser.get_character(command)
+        self.command = command
+        # self.character = self.parser.get_character(command)
+        self.character = character
         self.location = self.character.location
         self.item = self.parser.match_item(command, self.character.inventory)
 
@@ -79,14 +83,14 @@ class Drop(base.Action):
         Preconditions:
         * The item must be in the character's inventory
         """
-        if not self.was_matched(self.item, "I don't see it."):
+        if not self.was_matched(self.character, self.item, "I don't see it."):
             return False
         if not self.character.is_in_inventory(self.item):
             d = "{character_name} does not have the {item_name}."
             description = d.format(
                 character_name=self.character.name, item_name=self.item.name
             )
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.character)
             return False
         return True
 
@@ -105,7 +109,7 @@ class Drop(base.Action):
             location=self.location.name,
         )
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)
 
 
 class Inventory(base.Action):
@@ -120,6 +124,7 @@ class Inventory(base.Action):
         character: Character
     ):
         super().__init__(game)
+        self.command = command
         # self.character = self.parser.get_character(command)
         self.character = character
 
@@ -132,14 +137,14 @@ class Inventory(base.Action):
         if len(self.character.inventory) == 0:
             description = f"{self.character.name}'s inventory is empty."
             # self.parser.ok(description)
-            self.parser.ok(description, self.character)
+            self.parser.ok(self.command, description, self.character)
         else:
             description = f"{self.character.name}'s inventory contains:\n"
             for item_name in self.character.inventory:
                 item = self.character.inventory[item_name]
                 description += "* {item}\n".format(item=item.description)
             # self.parser.ok(description)
-            self.parser.ok(description, self.character)
+            self.parser.ok(self.command, description, self.character)
 
 
 class Examine(base.Action):
@@ -154,6 +159,7 @@ class Examine(base.Action):
         character: Character
     ):
         super().__init__(game)
+        self.command = command
         # self.character = self.parser.get_character(command)
         self.character = character
         self.matched_item = self.parser.match_item(
@@ -170,13 +176,13 @@ class Examine(base.Action):
         if self.matched_item:
             if self.matched_item.examine_text:
                 # self.parser.ok(self.matched_item.examine_text)
-                self.parser.ok(self.matched_item.examine_text, self.character)
+                self.parser.ok(self.command, self.matched_item.examine_text, self.character)
             else:
                 # self.parser.ok(self.matched_item.description)
-                self.parser.ok(self.matched_item.description, self.character)
+                self.parser.ok(self.command, self.matched_item.description, self.character)
         else:
             # self.parser.ok("You don't see anything special.")
-            self.parser.ok("You don't see anything special.", self.character)
+            self.parser.ok(self.command, "You don't see anything special.", self.character)
 
 
 class Give(base.Action):
@@ -189,7 +195,7 @@ class Give(base.Action):
                  command: str,
                  character: Character):
         super().__init__(game)
-
+        self.command = command
         # self.character = self.parser.get_character(command)
         # self.character = character
         give_words = ["give", "hand"]
@@ -212,7 +218,7 @@ class Give(base.Action):
         * The item must be in the giver's inventory
         * The character must be at the same location as the recipient
         """
-        if not self.was_matched(self.item, "I don't see it."):
+        if not self.was_matched(self.character, self.item, "I don't see it."):
             return False
         if not self.giver.is_in_inventory(self.item):
             return False
@@ -236,7 +242,7 @@ class Give(base.Action):
             item_name=self.item.name,
             recipient=self.recipient.name.capitalize(),
         )
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)
 
         if self.recipient.get_property("is_hungry") and self.item.get_property(
             "is_food"
@@ -289,4 +295,4 @@ class Unlock_Door(base.Action):
     def apply_effects(self):
         self.door.set_property("is_locked", False)
         # self.parser.ok("Door is unlocked")
-        self.parser.ok("Door is unlocked", self.character)
+        self.parser.ok(self.command, "Door is unlocked", self.character)

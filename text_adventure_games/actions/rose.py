@@ -12,6 +12,7 @@ class Pick_Rose(base.Action):
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
         # self.character = self.parser.get_character(command)
+        self.command = command
         self.character = character
         self.rosebush = self.parser.match_item(
             "rosebush", self.parser.get_items_in_scope(self.character)
@@ -24,11 +25,11 @@ class Pick_Rose(base.Action):
         * The rose bush has to have a rose.
         * The character must be at the location of the rosebush.
         """
-        if not self.was_matched(self.rosebush, "There's no rosebush here."):
+        if not self.was_matched(self.character, self.rosebush, "There's no rosebush here."):
             return False
         if not self.rosebush.get_property("has_rose"):
             description = "The rosebush is bare."
-            self.game.parser.fail(description)
+            self.game.parser.fail(self.command, description, self.character)
             return False
         if not self.rosebush.location.here(self.character):
             return False
@@ -52,7 +53,7 @@ class Pick_Rose(base.Action):
         d = "{character_name} picked the lone rose from the rosebush"
         description = d.format(character_name=self.character.name)
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)
         return rose
 
 
@@ -66,6 +67,7 @@ class Smell_Rose(base.Action):
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
         # self.character = self.parser.get_character(command)
+        self.command = command
         self.character = character
         self.rose = self.parser.match_item(
             "rose", self.parser.get_items_in_scope(self.character)
@@ -137,11 +139,11 @@ class Smell_Rose(base.Action):
             scent=self.rose.get_property("scent"),
         )
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)
 
         self.character.set_property("emotional_state", "happy")
         description = "{character_name} is happy.".format(
             character_name=self.character.name.capitalize()
         )
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)

@@ -145,7 +145,8 @@ class Game:
         """
         Describe the current location by printing its description field.
         """
-        return self.player.location.description
+        loc_description = f"location: {self.player.name} is at {self.player.location.description}"
+        return loc_description
 
     def describe_exits(self) -> str:
         """
@@ -156,42 +157,44 @@ class Game:
         for direction in self.player.location.connections.keys():
             location = self.player.location.connections[direction]
             exits.append(direction.capitalize() + " to " + location.name)
-        description = ""
+        description = "exits: "
         if len(exits) > 0:
-            description = "Exits:\n"
+            description += f"From {self.player.location.name} {self.player.name} could go: "
             for exit in exits:
-                description += exit + "\n"
+                description += exit + ", "
         return description
 
     def describe_items(self) -> str:
         """
         Describe what items are in the current location.
         """
-        description = ""
+        description = "items: "
         if len(self.player.location.items) > 0:
-            description = f"{self.player.name} sees:"
+            description += f"{self.player.name} sees:"
             for item_name in self.player.location.items:
                 item = self.player.location.items[item_name]
-                description += "\n * " + item.description
+                description += item.description 
                 if self.give_hints:
                     special_commands = item.get_command_hints()
+                    description += "(hint "
                     for cmd in special_commands:
-                        description += "\n\t" + cmd
+                        description += cmd + ", "
+                    description += ")"
+                description += "; "
         return description
 
     def describe_characters(self) -> str:
         """
         Describe what characters are in the current location.
         """
-        description = ""
-
+        description = "characters: "
         if len(self.player.location.characters) > 1:
-            description = "Characters:"
+            description += f"{self.player.name} sees characters: "
             for character_name in self.player.location.characters:
                 if character_name == self.player.name:
                     continue
                 character = self.player.location.characters[character_name]
-                description += "\n * " + character.description
+                description += character.description + ", "
         return description
 
     def describe_inventory(self) -> str:
@@ -454,9 +457,10 @@ class SurvivorGame(Game):
             for tick in range(self.max_ticks_per_round):
                 # Confirming Round increments and character movement
                 print(f"ROUND: {round}.{tick}")
-                self.view_character_locations()
                 for character in self.characters.values():  # naive ordering, not based on character initiative
                     print(f"Character: {character.name} (id: {character.id})")
+                    # set the current player to the game's "player" for description purposes
+                    self.player = character
                     # if tick == self.max_ticks_per_round - 1:
                     #     vote = True
                     # else:
@@ -471,8 +475,6 @@ class SurvivorGame(Game):
                                                        # vote
                                                        )
                         else:
-                            # set the current player to the game's "player" for description purposes
-                            self.player = character
                             # Depending on the round, character.engage() should trigger different things
                             # Planning occurs at beginning of round, reflection at end.
                             # Action selection should happen in all(?) rounds except for the last one bc 

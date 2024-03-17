@@ -11,6 +11,7 @@ class Eat(base.Action):
 
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
+        self.command = command
         self.character = character
         self.item = self.parser.match_item(
             command, self.parser.get_items_in_scope(self.character)
@@ -23,15 +24,15 @@ class Eat(base.Action):
         * The item must be food
         * The food must be in character's inventory
         """
-        if not self.was_matched(self.item):
+        if not self.was_matched(self.character, self.item):
             return False
         elif not self.item.get_property("is_food"):
             description = "That's not edible."
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.character)
             return False
         elif not self.character.is_in_inventory(self.item):
             description = "You don't have it."
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.character)
             return False
         return True
 
@@ -60,7 +61,7 @@ class Eat(base.Action):
                 food=self.item.name, name=self.character.name.capitalize()
             )
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)
 
 
 class Drink(base.Action):
@@ -70,6 +71,7 @@ class Drink(base.Action):
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
         # self.character = self.parser.get_character(command)
+        self.command = command
         self.character = character
         self.item = self.parser.match_item(
             command, self.parser.get_items_in_scope(self.character)
@@ -82,15 +84,16 @@ class Drink(base.Action):
         * The item must be a drink
         * The drink must be in character's inventory
         """
-        if not self.was_matched(self.item):
+        if not self.was_matched(self.character, self.item):
             return False
         elif not self.item.get_property("is_drink"):
             description = "That's not drinkable."
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.character)
             return False
         elif not self.character.is_in_inventory(self.item):
             description = "You don't have it."
-            self.parser.fail(description)
+            # self.parser.fail(description)
+            self.parser.fail(self.command, description, self.character)
             return False
         return True
 
@@ -108,14 +111,14 @@ class Drink(base.Action):
             name=self.character.name.capitalize(), drink=self.item.name
         )
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)
 
         if self.item.get_property("taste"):
             description = " It tastes {taste}".format(
                 taste=self.item.get_property("taste")
             )
             # self.parser.ok(description)
-            self.parser.ok(description, self.character)
+            self.parser.ok(self.command, description, self.character)
 
         if self.item.get_property("is_poisonous"):
             self.character.set_property("is_dead", True)
@@ -123,7 +126,7 @@ class Drink(base.Action):
                 drink=self.item.name, name=self.character.name.capitalize()
             )
             # self.parser.ok(description)
-            self.parser.ok(description, self.character)
+            self.parser.ok(self.command, description, self.character)
 
         if self.item.get_property("is_alcohol"):
             self.character.set_property("is_drink", True)
@@ -131,7 +134,7 @@ class Drink(base.Action):
                 drink=self.item.name, name=self.character.name.capitalize()
             )
             # self.parser.ok(description)
-            self.parser.ok(description, self.character)
+            self.parser.ok(self.command, description, self.character)
 
 
 class Light(base.Action):
@@ -141,6 +144,7 @@ class Light(base.Action):
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
         # self.character = self.parser.get_character(command)
+        self.command = command
         self.character = character
         self.item = self.parser.match_item(
             command, self.parser.get_items_in_scope(self.character)
@@ -153,17 +157,17 @@ class Light(base.Action):
         * The item must be in character's inventory
         * The item must be lightable
         """
-        if not self.was_matched(self.item):
+        if not self.was_matched(self.character, self.item):
             return False
         if not self.is_in_inventory(self.character, self.item):
             return False
         if not self.item.get_property("is_lightable"):
             description = "That's not something that can be lit."
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.character)
             return False
         if self.item.get_property("is_lit"):
             description = "It is already lit."
-            self.parser.fail(description)
+            self.parser.fail(self.command, description, self.character)
             return False
         return True
 
@@ -177,4 +181,4 @@ class Light(base.Action):
             name=self.character.name, item=self.item.name
         )
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)

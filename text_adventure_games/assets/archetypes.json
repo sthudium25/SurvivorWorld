@@ -1,0 +1,592 @@
+{
+    "archetypes": [{
+        "name": "Hubris",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 20,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 15,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 65,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 80,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 10,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 80,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 55,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 20,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 35,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Villain",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 10,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 10,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 30,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 90,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 5,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 90,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 70,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 20,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 30,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Hero",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 80,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 70,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 80,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 80,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 80,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 70,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 50,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 80,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 70,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Student",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 60,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 50,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 60,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 50,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 60,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 50,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 60,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 70,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 50,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Leader",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 70,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 60,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 70,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 90,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 70,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 100,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 60,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 70,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 70,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Hero",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 50,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 45,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 70,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 60,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 40,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 60,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 10,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 80,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 40,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Damsel in Distress",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 70,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 75,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 25,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 20,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 20,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 20,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 35,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 65,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 15,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Mother",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 80,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 85,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 70,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 35,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 90,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 75,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 65,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 80,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 80,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Warrior",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 35,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 20,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 40,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 100,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 58,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 70,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 85,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 50,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 60,
+                "name": "stress"
+            }
+        ]
+    },
+    {
+        "name": "Sage Advisor",
+        "traits": [
+            {
+                "lowAnchor": "Prejudicial",
+                "highAnchor": "Unbiased",
+                "targetScore": 95,
+                "name": "judgement"
+            },
+            {
+                "lowAnchor": "Stubborn",
+                "highAnchor": "Agreeable",
+                "targetScore": 65,
+                "name": "cooperation"
+            },
+            {
+                "lowAnchor": "Pessimistic",
+                "highAnchor": "Optimistic",
+                "targetScore": 80,
+                "name": "outlook"
+            },
+            {
+                "lowAnchor": "Passive",
+                "highAnchor": "Assertive",
+                "targetScore": 65,
+                "name": "initiative"
+            },
+            {
+                "lowAnchor": "Selfish",
+                "highAnchor": "Generous",
+                "targetScore": 80,
+                "name": "generosity"
+            },
+            {
+                "lowAnchor": "Follower",
+                "highAnchor": "Leader",
+                "targetScore": 30,
+                "name": "social"
+            },
+            {
+                "lowAnchor": "Creative",
+                "highAnchor": "Logical",
+                "targetScore": 78,
+                "name": "mind"
+            },
+            {
+                "lowAnchor": "Close-minded",
+                "highAnchor": "Open-minded",
+                "targetScore": 90,
+                "name": "openness"
+            },
+            {
+                "lowAnchor": "Anxious",
+                "highAnchor": "Calm",
+                "targetScore": 85,
+                "name": "stress"
+            }
+        ]
+    }]
+}

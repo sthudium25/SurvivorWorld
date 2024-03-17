@@ -684,13 +684,13 @@ def build_game(type=1) -> games.Game:
     return game
 
 def build_mini_game() -> games.Game:
-    cottage = things.Location("Cottage", "You are standing in a small cottage.")
+    cottage = things.Location("Cottage", "A small cottage.")
     garden_path = things.Location(
         "Garden Path",
-        "You are standing on a lush garden path. There is a cottage here.",
+        "A lush garden path. There is a cottage here.",
     )
     fishing_pond = things.Location(
-        "Fishing Pond", "You are at the edge of a small fishing pond."
+        "Fishing Pond", "The edge of a small fishing pond."
     )
     cottage.add_connection("out", garden_path)
     garden_path.add_connection("south", fishing_pond)

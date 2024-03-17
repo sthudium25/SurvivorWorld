@@ -12,6 +12,7 @@ class Catch_Fish(base.Action):
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
         # self.character = self.parser.get_character(command)
+        self.command = command
         self.character = character
         self.pond = self.character.location
         self.pole = False
@@ -35,10 +36,10 @@ class Catch_Fish(base.Action):
         * The character must be at the pond
         * The character must have a fishing pole in their inventory
         """
-        if not self.was_matched(self.pond, "There's no pond here."):
+        if not self.was_matched(self.character, self.pond, "There's no pond here."):
             return False
         if not self.pond.get_property("has_fish"):
-            self.parser.fail("The pond has no fish.")
+            self.parser.fail(self.command, "The pond has no fish.", self.character)
             return False
         # if not self.character.is_in_inventory(self.pole):
         #     return False
@@ -58,7 +59,7 @@ class Catch_Fish(base.Action):
                     "catch a fish with their hands, but the fish are too fast.",
                 ]
             )
-            self.parser.fail(no_pole)
+            self.parser.fail(self.command, no_pole, self.character)
             return None
 
         fish = self.pond.get_item("fish")
@@ -75,4 +76,4 @@ class Catch_Fish(base.Action):
         )
         description = d.format(character_name=self.character.name)
         # self.parser.ok(description)
-        self.parser.ok(description, self.character)
+        self.parser.ok(self.command, description, self.character)

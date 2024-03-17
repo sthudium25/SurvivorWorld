@@ -48,7 +48,8 @@ class Go(base.Action):
                 name=self.character.capitalize(),
                 location_name=self.location.name.capitalize(),
             )
-            self.parser.fail(message)
+            # self.parser.fail(message)
+            self.parser.fail(self.command, message, self.character)
             return False
 
         if not self.location.get_connection(self.direction):
@@ -56,7 +57,8 @@ class Go(base.Action):
             description = d.format(
                 location_name=self.location.name.capitalize(), direction=self.direction
             )
-            self.parser.fail(description)
+            # self.parser.fail(message)
+            self.parser.fail(self.command, message, self.character)
             return False
 
         if self.location.is_blocked(self.direction):
@@ -67,7 +69,8 @@ class Go(base.Action):
                     location_name=self.location.name.capitalize(),
                     direction=self.direction,
                 )
-            self.parser.fail(description)
+            # self.parser.fail(message)
+            self.parser.fail(self.command, message, self.character)
             return False
 
         return True
@@ -100,7 +103,7 @@ class Go(base.Action):
             self.game.game_over = True
             self.game.game_over_description = to_loc.description
             # self.parser.ok(to_loc.description)
-            self.parser.ok(to_loc.description), self.character
+            self.parser.ok(self.command, to_loc.description, self.character)
         else:
             action = base.Describe(self.game, command=self.command, character=self.character)
             action()
