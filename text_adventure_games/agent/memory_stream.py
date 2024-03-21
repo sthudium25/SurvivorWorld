@@ -16,6 +16,7 @@ import openai
 # Local imports
 from ..gpt import gpt_agent_setup as ga
 from ..utils.general import set_up_openai_client
+from spacy import load as spacyload
 
 
 class MemoryType(Enum):
@@ -41,7 +42,17 @@ class ObservationNode:
 
 
 class MemoryStream:
-    def __init__(self, agent_id):
+    # store stopwords as a class variable for efficient access when adding new memories
+    _stopwords = None
+
+    @classmethod
+    def _generate_stopwords(cls):
+        if cls._stopwords is None:
+            nlp = spacyload('en_core_web_sm', disable=['ner', 'tagger', 'parser', 'textcat'])
+            cls._stopwords = nlp.Defaults.stop_words
+        return cls._stopwords
+
+    def __init__(self, agent_id, agent_name, agent_description):
         """
         Defines Agent's memory via a dict of ObservationNodes. These
         are split by the round in which they occured.
@@ -49,16 +60,21 @@ class MemoryStream:
         Args:
             agent_id (int): thing.Thing.id for this agent
         """
+        # keep track of this agent's identifying info:
+        self.agent_id = agent_id  # would be good to store who this belongs to in case we need to reload a game
+        self.agent_name = agent_name
+        self.agent_description = agent_description
+        
         self.num_observations = 0
         self.observations = []
-        self.agent_id = agent_id  # would be good to store who this belongs to in case we need to reload a game
+        
         self.memory_embeddings = {}  # keys are the index of the observation
         self.character_nodes = defaultdict(list)  # Nodes that appear to be related to a character
         self.object_nodes = defaultdict(list)
         self.misc_keyword_nodes = defaultdict(list)
 
         # Attributes defining the memory features of the agent
-        self.lookback = 5  # The number of observations immediately available without retrieval
+        self.lookback = 10  # The number of observations immediately available without retrieval
         self.gamma = 0.95  # The decay factor for memory importance
         self.reflection_capacity = 2  # The number of reflections to make after each round
         self.reflection_distance = 200  # how many observations the agent can look back and reflect on.
@@ -71,6 +87,9 @@ class MemoryStream:
 
         # Set up a client for this instance
         self.client = set_up_openai_client(org="Penn")
+
+        # Initialize stopwords
+        self.stopwords = self._generate_stopwords()
 
     def get_observation(self, node_id):
         """
@@ -90,8 +109,7 @@ class MemoryStream:
                    location,
                    success_status,
                    memory_importance,
-                   memory_type,
-                   agent_name):
+                   memory_type):
         
         if not isinstance(memory_type, MemoryType):
             valid_types = [type.name for type in MemoryType]
@@ -101,7 +119,9 @@ class MemoryStream:
         node_id = self.num_observations + 1
         
         # Modify the description w.r.t this character's name
-        description = re.sub(agent_name.lower(), 'you', description)
+        description = self.replace_character(description, 
+                                             self.agent_name.lower(), 
+                                             agent_descriptor=self.agent_description)
 
         # Embed the description
         memory_embedding = self.get_observation_embedding(description)
@@ -150,6 +170,7 @@ class MemoryStream:
                                      embedding_key=node_id,
                                      node_importance=memory_importance,
                                      node_type=type)
+        # print(f"Added {new_action.node_description} to {self.agent_id}'s memory")
         return new_action
 
     def get_observation_embedding(self, text):
@@ -176,10 +197,21 @@ class MemoryStream:
         summary = f"The last {self.lookback} observations in chronological order you have made are:"
         for i, node in enumerate(nodes):
             summary += "\n{idx}. {desc}".format(idx=i, desc=node.node_description)
+        return summary
 
     def get_embedding(self, round, tick):
         embed_key = f"{round}_{tick}"
         return self.obs_embeddings[embed_key]
+    
+    def replace_character(self, text, character_name, agent_descriptor):
+        # Escape any special regex characters in the descriptor and character_name
+        escaped_name = re.escape(character_name)
+        escaped_descriptor = re.escape(" ".join([w for w in agent_descriptor.split() if w not in self.stopwords]))
+        # Pattern to match 'the' optionally, then the descriptor optionally, followed by the character name
+        # The descriptor and the character name can occur together or separately
+        pattern = r'\b(?:the\s+)?(?:(?:{d}\s+)?{c}|{d})\b'.format(d=escaped_descriptor, c=escaped_name)
+        replacement = 'you'
+        return re.sub(pattern, replacement, text, flags=re.IGNORECASE)
     
     # def add_dialogue(self,
     #                  round_tick: int,

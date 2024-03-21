@@ -7,9 +7,10 @@ class ActionCastle(games.Game):
         start_at: things.Location,
         player: things.Character,
         characters=None,
-        custom_actions=None
+        custom_actions=None,
+        world_info=None
     ):
-        super().__init__(start_at, player, characters, custom_actions)
+        super().__init__(start_at, player, characters, custom_actions, world_info)
        
     def is_won(self) -> bool:
         """
@@ -33,9 +34,10 @@ class ActionCastleSurvivor(games.SurvivorGame):
         start_at: things.Location,
         player: things.Character,
         characters=None,
-        custom_actions=None
+        custom_actions=None,
+        world_info=None
     ):
-        super().__init__(start_at, player, characters, custom_actions, max_ticks=5)
+        super().__init__(start_at, player, characters, custom_actions, world_info, max_ticks=5)
 
     def is_won(self) -> bool:
         """
@@ -457,7 +459,7 @@ class Door_Block(blocks.Block):
                 return True
         return False
 
-def build_game(type=1) -> games.Game:
+def build_game() -> games.Game:
     # Locations
     cottage = things.Location("Cottage", "You are standing in a small cottage.")
     garden_path = things.Location(
@@ -677,10 +679,8 @@ def build_game(type=1) -> games.Game:
     # The Game
     characters = [troll, guard, princess, ghost]
     custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
-    if type == 1:
-        game = ActionCastle(cottage, player, characters, custom_actions, gametype=type)
-    else:
-        game = ActionCastleSurvivor(cottage, player, characters, custom_actions)
+    
+    game = ActionCastle(cottage, player, characters, custom_actions, "You are playing ACTION CASTLE, an adventure game.")
     return game
 
 def build_mini_game() -> games.Game:
@@ -742,7 +742,7 @@ def build_mini_game() -> games.Game:
     # The Game
     characters = [troll, mother]
     custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
-    game = ActionCastleSurvivor(cottage, player, characters, custom_actions)
+    game = ActionCastleSurvivor(cottage, player, characters, custom_actions, world_info="You are in a rural town.")
     return game
 
 

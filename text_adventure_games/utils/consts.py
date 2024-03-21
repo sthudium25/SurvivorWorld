@@ -38,7 +38,7 @@ def get_openai_api_key(organization):
     for org in config_vars["organizations"]:
         if organization in org:
             api_key = org[organization].get("OPENAI_API_KEY", None)
-            print(f"{api_key[:5]}...")
+            # print(f"{api_key[:5]}...")
             return api_key
     
     # If no matches found for org

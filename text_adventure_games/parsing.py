@@ -182,7 +182,7 @@ class Parser:
             return actions.Go(self.game, command, character)
         elif intent == "take":
             return actions.Get(self.game, command, character)
-        self.fail(f"No action found for {command}")
+        self.fail(command, f"No action found for {command}", character)
         return None
 
     def parse_command(self, command: str, character: Character):
@@ -338,69 +338,6 @@ class GptParser(Parser):
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
         self.nlp = spacy.load('en_core_web_sm')
 
-    def gpt_pick_an_option(self, instructions, options, input_str):
-        """
-        CREDIT: Dr. Chris Callison-Burch (UPenn)
-        This function calls GPT to choose one option from a set of options.
-        Its arguments are:
-        * instructions - the system instructions
-        * options - a dictionary of option_descriptions -> option_names
-        * input_str - the user input which we are trying to match to one of the options
-
-        The function generates an enumerated list of option descriptions
-        that are shown to GPT. It then returns a number (which I match with a
-        regex, in case it generates more text than is necessary), and then
-        returns the option name.
-        """
-        options_list = list(options.keys())
-        choices_str = ""
-        # Create a numbered list of options
-        for i, option in enumerate(options_list):
-            choices_str += "{i}. {option}\n".format(i=i, option=option)
-
-        # Call the OpenAI API
-        response = self.client.chat.completions.create(
-            model=self.gpt_model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "{instructions}\n\n{choices_str}\nReturn just the number.".format(
-                        instructions=instructions, choices_str=choices_str
-                    ),
-                },
-                {"role": "user", "content": input_str},
-            ],
-            temperature=1,
-            max_tokens=256,
-            top_p=0,
-            frequency_penalty=0,
-            presence_penalty=0,
-        )
-        content = response.choices[0].message.content
-
-        if self.verbose:
-            v = "{instructions}\n\n{choices_str}\nReturn just the number.\n---\n> {input_str}"
-            print(
-                v.format(
-                    instructions=instructions,
-                    choices_str=choices_str,
-                    input_str=input_str,
-                )
-            )
-            print("---\nGPT's response was:", content)
-
-        # Use regular expressions to match a number returned by OpenAI and select that option.
-        pattern = r"\d+"
-        matches = re.findall(pattern, content)
-        if matches:
-            index = int(matches[0])
-            if index >= len(options_list):
-                return None
-            option = options_list[index]
-            return options[option]
-        else:
-            return None
-
     def gpt_describe(self, 
                      system_instructions, 
                      command_history
@@ -514,8 +451,7 @@ class GptParser(Parser):
                                    character.location, 
                                    success,
                                    importance, 
-                                   type, 
-                                   char.name)
+                                   type)
 
     def ok(self, command: str, description: str, thing: Thing) -> None:
         """
@@ -636,56 +572,70 @@ class GptParser2(GptParser):
         
         self.command_descriptions = command_descriptions
         return self
-
+    
     def determine_intent(self, command, character: Character):
-        # TODO: could make this a more succinct prompt for sake of token costs
         """
-        Given a user's command, this method returns the ACTION_NAME of
-        the intended action.  
+        Credit: Dr. Chris Callison-Burch (University of Pennsylvania)
+        Instead of the keyword based intent determination, we'll use GPT.
         """
-        lst = [str(idx) + ': ' + str(i) + '\n' for idx, i in enumerate(self.command_descriptions.keys())]
-        choices = ''.join(lst)
-        prompt_beg = "You are matching an input text to the most similar action phrase. If you are unsure of the correct input, the action is most likely \"go\".\n\
-Focus on matching the action to the verb in the command. Here are some examples of matching verbs:\n\
-\"grab\", \"take\", \"pick up\" ==> \"get\"\n\
-\"leave behind\", \"discard\", \"leave\" ==> \"drop\"\n\
-\"leave for\", \"head to\", \"head towards\" ==> \"go\"\n\
-\"strike\", \"fight\", \"hit\" ==> \"attack\"\n\
-\"inspect\", \"study\", \"look at\" ==> \"examine\"\n\
-\"gift\", \"hand over\", \"pass\" ==> \"give\"\
-\"consume\", \"taste\" ==> \"eat.\"\
-\"consume\", \"taste\", \"imbibe\", \"sip\" ==> \"drink\"\n\
-\"sniff\"  ==> \"smell\"\n\
-\"go fishing\" ==> \"catch fish\"\n\
-You must only return the single number whose corresponding text best matches the given command:\n"
-        prompt_end = "The best match is number: "
-        total_prompt = prompt_beg + choices + prompt_end
-        
-        response = self.client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {
-                    "role": "system",
-                    "content": total_prompt
-                },
-                {
-                    "role": "user",
-                    "content": command
-                },
-            ],
-            temperature=0,
-            max_tokens=10,
-            top_p=0,
-            frequency_penalty=0,
-            presence_penalty=0
+        instructions = "".join(
+            [
+                "You are the parser for a text adventure game. For a user input, say which ",
+                "of the commands it most closely matches. The commands are:",
+            ]
         )
 
-        idx = response.choices[0].message.content
+        return gpt_helpers.gpt_pick_an_option(instructions, self.command_descriptions, command)
 
-        # print(total_prompt)
-        print("Chosen Command:", list(self.command_descriptions.values())[int(idx)])
+#     def determine_intent(self, command, character: Character):
+#         # TODO: could make this a more succinct prompt for sake of token costs
+#         """
+#         Given a user's command, this method returns the ACTION_NAME of
+#         the intended action.  
+#         """
+#         lst = [str(idx) + ': ' + str(i) + '\n' for idx, i in enumerate(self.command_descriptions.keys())]
+#         choices = ''.join(lst)
+#         prompt_beg = "You are matching an input text to the most similar action phrase. If you are unsure of the correct input, the action is most likely \"go\".\n\
+# Focus on matching the action to the verb in the command. Here are some examples of matching verbs:\n\
+# \"grab\", \"take\", \"pick up\" ==> \"get\"\n\
+# \"leave behind\", \"discard\", \"leave\" ==> \"drop\"\n\
+# \"leave for\", \"head to\", \"head towards\" ==> \"go\"\n\
+# \"strike\", \"fight\", \"hit\" ==> \"attack\"\n\
+# \"inspect\", \"study\", \"look at\" ==> \"examine\"\n\
+# \"gift\", \"hand over\", \"pass\" ==> \"give\"\
+# \"consume\", \"taste\" ==> \"eat.\"\
+# \"consume\", \"taste\", \"imbibe\", \"sip\" ==> \"drink\"\n\
+# \"sniff\"  ==> \"smell\"\n\
+# \"go fishing\" ==> \"catch fish\"\n\
+# You must only return the single number whose corresponding text best matches the given command:\n"
+#         prompt_end = "The best match is number: "
+#         total_prompt = prompt_beg + choices + prompt_end
         
-        return list(self.command_descriptions.values())[int(idx)]
+#         response = self.client.chat.completions.create(
+#             model="gpt-4",
+#             messages=[
+#                 {
+#                     "role": "system",
+#                     "content": total_prompt
+#                 },
+#                 {
+#                     "role": "user",
+#                     "content": command
+#                 },
+#             ],
+#             temperature=0,
+#             max_tokens=10,
+#             top_p=0,
+#             frequency_penalty=0,
+#             presence_penalty=0
+#         )
+
+#         idx = response.choices[0].message.content
+
+#         # print(total_prompt)
+#         print("Chosen Command:", list(self.command_descriptions.values())[int(idx)])
+        
+#         return list(self.command_descriptions.values())[int(idx)]
 
 
 class GptParser3(GptParser2):

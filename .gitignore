@@ -169,3 +169,7 @@ cython_debug/
 # config files
 config.*
 .config.*
+
+# testing notebooks:
+test/*.ipynb
+

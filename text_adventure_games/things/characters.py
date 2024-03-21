@@ -6,6 +6,7 @@ from ..gpt.gpt_helpers import gpt_get_action_importance
 from ..utils.general import (parse_location_description, 
                              find_difference_in_dict_lists)
 from ..agent.memory_stream import MemoryStream, MemoryType
+from ..agent.agent_cognition import act
 
 
 class Character(Thing):
@@ -112,8 +113,9 @@ class GenerativeAgent(Character):
         # self.persona = persona
 
         # Initialize Agent's memory
-        self.memory = MemoryStream(self.id)
+        self.memory = MemoryStream(self.id, name, description)
         self.last_location_observations = None
+        self.goals = ""
 
         # Custom Kani class here? which could store this character's bio as "always_included"
         # Route from this Kani to Reflect, Act, Perceive Kanis?
@@ -133,17 +135,18 @@ class GenerativeAgent(Character):
     def engage(self, game, round, tick, 
                # vote
                ):
+        """_summary_
+
+        Args:
+            game (games.Game): The current game instance
+            round (int): the current round or episode
+            tick (_type_): the current time tick within the round
+
+        Returns:
+            str: an action
+        """
         self.percieve_location(game)
-        print(f"{self.name} has: {self.memory.num_observations} memories")
-                
-        # if vote:
-        #     # At end of round: agent votes and reflects
-        #     self.agent_ai.vote()
-        #     self.agent_ai.reflect()
-        # elif tick == 0:
-        #     # At start of round: agent plans
-        #     self.agent_ai.plan()
-        return input("\n>")
+        return act.act(game, self)
         # self.agent_ai.full_round("Select an action to take.")
         # need to access the game history if this player is in the same as the last one
         # need to describe a new setting if this player is in a different location
@@ -177,8 +180,8 @@ class GenerativeAgent(Character):
         self.last_location_observations = location_observations.copy()
 
         # Create new observations from the differences
-        print(f"{self.name} observes:")
         for observations in diffs_perceived.values():
+            print(f"{self.name} sees: {observations}")
             for statement in observations:
                 action_statement = game.parser.create_action_statement(command="describe",
                                                                        description=statement,
@@ -189,15 +192,13 @@ class GenerativeAgent(Character):
                                                              game.parser.model, 
                                                              max_tokens=10)
                 keywords = game.parser.extract_keywords(action_statement)
-                print(action_statement)
 
                 self.memory.add_memory(description=action_statement,
                                        keywords=keywords,
                                        location=self.location,
                                        success_status=True,
                                        memory_importance=importance_score,
-                                       memory_type=MemoryType.ACTION,
-                                       agent_name=self.name)
+                                       memory_type=MemoryType.ACTION)
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):
@@ -214,24 +215,15 @@ class GenerativeAgent(Character):
         """
         chars_in_view = []
         for char in game.characters.values():
-            print(f"{char.name} loc id: ", char.location.id)
             if char.location.id == self.location.id:
                 chars_in_view.append(char)
 
-        # DEBUG: 
-        if len(chars_in_view) > 0:
-            print("Characters in view of ", self.name)
-            for c in chars_in_view:
-                print(c.name)
         return chars_in_view
-
-    # def get_memories(self):
-    #     return [m['content'] for m in self.memory]
 
     # def reflect(self):
     #     # Look back at observations from this round
     #     pass
 
-    # def act(self):
-    #     # Intent determination here?
-    #     pass
+    def act(self):
+        # Intent determination here?
+        pass
