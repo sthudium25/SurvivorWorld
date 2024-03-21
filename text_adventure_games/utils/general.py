@@ -139,10 +139,18 @@ def find_difference_in_dict_lists(dict1, dict2):
                 # value1 = dict1[key]
                 if any([description2 == desc1 for desc1 in dict1[key]]):
                     continue
-                    # If the value was not matched by anything in dict1[key]
+                # If the value was not matched by anything in dict1[key]
                 else:
-                    diff[key] = description2
+                    diff[key] = [description2]
             else:
                 # If the key doesn't exist in the first dictionary, add it to the difference
-                diff[key] = value2
+                diff[key] = [value2]
     return diff
+
+def enumerate_dict_options(options):
+    options_list = list(options.keys())
+    choices_str = ""
+    # Create a numbered list of options
+    for i, option in enumerate(options_list):
+        choices_str += "{i}. {option}\n".format(i=i, option=option)
+    return choices_str, options_list
