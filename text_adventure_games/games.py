@@ -24,9 +24,13 @@ class Game:
         player: Character,
         characters=None,
         custom_actions=None,
+        world_info=None,
     ):
         self.start_at = start_at
         self.player = player
+
+        # General world information that characters can have access to
+        self.world_info = world_info
 
         # Print the special commands associated with items in the game (helpful
         # for debugging and for novice players).
@@ -194,6 +198,7 @@ class Game:
                 if character_name == self.player.name:
                     continue
                 character = self.player.location.characters[character_name]
+                # TODO: may want to change this to just the character name for ease of parsing later
                 description += character.description + ", "
         return description
 
@@ -443,8 +448,8 @@ class Game:
 
 # Override methods or implement a new class?
 class SurvivorGame(Game):
-    def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, max_ticks=5):
-        super().__init__(start_at, player, characters, custom_actions)
+    def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, world_info=None, max_ticks=5):
+        super().__init__(start_at, player, characters, custom_actions, world_info)
         self.max_ticks_per_round = max_ticks
         self.original_player_id = self.player.id
     
