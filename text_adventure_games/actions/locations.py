@@ -54,7 +54,7 @@ class Go(base.Action):
 
         if not self.location.get_connection(self.direction):
             d = "{location_name} does not have an exit '{direction}'"
-            description = d.format(
+            message = d.format(
                 location_name=self.location.name.capitalize(), direction=self.direction
             )
             # self.parser.fail(message)
@@ -70,7 +70,7 @@ class Go(base.Action):
                     direction=self.direction,
                 )
             # self.parser.fail(message)
-            self.parser.fail(self.command, message, self.character)
+            self.parser.fail(self.command, description, self.character)
             return False
 
         return True
