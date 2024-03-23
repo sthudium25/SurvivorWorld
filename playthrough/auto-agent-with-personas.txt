@@ -1,0 +1,136 @@
+ROUND: 0.0
+Character: Elena Blackwood (id: 7)
+Elena Blackwood sees: ['Elena Blackwood is at A small cottage.']
+Elena Blackwood sees: ['From Cottage Elena Blackwood could go Out to Garden Path']
+Elena Blackwood sees: ['No items here']
+Elena Blackwood sees: ['Elena Blackwood sees characters A 42 year old Stay-at-home mom named Elena Ortiz']
+Gathered ids: [0, 1, 2, 3]
+Character observations count: 4
+Character num_observations counter: 4
+Max node id is: 3; min is: 0
+passing 4 relevant memories to Elena Blackwood
+Elena Blackwood chose to take action: Go to the garden path.
+Found connections:  {0: ('out', 'Garden Path')}
+GPTParse selected direction: 0
+passing Elena Blackwood's action to Elena Blackwood
+passing Elena Blackwood's action to Elena Ortiz
+Elena Blackwood steps onto the garden path, her boots crunching on the gravel
+underfoot. The path is lined with vibrant flowers, their colors a riotous
+symphony of nature's palette. The scent of blooming roses and lilacs fills the
+air, sweet and intoxicating. To her right, a quaint cottage stands, its white-
+washed walls and thatched roof picture-perfect. A warm light spills from its
+windows, inviting and cozy. To her south, the path winds down to a serene
+fishing pond, its surface a mirror reflecting the azure sky.
+
+Character: Grugg (id: 5)
+Grugg sees: ['Grugg is at The edge of a small fishing pond.']
+Grugg sees: ['From Fishing Pond Grugg could go North to Garden Path']
+Grugg sees: ['Grugg sees a fishing pole(hint )']
+Grugg sees: ['No characters here']
+Gathered ids: [0, 1, 2]
+Character observations count: 4
+Character num_observations counter: 4
+Max node id is: 2; min is: 0
+passing 3 relevant memories to Grugg
+Grugg chose to take action: Pick up the fishing pole.
+GPTParse selected item: 0
+passing Grugg's action to Grugg
+Grugg's large, calloused hands close around the handle of the fishing pole,
+lying discarded by the side of the pond. The pole is a simple thing, made of
+sturdy oak with a line and hook attached. He hefts it, feeling the familiar
+weight. Now armed with the fishing pole, he looks towards the tranquil waters of
+the pond, ready for a quiet moment of fishing.
+
+Character: Elena Ortiz (id: 6)
+Elena Ortiz sees: ['Elena Ortiz is at A small cottage.']
+Elena Ortiz sees: ['From Cottage Elena Ortiz could go Out to Garden Path']
+Elena Ortiz sees: ['No items here']
+Elena Ortiz sees: ['No characters here']
+Gathered ids: [0, 1, 2]
+Character observations count: 5
+Character num_observations counter: 5
+Max node id is: 2; min is: 0
+passing 3 relevant memories to Elena Ortiz
+Elena Ortiz chose to take action: Head south to the fishing pond.
+Found connections:  {0: ('out', 'Garden Path')}
+GPTParse selected direction: -999
+direction id "-999" not in location connections: {0: ('out', 'Garden Path')}
+passing Elena Ortiz's action to Elena Ortiz
+Elena Ortiz, it seems there's been a misunderstanding. Your command to head
+south to the fishing pond failed because you're currently at the cottage, which
+doesn't have a southern exit. You need to return to the garden path first before
+you can head south. Try using the command 'go back to garden path' first, then
+'head south to fishing pond'.
+
+ROUND: 0.1
+Character: Elena Blackwood (id: 7)
+Elena Blackwood sees: ['Elena Blackwood is at A lush garden path. There is a cottage here.']
+Elena Blackwood sees: ['From Garden Path Elena Blackwood could go  South to Fishing Pond']
+Elena Blackwood sees: ['No characters here']
+Gathered ids: [0, 1, 3, 4, 5, 6]
+Character observations count: 8
+Character num_observations counter: 8
+Max node id is: 6; min is: 0
+passing 6 relevant memories to Elena Blackwood
+Elena Blackwood chose to take action: Go south to the fishing pond.
+Found connections:  {0: ('in', 'Cottage'), 1: ('south', 'Fishing Pond')}
+GPTParse selected direction: 1
+passing Elena Blackwood's action to Elena Blackwood
+Elena Blackwood steps onto the soft, grassy edge of the small fishing pond. The
+water is clear and calm, reflecting the sky above. The peaceful chirping of
+birds and the gentle rustle of leaves in the wind create a serene symphony. To
+the north, the path leads back to the vibrant garden.
+
+Nearby, a figure stands by the water's edge. It's Grugg, the Guardian of the
+Drawbridge. His age is unknown, but his weathered face and stoic demeanor speak
+of years spent in service. He's a formidable figure, his large hands gripping a
+fishing pole. His gaze is fixed on the pond, a picture of concentration and
+patience.
+
+Character: Grugg (id: 5)
+Grugg sees: ['No items here']
+Grugg sees: ['Grugg sees characters A 22 year old Aspiring writer named Elena Blackwood']
+Gathered ids: [2, 4, 6]
+Character observations count: 7
+Character num_observations counter: 7
+Max node id is: 6; min is: 2
+passing 3 relevant memories to Grugg
+Grugg chose to take action: Go fishing under the drawbridge.
+passing Grugg's action to Elena Blackwood
+passing Grugg's action to Grugg
+Grugg, it seems there's been a bit of a misunderstanding. Your command to catch
+a fish with your hands has failed. The fish in this pond are too quick and
+agile, darting away at the slightest disturbance. Instead, try using the fishing
+pole you picked up earlier. It will give you the reach and precision needed to
+catch a fish. Use the command 'use fishing pole' to try again.
+
+Character: Elena Ortiz (id: 6)
+Gathered ids: [0, 1, 2, 5]
+Character observations count: 6
+Character num_observations counter: 6
+Max node id is: 5; min is: 0
+passing 4 relevant memories to Elena Ortiz
+Elena Ortiz chose to take action: Head into the cottage.
+Found connections:  {0: ('out', 'Garden Path')}
+GPTParse selected direction: -999
+direction id "-999" not in location connections: {0: ('out', 'Garden Path')}
+passing Elena Ortiz's action to Elena Ortiz
+Elena Ortiz, it seems there's been a misunderstanding. Your command to head into
+the cottage failed because the cottage does not have an exit. It's a small, one-
+room building, perfect for taking shelter or resting, but it doesn't lead
+anywhere else. If you're looking to explore further, you'll need to return to
+the garden path and choose a different direction. Try using the command 'exit
+cottage' to leave the building and continue your adventure.
+
+ROUND: 0.2
+Character: Elena Blackwood (id: 7)
+Elena Blackwood sees: ['Elena Blackwood is at The edge of a small fishing pond.']
+Elena Blackwood sees: ['From Fishing Pond Elena Blackwood could go North to Garden Path']
+Elena Blackwood sees: ['Elena Blackwood sees a dead fish(hint eat fish, )']
+Elena Blackwood sees: ['Elena Blackwood sees characters A Unknown year old Guardian of the Drawbridge named Grugg']
+Gathered ids: [1, 3, 4, 6, 8, 9, 10, 11, 12, 13]
+Character observations count: 14
+Character num_observations counter: 14
+Max node id is: 13; min is: 1
+passing 10 relevant memories to Elena Blackwood
+Elena Blackwood chose to take action: Ask Grugg for help catching fish.
