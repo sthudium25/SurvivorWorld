@@ -11,7 +11,7 @@ import openai
 # relative imports
 from ..utils import general
 
-def get_new_character_from_gpt(description, model):
+def get_new_character_from_gpt(description, model: str = "gpt-3.5-turbo"):
 
     client = general.set_up_openai_client(org="Penn")
 
@@ -22,7 +22,7 @@ Example prompt: A college student from New Mexico
 Example Output:
 {
   "Name": "Emily Sanchez",
-  "Age": 20,
+  "Age": "20",
   "Likes": ["studying, "cinema"],
   "Dislikes": ["procrastination", "fast food"],
   "Occupation": "College Student",
@@ -46,9 +46,10 @@ Create a JSON structure from the output.
         max_tokens=200,
         top_p=1
     )
-    traits_json = general.extract_json_from_string(response.choices[0].message.content)
-    # TODO: check that at least "Name" is in the returned json.
-    return traits_json
+
+    facts_json, error_in_json = general.extract_json_from_string(response.choices[0].message.content)
+    print(f"Generated JSON: {facts_json}")
+    return facts_json, error_in_json
 
 def get_trait_continuum(low: str, high: str, mid: str = None, model='gpt-3.5-turbo'):
     # TODO: Might be able to just set this in the environment and
@@ -137,27 +138,35 @@ def get_target_adjective(low: str,
     return target_trait
 
 
-def summarize_agent_facts(facts, model='gpt-4'):
+def summarize_agent_facts(facts: str, model='gpt-4') -> str:
     """
     Get a short summary of factual information about an agent
 
     Args:
         facts (Dict): facts about the agent
     """
-    system_prompt = """You will get a dictionary of traits that tell you about a person. 
-    You should write a one sentence, information dense summary of the person.  
-
-    {
-    "Name": "John Mullen",
-    "Age": 35,
-    "Likes": ["sports", "video games", "dogs", "Stargazing"],
-    "Dislikes": ["disorganization", "rude people", "late appointments"],
-    "Occupation": "Architect",
-    "Home city": "Kansas City, Missouri"
+    dummy_facts = {
+        "Name": "Jacob Harrison",
+        "Age": 25,
+        "Likes": ["coffee brewing", "indie music", "baking", "dogs", "reading"],
+        "Dislikes": ["rude customers", "early mornings", "negativity", "instant coffee"],
+        "Occupation": "Barista",
+        "Home city": "Philadelphia, Pennsylvania"
     }
-
-    Being succinct is key; do not list the person's likes and dislikes.
-"""
+    system_prompt = "".join(
+        ["You will get a dictionary of traits that tell you about a person.",
+         "You should write a concise, two-sentence summary of the person and describe their core",
+         "characteristics without just listing the person's likes and dislikes.",
+         "The facts:\n",
+         f"{str(dummy_facts)}\n",
+         "are summarized as:\n",
+         "Jacob Harrison is a 25-year-old barista from Philadelphia who has a passion for",
+         "creating delicious coffee blends and treats. He finds solace in indie music and", 
+         "enjoys spending his free time baking and getting lost in the pages of a good book.",
+         "Jacob is a compassionate individual who values positivity and dislikes rude behavior or early mornings. ",
+         "His love for dogs adds a playful and nurturing aspect to his personality, ",
+         "creating a warm and inviting presence in both his professional and personal life."])
+    
     client = general.set_up_openai_client(org="Penn")
 
     response = client.chat.completions.create(
@@ -180,9 +189,3 @@ def summarize_agent_facts(facts, model='gpt-4'):
     summary = response.choices[0].message.content.lower()
     summary = re.sub("summary:?", "", summary)
     return summary
-
-
-def get_text_embedding(text, model="text-embedding-3-small"):
-    client = general.set_up_openai_client(org="Penn")
-    text_vector = client.embeddings.create(input=[text], model=model).data[0].embedding
-    return text_vector
