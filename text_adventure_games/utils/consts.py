@@ -8,15 +8,21 @@ Description: get/set any necessary API keys, constant values, etc.
 import json
 import os
 
-def get_root_dir():
-    root = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir))
+def get_root_dir(n=2):
+    if n == 2:
+        # for assets
+        root = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir))
+    if n == 3:
+        # for config file
+        root = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir))
+    # print(f"ROOT DIR: {root}")
     return root
 
 def get_config_file():
-    config_path = os.path.join(get_root_dir(), "config.json")
+    config_path = os.path.join(get_root_dir(n=3), "config.json")
     if not os.path.exists(config_path):
         print("visible config not found, trying invisible option")
-        config_path = os.path.join(get_root_dir(), ".config.json")
+        config_path = os.path.join(get_root_dir(n=3), ".config.json")
         if not os.path.exists(config_path):
             raise FileNotFoundError("No config file found. Store your OpenAI key in a variable \"OPENAI_API_KEY\".")
 
@@ -69,7 +75,7 @@ def get_helicone_base_path(organization="Helicone"):
     
 
 def get_assets_path():
-    asset_path = os.path.join(get_root_dir(), "assets")
+    asset_path = os.path.join(get_root_dir(n=2), "assets")
     return asset_path
 
 # TODO: set up any global variables

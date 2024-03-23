@@ -205,8 +205,8 @@ class Give(base.Action):
             if word in command:
                 parts = command.split(word, 1)
                 command_before_word = parts[0]
-            command_after_word = parts[1]
-            break
+                command_after_word = parts[1]
+                break
         # self.giver = self.parser.get_character(command_before_word)
         self.giver = character
         self.recipient = self.parser.get_character(command_after_word, character=None)
