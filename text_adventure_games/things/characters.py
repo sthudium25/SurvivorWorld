@@ -105,21 +105,16 @@ class Character(Thing):
 
 class GenerativeAgent(Character):
     
-    def __init__(self, name: str, description: str, persona: str):
-        super().__init__(name, description, persona)
-        # super().__init__(persona.facts["name"], persona.summary, persona="see subclass")
-        
-        # Set the Agent's persona:
-        # self.persona = persona
+    def __init__(self, persona):
+        super().__init__(persona.facts["Name"], persona.description, persona=persona.summary)
 
-        # Initialize Agent's memory
-        self.memory = MemoryStream(self.id, name, description)
-        self.last_location_observations = None
+        # Set the Agent's persona and initialize empty goals:
+        self.persona = persona
         self.goals = ""
 
-        # Custom Kani class here? which could store this character's bio as "always_included"
-        # Route from this Kani to Reflect, Act, Perceive Kanis?
-        # self.agent_ai = AgentKani(persona, name)  # I don't really want to store the persona in two places
+        # Initialize Agent's memory
+        self.memory = MemoryStream(self)
+        self.last_location_observations = None
 
     def get_character_summary(self):
         """
@@ -128,14 +123,15 @@ class GenerativeAgent(Character):
         Returns:
             str: a standard summary paragraph for this agent
         """
-        persona_summary = self.persona.get_personal_summary()
-        alliance_summary = self.get_alliance_summary()
-        return persona_summary + ' ' + alliance_summary
+        summary = self.persona.get_personal_summary()
+        summary += self.get_alliance_summary()
+        return summary
 
     def engage(self, game, round, tick, 
                # vote
                ):
-        """_summary_
+        """
+        wrapper method for all agent cognition: perceive, retrieve, act, reflect, set goals
 
         Args:
             game (games.Game): The current game instance
@@ -151,14 +147,10 @@ class GenerativeAgent(Character):
         # need to access the game history if this player is in the same as the last one
         # need to describe a new setting if this player is in a different location
  
+    # TODO: move perceive into an "agent_cognition" module
     def perceive(self, game):
         # Collect the latest information about the location
         location_description = game.describe()
-        # self.memory.append({"role": "user", "content": location_description})
-        # print(f"{self.name} has {len(self.memory)} memories.")
-        # It would be helpful to get lists of 
-        # * Item names, Character names, and the location
-        # These could be passed to Kani to help retrieve the relevant ObservationNodes
         return location_description
     
     def percieve_location(self, game):
@@ -183,6 +175,7 @@ class GenerativeAgent(Character):
         for observations in diffs_perceived.values():
             print(f"{self.name} sees: {observations}")
             for statement in observations:
+                # TODO: "create_action_statement" method is awkward as part of the Parser class
                 action_statement = game.parser.create_action_statement(command="describe",
                                                                        description=statement,
                                                                        character=self)
@@ -202,7 +195,7 @@ class GenerativeAgent(Character):
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):
-        # TODO: it would be nicer to have characters listed in the location object
+        # NOTE: it would be nicer to have characters listed in the location object
         # however this is more state to maintain.
         """
         Given a character, identifies the other characters in the game that are in the same location
