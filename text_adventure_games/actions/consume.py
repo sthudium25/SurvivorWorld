@@ -1,8 +1,7 @@
+# local imports
 from ..things.characters import Character
 from . import base
 from . import preconditions as P
-
-# from ..things import Character  # , Item
 
 
 class Eat(base.Action):

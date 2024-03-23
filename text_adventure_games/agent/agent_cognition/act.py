@@ -12,6 +12,7 @@ Description: defines how agents select an action given their perceptions and mem
 # 4. Ask GPT to pick an option 
 # 5. Parse and return
 
+# local imports
 from text_adventure_games.gpt.gpt_helpers import gpt_pick_an_option, limit_context_length
 from text_adventure_games.utils.general import set_up_openai_client, enumerate_dict_options
 from .retrieve import retrieve
