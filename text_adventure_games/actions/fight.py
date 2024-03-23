@@ -1,3 +1,4 @@
+# local imports
 from text_adventure_games.things.characters import Character
 from . import base
 from .things import Drop
