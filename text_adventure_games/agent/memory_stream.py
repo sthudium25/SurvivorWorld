@@ -5,19 +5,18 @@ File: agent/memory_structures/memory_stream.py
 Description: Defines Agent memory classes
 """
 from __future__ import annotations
+from typing import TYPE_CHECKING
 from enum import Enum
 from collections import defaultdict
-from dataclasses import dataclass, field    
+from dataclasses import dataclass    
 import re
-from typing import List, Literal, Optional, Union
-import openai
+from spacy import load as spacyload
 # from uuid import uuid4
 
 # Local imports
-from ..gpt import gpt_agent_setup as ga
-from ..utils.general import set_up_openai_client
-from spacy import load as spacyload
-
+from ..utils.general import set_up_openai_client, get_text_embedding
+if TYPE_CHECKING:
+    from ..things.characters import Character
 
 class MemoryType(Enum):
     ACTION = 1
@@ -52,7 +51,7 @@ class MemoryStream:
             cls._stopwords = nlp.Defaults.stop_words
         return cls._stopwords
 
-    def __init__(self, agent_id, agent_name, agent_description):
+    def __init__(self, character: "Character"):
         """
         Defines Agent's memory via a dict of ObservationNodes. These
         are split by the round in which they occured.
@@ -61,29 +60,35 @@ class MemoryStream:
             agent_id (int): thing.Thing.id for this agent
         """
         # keep track of this agent's identifying info:
-        self.agent_id = agent_id  # would be good to store who this belongs to in case we need to reload a game
-        self.agent_name = agent_name
-        self.agent_description = agent_description
+        self.agent_id = character.id  # would be good to store who this belongs to in case we need to reload a game
+        self.agent_name = character.name
+        self.agent_description = character.description
         
         self.num_observations = 0
         self.observations = []
         
         self.memory_embeddings = {}  # keys are the index of the observation
-        self.character_nodes = defaultdict(list)  # Nodes that appear to be related to a character
-        self.object_nodes = defaultdict(list)
-        self.misc_keyword_nodes = defaultdict(list)
+        self.keyword_nodes = defaultdict(lambda: defaultdict(list))
+        # self.character_nodes = defaultdict(list)  # Nodes that appear to be related to a character
+        # self.object_nodes = defaultdict(list)
+        # self.misc_keyword_nodes = defaultdict(list)
+
+        # A cache of the current querying statements about this agent
+        # Cached embeddings of: Persona summary, goals, personal relationships
+        # These will be used in the memory retrieval process
+        self.query_embeddings = self.set_query_embeddings(character)
 
         # Attributes defining the memory features of the agent
-        self.lookback = 10  # The number of observations immediately available without retrieval
+        self.lookback = 5  # The number of observations immediately available without retrieval; also used to gather keys for retrieval
         self.gamma = 0.95  # The decay factor for memory importance
         self.reflection_capacity = 2  # The number of reflections to make after each round
         self.reflection_distance = 200  # how many observations the agent can look back and reflect on.
         self.reflection_rounds = 2  # The number of rounds the agent can look back
         
         # Attributes for calculating relevancy scores
-        self.sentiment_alpha = 1
+        self.importance_alpha = 1
         self.recency_alpha = 1
-        self.similarity_alpha = 1
+        self.relevance_alpha = 1
 
         # Set up a client for this instance
         self.client = set_up_openai_client(org="Penn")
@@ -116,7 +121,8 @@ class MemoryStream:
             raise ValueError(f"Memories must be created with valid type; one of {valid_types}")
             
         # Get the next node id
-        node_id = self.num_observations + 1
+        # This works out to be the number of observations b/c of zero-indexing
+        node_id = self.num_observations
         
         # Modify the description w.r.t this character's name
         description = self.replace_character(description, 
@@ -141,15 +147,20 @@ class MemoryStream:
         # Cache the node under its keywords
         # TODO: weigh the pros/cons of adding these at start vs. end of the kwd list
         for category, kws_list in keywords.items():
-            if category == "characters":
-                for kw in kws_list:
-                    self.character_nodes[kw].append(node_id)
-            elif category == "object":
-                for kw in kws_list:
-                    self.object_nodes[kw].append(node_id)
-            else:
-                for kw in kws_list:
-                    self.misc_keyword_nodes[kw].append(node_id)
+            for word in kws_list:
+                if word in self.keyword_nodes[category]:
+                    self.keyword_nodes[category][word].append(node_id)
+                else:
+                    self.keyword_nodes[category].update({word: [node_id]})
+            # if category == "characters":
+            #     for kw in kws_list:
+            #         self.character_nodes[kw].append(node_id)
+            # elif category == "object":
+            #     for kw in kws_list:
+            #         self.object_nodes[kw].append(node_id)
+            # else:
+            #     for kw in kws_list:
+            #         self.misc_keyword_nodes[kw].append(node_id)
         
         # increment the internal count of nodes
         self.num_observations += 1
@@ -183,7 +194,7 @@ class MemoryStream:
         Returns:
             ndarray: an embedding vector
         """
-        embedded_vector = ga.get_text_embedding(text)
+        embedded_vector = get_text_embedding(text)
         return embedded_vector
     
     def get_observations_by_subject(self, subject):
@@ -199,9 +210,17 @@ class MemoryStream:
             summary += "\n{idx}. {desc}".format(idx=i, desc=node.node_description)
         return summary
 
-    def get_embedding(self, round, tick):
-        embed_key = f"{round}_{tick}"
-        return self.obs_embeddings[embed_key]
+    def get_embedding(self, index):
+        """
+        Get the index of a given node
+
+        Args:
+            index (int): index of the node
+
+        Returns:
+            np.array: an embedding of the node description
+        """
+        return self.memory_embeddings[index]
     
     def replace_character(self, text, character_name, agent_descriptor):
         # Escape any special regex characters in the descriptor and character_name
@@ -213,6 +232,27 @@ class MemoryStream:
         replacement = 'you'
         return re.sub(pattern, replacement, text, flags=re.IGNORECASE)
     
+    def set_query_embeddings(self, character):
+        cached_queries = {}
+        goal_summary = character.goals  # .get_goal_summary()???
+        # relationship_summary = self.get_relationships_summary()
+        persona_embed = get_text_embedding(character.persona.summary)
+        if persona_embed is not None:
+            cached_queries["persona"] = persona_embed
+        goals_embed = get_text_embedding(goal_summary)
+        if goals_embed is not None:
+            cached_queries["goals"] = goals_embed
+        # relationships_embed = get_text_embedding(relationship_summary)
+        # if relationships_embed is not None:
+        #     cached_queries["relationships"] = get_text_embedding(relationship_summary)
+        return cached_queries
+
+    def update_query_embeddings(self, character):
+        raise NotImplementedError
+    
+    def get_relationships_summary(self):
+        raise NotImplementedError
+
     # def add_dialogue(self,
     #                  round_tick: int,
     #                  game_round: int,
