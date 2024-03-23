@@ -5,16 +5,18 @@ File: utils/general.py
 Description: helper methods used throughout the project
 """
 
+from collections import defaultdict
 import os
 import re
 import json
 import string
+import numpy as np
 # from importlib.resources import files, as_file
-from typing import Dict, Literal
+from typing import Dict
 from openai import OpenAI
 from kani.engines.openai import OpenAIEngine
 
-# Relative imports
+# local imports
 from . import consts
 
 
@@ -61,44 +63,41 @@ def extract_enumerated_list(response):
 
 
 def extract_json_from_string(s: str):
+    # print(f"Pre-JSON extraction string from GPT: {s}")
     # Regular expression to match a JSON structure
     # It looks for an opening curly brace, followed by any character (non-greedily),
     # and then a closing curly brace. The DOTALL flag allows the dot to match newlines.
     pattern = re.compile(r'\{.*?\}', re.DOTALL)
-    match = pattern.search(s)
+    match = pattern.findall(s)
     if match:
         # Extract the JSON string
-        json_str = match.group(0)
-        try:
-            # Attempt to parse the JSON string to ensure it's valid
-            json_obj = json.loads(json_str)
-            # Return the JSON object if parsing is successful
-            return json_obj
-        except json.JSONDecodeError:
-            # Return None or raise an error if the JSON is invalid
-            return None
+        json_str = match[0]
+        json_str, flag = try_fix_json(json_str)
+        return json_str, flag
     return None
 
+def try_fix_json(json_str):
+    try:
+        return json.loads(json_str), False
+    except json.JSONDecodeError as e:
+        err_msg = str(e)
+        if "Expecting value" in err_msg:
+            before_error = json_str[:e.pos]
+            after_error = json_str[e.pos:]
 
-def get_archetype_profiles(target: str) -> Dict:
-    asset_path = consts.get_assets_path()
-    asset_path = os.path.join(asset_path, "persona_profiles.json")
-    with open(asset_path, 'r') as f:
-        profiles = json.load(f)
+            # Attempt to insert a missing quotation mark
+            fixed_json_str = before_error + '"' + after_error
 
-    for atype in profiles['archetypes']:
-        if target == atype['name']:
-            return atype
-    return None
+            # Recursively try to fix
+            return try_fix_json(fixed_json_str)
+    return json_str, True
 
-
-def get_character_facts():
-    asset_path = consts.get_assets_path()
-    asset_path = os.path.join(asset_path, "character_traits.json")
-    with open(asset_path, 'r') as f:
-        characters = json.load(f)
-    return characters
-
+def parse_json_garbage(s):
+    s = s[next(idx for idx, c in enumerate(s) if c in "{["):]
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError as e:
+        return json.loads(s[:e.pos])
 
 def parse_location_description(text):
     by_description_type = re.split('\n+', text)
@@ -154,3 +153,28 @@ def enumerate_dict_options(options):
     for i, option in enumerate(options_list):
         choices_str += "{i}. {option}\n".format(i=i, option=option)
     return choices_str, options_list
+
+def combine_dicts_helper(existing, new):
+    for k, v in new.items():
+        if k in existing:
+            existing[k].extend(v)
+        else:
+            existing[k] = v
+    return existing
+
+def get_text_embedding(text, model="text-embedding-3-small", *args):
+    """
+    Calls the OpenAI embeddings api
+
+    Args:
+        text (str): text to embed
+        model (str, optional): the embedding model to use. Defaults to "text-embedding-3-small".
+
+    Returns:
+        np.array (1, 1536): array of embeddings 
+    """
+    if not text:
+        return None
+    client = set_up_openai_client(org="Penn")
+    text_vector = client.embeddings.create(input=[text], model=model, *args).data[0].embedding
+    return np.array(text_vector)
