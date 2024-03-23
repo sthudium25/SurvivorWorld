@@ -37,8 +37,47 @@ We provide a sandbox environment in which all gameplay experiments were conducte
 
 ## Installation
 
-* OpenAI requirements
-* config file set up
+### Create virtual environment: 
+
+It is highly recommended that you create a virtual environment in which to install the package dependencies.
+The commands below create a new directory to store the package, make a new environment, and activate it.
+
+```bash
+    mkdir <my_folder>
+    cd <my_folder>
+    python3 -m venv "venv-name"  # optionally hide the environment by naming it ".venv-name"
+    source venv-name/bin/activate
+```
+
+### Clone repo and install package [CHANGE git link if necessary]
+
+Next, clone the repo, assuming you're in `<my_folder>`. The install line puts the package in "editable" mode, but you can omit that if you don't intend to develop the code further.
+
+```bash
+    git clone https://github.com/sthudium25/SurvivorWorld.git
+    cd SurvivorWorld
+    pip install -e .
+```
+
+### Set up configuration file
+
+This package is heavily reliant upon calls to the OpenAI API, so you must add your key or keys to your configuration file. Within the project root, create a JSON file with the following structure; any API keys should be added to the "organizations" list with the organization name as a key and at minimum a sub-dict of {"OPENAI_API_KEY": `<your_key>`}. Optionally, you can add a custom base url if your organization requires it. 
+
+Save this file as `config.json` or `.config.json` at the package root.
+
+```json
+{
+    "organizations": [
+        {"Penn":
+            {"OPENAI_API_KEY": "sk-..."}
+        },
+        {"Helicone":
+            {"OPENAI_API_KEY": "sk-...",
+             "HELICONE_BASE_URL": "https://..."}
+        }
+    ]
+}
+```
 
 -------------
 
