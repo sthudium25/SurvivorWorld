@@ -12,27 +12,39 @@ Description: defines how agents select an action given their perceptions and mem
 # 4. Ask GPT to pick an option 
 # 5. Parse and return
 
-from text_adventure_games.gpt.gpt_helpers import gpt_pick_an_option
+from text_adventure_games.gpt.gpt_helpers import gpt_pick_an_option, limit_context_length
 from text_adventure_games.utils.general import set_up_openai_client, enumerate_dict_options
+from .retrieve import retrieve
+
+GPT4_MAX_TOKENS = 8192
+ACTION_MAX_OUTPUT = 100
 
 def act(game, character):
     available_actions = game.parser.actions
 
     system_prompt = "".join([
-        f"You are {character.name} and you are {character.persona}. ", 
+        # TODO: replace first line of prompt with more descriptive character summary
+        f"You are {character.persona.summary}. ", 
         "Given the following context of your surroundings, past memories, ",
         "and relationships with other characters, select a next action that furthers your ",
-        "completion of your goals. "
+        "strategic position in the game. "
     ])
 
     user_messages = ""
     user_messages += f"WORLD INFO: {game.world_info}"
     user_messages += f"GOALS: {character.goals}. "
-    # TODO: For now we'll limit this to the default latest summary: last 10 memories
-    user_messages += f"MEMORIES: {character.memory.get_most_recent_summary()}"
+    # NOTE: For now we'll limit this to the default latest summary: last 10 memories
+    # TODO: replace with retrieval module
+    user_messages += "MEMORIES in ORDER from LEAST to MOST RELEVANT: " 
+    context_list = retrieve(game, character, query=None, n=-1)
 
-    # print(f"{character.name} info:")
-    # print(user_messages)
+    # limit the context length here on the retrieved memories
+    context_list = limit_context_length(context_list, 
+                                        max_tokens=GPT4_MAX_TOKENS-ACTION_MAX_OUTPUT, 
+                                        tokenizer=game.parser.tokenizer)
+    # Then add these to the user message
+    print(f"passing {len(context_list)} relevant memories to {character.name}")
+    user_messages += "".join([f"{m}\n" for m in context_list])
 
     action_to_take = generate_action(system_prompt, available_actions, user_messages)
     print(f"{character.name} chose to take action: {action_to_take}")

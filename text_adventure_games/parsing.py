@@ -23,7 +23,7 @@ from text_adventure_games.things.base import Thing
 from .things import Character, Item, Location
 from . import actions, blocks
 from .utils.general import (set_up_openai_client, 
-                            # set_up_kani_engine
+                            # set_up_kani_engine,
                             )
 # from .gpt.parser_kani import DescriptorKani
 from .gpt import gpt_helpers 
@@ -330,11 +330,10 @@ class GptParser(Parser):
     def __init__(self, game, echo_commands=True, verbose=False):
         super().__init__(game, echo_commands=echo_commands)
         self.verbose = verbose
-        self.client = set_up_openai_client()
+        self.client = set_up_openai_client(org="Helicone")
         self.gpt_model = "gpt-4"  # REMEMBER TO SWITCH BACK TO GPT-4
         self.max_output_tokens = 256  # You get to pick this
         self.max_tokens = 8192 - self.max_output_tokens  # GPT-4's max total tokens
-        # self.max_tokens = 4096
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
         self.nlp = spacy.load('en_core_web_sm')
 
@@ -359,8 +358,8 @@ class GptParser(Parser):
                 "role": "system",
                 "content": system_instructions
             }]
-            # context = self.limit_context_length(command_history, self.max_tokens)
-            context = self.limit_context_length(command_history, self.max_tokens)
+            # Here, the command history is being stored as a Chat Dict {"role": ..., "content":}
+            context = gpt_helpers.limit_context_length(command_history, self.max_tokens)
             messages.extend(context)
             if self.verbose:
                 print(json.dumps(messages, indent=2))
@@ -390,25 +389,26 @@ class GptParser(Parser):
     #     response = narrator_ai.chat_round_str(f"Describe the current setting for {character.name}")
     #     return response
         
-    def limit_context_length(self, command_history, max_tokens, max_turns=1000):
-        """
-        This method limits the length of the command_history 
-        to be less than the max_tokens and less than max_turns. 
-        The least recent messages are disregarded from the context. 
-        This function is non-destructive and doesn't modify command_history.
-        """
-        total_tokens = 0
-        limited_history = []
+    # NOTE: Moved to gpt_helpers
+    # def limit_context_length(self, command_history, max_tokens, max_turns=1000):
+    #     """
+    #     This method limits the length of the command_history 
+    #     to be less than the max_tokens and less than max_turns. 
+    #     The least recent messages are disregarded from the context. 
+    #     This function is non-destructive and doesn't modify command_history.
+    #     """
+    #     total_tokens = 0
+    #     limited_history = []
 
-        for message in reversed(command_history):
-            msg_tokens = len(self.tokenizer.encode(message["content"]))
-            if total_tokens + msg_tokens > max_tokens:
-                break
-            total_tokens += msg_tokens
-            limited_history.append(message)
-            if len(limited_history) >= max_turns:
-                break
-        return list(reversed(limited_history)) 
+    #     for message in reversed(command_history):
+    #         msg_tokens = len(self.tokenizer.encode(message["content"]))
+    #         if total_tokens + msg_tokens > max_tokens:
+    #             break
+    #         total_tokens += msg_tokens
+    #         limited_history.append(message)
+    #         if len(limited_history) >= max_turns:
+    #             break
+    #     return list(reversed(limited_history)) 
     
     def create_action_statement(self, command: str, description: str, character: Character):
         outcome = f"ACTOR: {character.name}; ACTION: {command}; OUTCOME: {description}"
@@ -416,6 +416,8 @@ class GptParser(Parser):
         return summary
     
     def extract_keywords(self, text):
+        if not text:
+            return None
         doc = self.nlp(text)
         keys = defaultdict(list)
         for w in doc:
@@ -586,56 +588,6 @@ class GptParser2(GptParser):
         )
 
         return gpt_helpers.gpt_pick_an_option(instructions, self.command_descriptions, command)
-
-#     def determine_intent(self, command, character: Character):
-#         # TODO: could make this a more succinct prompt for sake of token costs
-#         """
-#         Given a user's command, this method returns the ACTION_NAME of
-#         the intended action.  
-#         """
-#         lst = [str(idx) + ': ' + str(i) + '\n' for idx, i in enumerate(self.command_descriptions.keys())]
-#         choices = ''.join(lst)
-#         prompt_beg = "You are matching an input text to the most similar action phrase. If you are unsure of the correct input, the action is most likely \"go\".\n\
-# Focus on matching the action to the verb in the command. Here are some examples of matching verbs:\n\
-# \"grab\", \"take\", \"pick up\" ==> \"get\"\n\
-# \"leave behind\", \"discard\", \"leave\" ==> \"drop\"\n\
-# \"leave for\", \"head to\", \"head towards\" ==> \"go\"\n\
-# \"strike\", \"fight\", \"hit\" ==> \"attack\"\n\
-# \"inspect\", \"study\", \"look at\" ==> \"examine\"\n\
-# \"gift\", \"hand over\", \"pass\" ==> \"give\"\
-# \"consume\", \"taste\" ==> \"eat.\"\
-# \"consume\", \"taste\", \"imbibe\", \"sip\" ==> \"drink\"\n\
-# \"sniff\"  ==> \"smell\"\n\
-# \"go fishing\" ==> \"catch fish\"\n\
-# You must only return the single number whose corresponding text best matches the given command:\n"
-#         prompt_end = "The best match is number: "
-#         total_prompt = prompt_beg + choices + prompt_end
-        
-#         response = self.client.chat.completions.create(
-#             model="gpt-4",
-#             messages=[
-#                 {
-#                     "role": "system",
-#                     "content": total_prompt
-#                 },
-#                 {
-#                     "role": "user",
-#                     "content": command
-#                 },
-#             ],
-#             temperature=0,
-#             max_tokens=10,
-#             top_p=0,
-#             frequency_penalty=0,
-#             presence_penalty=0
-#         )
-
-#         idx = response.choices[0].message.content
-
-#         # print(total_prompt)
-#         print("Chosen Command:", list(self.command_descriptions.values())[int(idx)])
-        
-#         return list(self.command_descriptions.values())[int(idx)]
 
 
 class GptParser3(GptParser2):

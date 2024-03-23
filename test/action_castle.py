@@ -1,5 +1,6 @@
 from SurvivorWorld.text_adventure_games import games, things, actions, blocks
 from SurvivorWorld.text_adventure_games.things.characters import GenerativeAgent
+from SurvivorWorld.text_adventure_games.utils.build_agent import build_agent
 
 class ActionCastle(games.Game):
     def __init__(
@@ -704,20 +705,22 @@ def build_mini_game() -> games.Game:
     fishing_pond.add_item(fishing_pole)
 
     # Troll
+    troll_persona = build_agent(agent_description="A mean hungry troll by a drawbridge of a castle",
+                                facts_new=True,
+                                archetype="Hubris")
     troll = GenerativeAgent(
-        name="troll",
-        description="A mean troll",
-        persona="I am hungry. The guard promised to feed me if I guard the drawbridge and keep people out of the castle.",
+        troll_persona
     )
     troll.set_property("is_hungry", True)
     troll.set_property("character_type", "troll")
     fishing_pond.add_character(troll)
 
     # Mother
+    mother_persona = build_agent(agent_description="A homely mother who with a powerful spirit",
+                                 facts_new=True,
+                                 archetype="Mother")
     mother = GenerativeAgent(
-        name="mother",
-        description="A motherly figure",
-        persona="I am a mother and I will do anything to protect my child",
+        mother_persona
     )
     mother.set_property("emotional_state", "happy")
     mother.set_property("is_married", True)
@@ -725,10 +728,11 @@ def build_mini_game() -> games.Game:
     cottage.add_character(mother)
 
     # Player
+    player_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
+                                 facts_new=True,
+                                 archetype="Villain")
     player = GenerativeAgent(
-        name="The player",
-        description="You are a simple peasant destined for greatness.",
-        persona="I am on an adventure.",
+        player_persona
     )
     player.set_property("character_type", "human")
 
