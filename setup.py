@@ -9,7 +9,7 @@ base_game_install_reqs = ['jupyter', 'graphviz']
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open(os.path.join(__file__, "requirements.txt"), 'r') as reqs:
+with open(os.path.join(os.path.dirname(__file__), "requirements.txt"), 'r') as reqs:
     install_packages = [req for req in reqs.read().split('\n') if not re.match(r"#\s?", req) and req]
     install_packages.extend(base_game_install_reqs)
 
