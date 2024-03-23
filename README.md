@@ -43,10 +43,10 @@ It is highly recommended that you create a virtual environment in which to insta
 The commands below create a new directory to store the package, make a new environment, and activate it.
 
 ```bash
-    mkdir <my_folder>
-    cd <my_folder>
-    python3 -m venv "venv-name"  # optionally hide the environment by naming it ".venv-name"
-    source venv-name/bin/activate
+mkdir <my_folder>
+cd <my_folder>
+python3 -m venv "venv-name"  # optionally hide the environment by naming it ".venv-name"
+source venv-name/bin/activate
 ```
 
 ### Clone repo and install package [CHANGE git link if necessary]
@@ -54,9 +54,9 @@ The commands below create a new directory to store the package, make a new envir
 Next, clone the repo, assuming you're in `<my_folder>`. The install line puts the package in "editable" mode, but you can omit that if you don't intend to develop the code further.
 
 ```bash
-    git clone https://github.com/sthudium25/SurvivorWorld.git
-    cd SurvivorWorld
-    pip install -e .
+git clone https://github.com/sthudium25/SurvivorWorld.git
+cd SurvivorWorld
+pip install -e .
 ```
 
 ### Set up configuration file
