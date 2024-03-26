@@ -143,9 +143,6 @@ class GenerativeAgent(Character):
         """
         self.percieve_location(game)
         return act.act(game, self)
-        # self.agent_ai.full_round("Select an action to take.")
-        # need to access the game history if this player is in the same as the last one
-        # need to describe a new setting if this player is in a different location
  
     # TODO: move perceive into an "agent_cognition" module
     def perceive(self, game):

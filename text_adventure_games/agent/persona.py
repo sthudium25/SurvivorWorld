@@ -16,9 +16,6 @@ class Persona():
 
     Traits (dict): {trait name: TraitScale}
     Affinities (dict): {target character id: AffinityScale}
-    Goals (dict): {flex: generated,
-                   short-term: do not get voted off at the next tribal,
-                   long-term: win the game and 1M dollars}
     Facts (dict)
     summary: str
     """
@@ -26,7 +23,7 @@ class Persona():
         # Agent traits
         self.facts = facts
         self.traits = {}
-        self.affinities = {}
+        # self.affinities = {}
         self.summary = summarize_agent_facts(str(self.facts))
         self.description = f'A {facts["Age"]} year old {facts["Occupation"]} named {facts["Name"]}'
 
