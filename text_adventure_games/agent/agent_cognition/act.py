@@ -32,11 +32,13 @@ def act(game, character):
     ])
 
     user_messages = ""
+    # TODO: move game info and goals to the system_prompt?
     user_messages += f"WORLD INFO: {game.world_info}"
     user_messages += f"GOALS: {character.goals}. "
+    # TODO: add personal relationships here as well
     # NOTE: For now we'll limit this to the default latest summary: last 10 memories
-    # TODO: replace with retrieval module
-    user_messages += "MEMORIES in ORDER from LEAST to MOST RELEVANT: " 
+    # TODO: Add "short term memory" nodes by default?
+    user_messages += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: " 
     context_list = retrieve(game, character, query=None, n=-1)
 
     # limit the context length here on the retrieved memories

@@ -22,7 +22,7 @@ class MemoryType(Enum):
     ACTION = 1
     DIALOGUE = 2
     REFLECTION = 3
-
+    # TODO: add a fourth type that specifies an agent observed an event (did not participate in it)?
 
 @dataclass
 class ObservationNode:
@@ -69,9 +69,6 @@ class MemoryStream:
         
         self.memory_embeddings = {}  # keys are the index of the observation
         self.keyword_nodes = defaultdict(lambda: defaultdict(list))
-        # self.character_nodes = defaultdict(list)  # Nodes that appear to be related to a character
-        # self.object_nodes = defaultdict(list)
-        # self.misc_keyword_nodes = defaultdict(list)
 
         # A cache of the current querying statements about this agent
         # Cached embeddings of: Persona summary, goals, personal relationships
@@ -140,6 +137,11 @@ class MemoryStream:
                                          success_status,
                                          memory_importance,
                                          type=MemoryType.ACTION)
+            
+        if memory_type == MemoryType.DIALOGUE:
+            pass
+        if memory_type == MemoryType.REFLECTION:
+            pass
         
         # Add node to sequential memory
         self.observations.append(new_memory)
@@ -152,15 +154,6 @@ class MemoryStream:
                     self.keyword_nodes[category][word].append(node_id)
                 else:
                     self.keyword_nodes[category].update({word: [node_id]})
-            # if category == "characters":
-            #     for kw in kws_list:
-            #         self.character_nodes[kw].append(node_id)
-            # elif category == "object":
-            #     for kw in kws_list:
-            #         self.object_nodes[kw].append(node_id)
-            # else:
-            #     for kw in kws_list:
-            #         self.misc_keyword_nodes[kw].append(node_id)
         
         # increment the internal count of nodes
         self.num_observations += 1

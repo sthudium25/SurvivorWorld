@@ -141,7 +141,7 @@ def calculate_node_relevance(character, memory_ids, query):
         # TODO: do I need to parse this new array since it's type ndarray?
     else:
         # if no query is passed, then the default queries will be used: 
-        # persona, goals, relationships
+        # persona, goals, relationships, last perception
         # Take the average relevance of all of these
         default_embeddings = np.array(list(character.memory.query_embeddings.values()))
         raw_relevance = cosine_similarity(memory_embeddings, default_embeddings)
@@ -167,10 +167,10 @@ def get_relevant_memory_ids(seach_keys, character):
             node_ids = character.memory.keyword_nodes[kw_type][w]
             # memory_ids.extend(list(set(node_ids)))
             memory_ids.extend(node_ids)
-    print(f"Gathered ids: {list(set(memory_ids))}")
-    print(f"Character observations count: {len(character.memory.observations)}")
-    print(f"Character num_observations counter: {character.memory.num_observations}")
-    print(f"Max node id is: {max(memory_ids)}; min is: {min(memory_ids)}")
+    # print(f"Gathered ids: {list(set(memory_ids))}")
+    # print(f"Character observations count: {len(character.memory.observations)}")
+    # print(f"Character num_observations counter: {character.memory.num_observations}")
+    # print(f"Max node id is: {max(memory_ids)}; min is: {min(memory_ids)}")
     return list(set(memory_ids))
     
 def gather_keywords_for_search(game, character, query):
