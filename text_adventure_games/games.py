@@ -1,5 +1,6 @@
 from .things import Location, Character
 from . import parsing, actions, blocks
+from .utils.custom_logging import logger
 
 import json
 import inspect
@@ -450,33 +451,36 @@ class Game:
 class SurvivorGame(Game):
     def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, world_info=None, max_ticks=5):
         super().__init__(start_at, player, characters, custom_actions, world_info)
-        self.max_ticks_per_round = max_ticks
+        self.logger = logger.CustomLogger(experiment_name="test-game-logger", sim_id=1).get_logger()
+        
         self.original_player_id = self.player.id
+        
+        # Game related tracking variables
+        self.max_ticks_per_round = max_ticks
+        self.round = 0
+        self.tick = 0
     
     # Override game loop 
     def game_loop(self):
-        # self.parser.parse_command("Come on in! Welcome to Survivor!")
-        # self.parser.parse_command("look\n", self.player)
-        round = 0
+
         while True:
             for tick in range(self.max_ticks_per_round):
+                self.tick = tick
                 # Confirming Round increments and character movement
-                print(f"ROUND: {round}.{tick}")
+                print(f"ROUND: {self.round}.{self.tick}")
                 for character in self.characters.values():  # naive ordering, not based on character initiative
                     print(f"Character: {character.name} (id: {character.id})")
                     # set the current player to the game's "player" for description purposes
                     self.player = character
-                    # if tick == self.max_ticks_per_round - 1:
-                    #     vote = True
-                    # else:
-                    #     vote = False
+
                     success = False
                     # Only move on to the next character when current takes a successful action
                     while not success:
                         if character.id == self.original_player_id:
+                            # TODO: How do we integrate the ability for a human player to engage?
                             command = character.engage(self,
-                                                       round, 
-                                                       tick, 
+                                                       self.round, 
+                                                       self.tick, 
                                                        # vote
                                                        )
                         else:
@@ -485,11 +489,10 @@ class SurvivorGame(Game):
                             # Action selection should happen in all(?) rounds except for the last one bc 
                             # at end of round the only valid action is vote()
                             command = character.engage(self,
-                                                       round, 
-                                                       tick, 
+                                                       self.round, 
+                                                       self.tick, 
                                                        # vote
                                                        )
-                            # command = input("\n>")
                         success = self.parser.parse_command(command,
                                                             character,
                                                             #   round,
@@ -500,8 +503,14 @@ class SurvivorGame(Game):
                 break
 
             # Increment the rounds
-            round += 1
+            self.round += 1
+
+    # TODO: implement new game over check
+    # def is_game_over(self) -> bool:
+    #     pass
 
     def view_character_locations(self):
         for name, char in self.characters.items():
             print(f"{name} is in {char.location.name}\n")
+
+

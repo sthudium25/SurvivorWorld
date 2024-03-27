@@ -59,6 +59,8 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
 
     # TODO: in what format do we want to return the relevant nodes?
     # NOTE: currently just a list of strings
+    game.logger.debug(f"{character.name} found {len(ranked_memory_ids)} relevant memories.", 
+                      extra={"round": game.round, "tick": game.tick})
     return [character.memory.observations[t[0]].node_description for t in ranked_memory_ids]
 
 def rank_nodes(character, node_ids, query):
@@ -165,8 +167,8 @@ def get_relevant_memory_ids(seach_keys, character):
     for kw_type, search_words in seach_keys.items():
         for w in search_words:
             node_ids = character.memory.keyword_nodes[kw_type][w]
-            # memory_ids.extend(list(set(node_ids)))
             memory_ids.extend(node_ids)
+
     # print(f"Gathered ids: {list(set(memory_ids))}")
     # print(f"Character observations count: {len(character.memory.observations)}")
     # print(f"Character num_observations counter: {character.memory.num_observations}")
@@ -176,7 +178,7 @@ def get_relevant_memory_ids(seach_keys, character):
 def gather_keywords_for_search(game, character, query):
     # gather memories from which keywords will be extracted
     retrieval_kwds = {}
-    # 1. last n memories by default
+    # 1. last n memories by default - this is like "short term memory"
     for node in character.memory.observations[-character.memory.lookback:]:
         node_kwds = game.parser.extract_keywords(node.node_description)  # a dict
         if node_kwds:
@@ -211,7 +213,6 @@ def minmax_normalize(lst, target_min: int, target_max: int):
     Returns:
         np.array: range normalized values
     """
-    # TODO: consider the case where range_val == 0
     min_val = min(lst)
     max_val = max(lst)
     range_val = max_val - min_val
@@ -219,6 +220,8 @@ def minmax_normalize(lst, target_min: int, target_max: int):
     # If there is no variance in the values, they will not contribute to the score
     if range_val == 0:
         out = [0.5] * len(lst)
+        return out
+
     out = [((x - min_val) * (target_max - target_min) / range_val + target_min) for x in lst]
     return np.array(out)
 

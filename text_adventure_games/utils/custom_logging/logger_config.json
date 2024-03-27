@@ -1,0 +1,68 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+      "simple": {
+        "format": "[%(levelname)s|%(module)s|L%(lineno)d] %(asctime)s: %(message)s",
+        "datefmt": "%Y-%m-%dT%H:%M:%S%z"
+      },
+      "json": {
+        "()": "SurvivorWorld.text_adventure_games.utils.custom_logging.custom_logging_formatters.CustomJSONFormatter", 
+        "fmt_keys": {
+          "level": "levelname",
+          "message": "message",
+          "timestamp": "timestamp",
+          "logger": "name",
+          "module": "module",
+          "function": "funcName",
+          "line": "lineno",
+          "thread_name": "threadName"
+        }
+      }
+    },
+    "handlers": {
+      "err_std": {
+        "class": "logging.StreamHandler",
+        "level": "WARNING",
+        "formatter": "simple",
+        "stream": "ext://sys.stderr"
+      },
+      "file_json": {
+        "class": "logging.FileHandler",
+        "level": "DEBUG",
+        "formatter": "json",
+        "filename": "logs/tmp.jsonl"
+      },
+      "queue_handler": {
+        "()": "SurvivorWorld.text_adventure_games.utils.custom_logging.custom_logging_handlers.QueueListenerHandler",
+        "handlers": [
+          "cfg://handlers.err_std",
+          "cfg://handlers.file_json"
+        ],
+        "respect_handler_level": true
+      },
+      "warning_json": {
+        "class": "logging.handlers.RotatingFileHandler",
+        "level": "WARNING",
+        "formatter": "json",
+        "filename": "logs/tmp.jsonl",
+        "maxBytes": 2000000,
+        "backupCount": 3
+      }
+    },
+    "loggers": {
+      "root": {
+        "level": "WARNING",
+        "handlers": [
+            "err_std",
+            "warning_json"
+        ]
+      },
+      "survivor_global_logger":{
+        "level": "DEBUG",
+        "handlers": [
+          "queue_handler"
+        ]
+      }
+    }
+  }
