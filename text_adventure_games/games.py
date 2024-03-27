@@ -503,7 +503,7 @@ class SurvivorGame(Game):
                 break
 
             # Increment the rounds
-            round += 1
+            self.round += 1
 
     # TODO: implement new game over check
     # def is_game_over(self) -> bool:
