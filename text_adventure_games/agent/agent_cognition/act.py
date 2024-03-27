@@ -12,6 +12,7 @@ Description: defines how agents select an action given their perceptions and mem
 # 4. Ask GPT to pick an option 
 # 5. Parse and return
 
+
 # local imports
 from text_adventure_games.gpt.gpt_helpers import gpt_pick_an_option, limit_context_length
 from text_adventure_games.utils.general import set_up_openai_client, enumerate_dict_options
@@ -19,6 +20,7 @@ from .retrieve import retrieve
 
 GPT4_MAX_TOKENS = 8192
 ACTION_MAX_OUTPUT = 100
+
 
 def act(game, character):
     available_actions = game.parser.actions
@@ -50,6 +52,7 @@ def act(game, character):
     user_messages += "".join([f"{m}\n" for m in context_list])
 
     action_to_take = generate_action(system_prompt, available_actions, user_messages)
+    game.logger.debug(f"{character.name} chose to take action: {action_to_take}")
     print(f"{character.name} chose to take action: {action_to_take}")
     return action_to_take
 
