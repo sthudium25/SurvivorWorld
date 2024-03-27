@@ -173,3 +173,5 @@ config.*
 # testing notebooks:
 test/*.ipynb
 
+# log data files
+logs/*
