@@ -35,7 +35,6 @@ def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):
     engine = OpenAIEngine(key, model=model, **kwargs)
     return engine
 
-
 def extract_target_word(response):
     words = response.split()
     # For debugging purposes check when it fails to return only 1 word.
@@ -44,7 +43,6 @@ def extract_target_word(response):
         return words[0].strip(string.punctuation)
     else:
         return words[0].strip(string.punctuation)
-
 
 def extract_enumerated_list(response):
     # Split the response string into lines
@@ -60,7 +58,6 @@ def extract_enumerated_list(response):
         if match:
             extracted_words.append(match.group(1))
     return extracted_words
-
 
 def extract_json_from_string(s: str):
     # print(f"Pre-JSON extraction string from GPT: {s}")
@@ -119,7 +116,6 @@ def parse_location_description(text):
                 else:
                     new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(',') if obs]
     return new_observations
-
 
 def find_difference_in_dict_lists(dict1, dict2):
     if dict1 is None:
