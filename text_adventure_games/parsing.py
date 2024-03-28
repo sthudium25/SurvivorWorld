@@ -450,7 +450,7 @@ class GptParser(Parser):
             print(f'passing {character.name}\'s action to {char.name}')
             char.memory.add_memory(summary.lower(), 
                                    keywords, 
-                                   character.location, 
+                                   character.location.name, 
                                    success,
                                    importance, 
                                    type)

@@ -185,7 +185,7 @@ class GenerativeAgent(Character):
 
                 self.memory.add_memory(description=action_statement,
                                        keywords=keywords,
-                                       location=self.location,
+                                       location=self.location.name,
                                        success_status=True,
                                        memory_importance=importance_score,
                                        memory_type=MemoryType.ACTION)
