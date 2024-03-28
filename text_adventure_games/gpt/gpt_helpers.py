@@ -25,7 +25,7 @@ def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
     return summary_statement
 
 
-def gpt_get_action_importance(statement: str, model="gpt-4", max_tokens=10, client=None):
+def gpt_get_action_importance(statement: str, client=None, model: str = "gpt-4", max_tokens: int = 10):
 
     if not client:
         client = set_up_openai_client("Helicone")
