@@ -448,7 +448,9 @@ class GptParser(Parser):
         super().add_command_to_history(summary)
         for char in character.chars_in_view:
             print(f'passing {character.name}\'s action to {char.name}')
-            char.memory.add_memory(summary.lower(), 
+            char.memory.add_memory(self.game.round,
+                                   self.game.tick,
+                                   summary.lower(), 
                                    keywords, 
                                    character.location.name, 
                                    success,
@@ -479,8 +481,8 @@ class GptParser(Parser):
         if isinstance(thing, Character):
             summary_of_action = self.create_action_statement(command, description, thing)
             importance_of_action = gpt_helpers.gpt_get_action_importance(summary_of_action,
-                                                                         self.client, 
-                                                                         self.model, 
+                                                                         client=self.client, 
+                                                                         model=self.model, 
                                                                          max_tokens=10)
             keywords = self.extract_keywords(summary_of_action)
             # TODO: ensure that we can set the correct type of memory node
