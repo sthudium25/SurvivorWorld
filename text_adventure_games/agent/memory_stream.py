@@ -373,7 +373,7 @@ class MemoryStream:
     def node_exists(self, node_id):
         return node_id < self.num_observations
     
-    def is_valid_memory_type(memory_type):
+    def is_valid_memory_type(self, memory_type):
         """
         Confirm that a memory type is valid.
         Allows for either the value or the name to be used as input
