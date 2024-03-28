@@ -479,8 +479,8 @@ class SurvivorGame(Game):
                         if character.id == self.original_player_id:
                             # TODO: How do we integrate the ability for a human player to engage?
                             command = character.engage(self,
-                                                       self.round, 
-                                                       self.tick, 
+                                                    #    self.round, 
+                                                    #    self.tick, 
                                                        # vote
                                                        )
                         else:
@@ -489,14 +489,12 @@ class SurvivorGame(Game):
                             # Action selection should happen in all(?) rounds except for the last one bc 
                             # at end of round the only valid action is vote()
                             command = character.engage(self,
-                                                       self.round, 
-                                                       self.tick, 
+                                                    #    self.round, 
+                                                    #    self.tick, 
                                                        # vote
                                                        )
                         success = self.parser.parse_command(command,
-                                                            character,
-                                                            #   round,
-                                                            #   tick
+                                                            character
                                                             )
 
             if self.is_game_over():
