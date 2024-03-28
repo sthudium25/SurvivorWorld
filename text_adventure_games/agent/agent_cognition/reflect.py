@@ -81,6 +81,7 @@ def generalize(game, character):
     this_round_mem_desc = character.memory.get_enumerated_description_list(this_round_mem_ids, as_type="str")
 
     generalizations = gpt_generalize(game, reflection_desc, this_round_mem_desc)
+    print(f"{character.name} generalized: {generalizations}")
     add_generalizations_to_memory(game, character, generalizations)
 
 def reflect_on_goals():
