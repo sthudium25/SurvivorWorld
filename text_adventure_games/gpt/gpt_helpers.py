@@ -25,7 +25,11 @@ def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
     return summary_statement
 
 
-def gpt_get_action_importance(statement, client, model, max_tokens):
+def gpt_get_action_importance(statement: str, model="gpt-4", max_tokens=10, client=None):
+
+    if not client:
+        client = set_up_openai_client("Helicone")
+
     system = "Gauge the importance of the provided sentence on a scale from 1 to 10, where 1 is mundane and 10 is critical."
     messages = [{"role": "system", "content": system},
                 {"role": "user", "content": statement}]
