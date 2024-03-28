@@ -1,5 +1,4 @@
 import tiktoken
-from openai import 
 from ..utils.general import set_up_openai_client
 
 
@@ -13,7 +12,7 @@ class Dialogue:
             participants (List(Character)): sorted list of 
             characters by initiative.
         """
-        self.client = set_up_openai_client(org='Helicone', base_url="https://oai.hconeai.com/v1")
+        self.client = set_up_openai_client(org='Helicone')
         self.verbose = False
         self.gpt_model = "gpt-4"
         self.max_output_tokens = 256 # You get to pick this
@@ -103,10 +102,10 @@ class Dialogue:
         while True:
             for character in self.participants:
                 response = self.get_gpt_response(character)
-                print(response)
                 self.add_to_dialogue_history(response)
                 if response == f"{character.name} leaves the conversation.":
                     self.participants.remove(character)
             if self.is_dialogue_over():
                 print("The conversation is over")
                 break
+        return self.dialogue_history
