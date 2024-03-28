@@ -39,9 +39,10 @@ class ActionCastleSurvivor(games.SurvivorGame):
         player: things.Character,
         characters=None,
         custom_actions=None,
-        world_info=None
+        world_info=None,
+        max_ticks=5
     ):
-        super().__init__(start_at, player, characters, custom_actions, world_info, max_ticks=5)
+        super().__init__(start_at, player, characters, custom_actions, world_info, max_ticks=max_ticks)
 
     def is_won(self) -> bool:
         """
@@ -749,7 +750,12 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False) -> games
     # The Game
     characters = [troll, mother]
     custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
-    game = ActionCastleSurvivor(cottage, player, characters, custom_actions, world_info="You are in a rural town.")
+    game = ActionCastleSurvivor(cottage, 
+                                player, 
+                                characters, 
+                                custom_actions, 
+                                world_info="You are in a rural town.",
+                                max_ticks=3)
 
     # Logging data
     # logging_setup.setup_logger(experiment_name, sim_id)
