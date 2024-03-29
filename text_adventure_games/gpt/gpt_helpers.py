@@ -64,7 +64,7 @@ def gpt_pick_an_option(instructions, options, input_str):
     This function calls GPT to choose one option from a set of options.
     Its arguments are:
     * instructions - the system instructions
-    * options - a dictionary of option_descriptions -> option_names
+    * options - Dict[option_descriptions: option_names]
     * input_str - the user input which we are trying to match to one of the options
 
     The function generates an enumerated list of option descriptions
@@ -97,17 +97,6 @@ def gpt_pick_an_option(instructions, options, input_str):
         presence_penalty=0,
     )
     content = response.choices[0].message.content
-
-    # if self.verbose:
-    #     v = "{instructions}\n\n{choices_str}\nReturn just the number.\n---\n> {input_str}"
-    #     print(
-    #         v.format(
-    #             instructions=instructions,
-    #             choices_str=choices_str,
-    #             input_str=input_str,
-    #         )
-    #     )
-    #     print("---\nGPT's response was:", content)
 
     # Use regular expressions to match a number returned by OpenAI and select that option.
     pattern = r"\d+"
