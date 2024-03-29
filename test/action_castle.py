@@ -755,7 +755,7 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False) -> games
                                 characters, 
                                 custom_actions, 
                                 world_info="You are in a rural town.",
-                                max_ticks=3)
+                                max_ticks=2)
 
     # Logging data
     # logging_setup.setup_logger(experiment_name, sim_id)
