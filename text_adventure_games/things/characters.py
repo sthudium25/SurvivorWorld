@@ -144,6 +144,7 @@ class GenerativeAgent(Character):
         # If this is the end of a round, force reflection
         # NOTE: This means theoretically, that characters reflect BEFORE voting. -- good or bad???
         if game.tick == game.max_ticks_per_round - 1:
+            print(f"{self.name} has {len(self.memory.get_observations_by_type(3))}existing reflections")
             reflect.reflect(game, self)
 
         self.percieve_location(game)
@@ -195,7 +196,7 @@ class GenerativeAgent(Character):
                                        location=self.location.name,
                                        success_status=True,
                                        memory_importance=importance_score,
-                                       memory_type=MemoryType.ACTION)
+                                       memory_type=MemoryType.ACTION.value)
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):
