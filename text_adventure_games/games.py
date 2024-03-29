@@ -143,7 +143,7 @@ class Game:
         description += self.describe_exits() + "\n"
         description += self.describe_items() + "\n"
         description += self.describe_characters() + "\n"
-        # self.parser.ok(description)
+        description += self.describe_inventory() 
         return description
 
     def describe_current_location(self) -> str:
@@ -200,26 +200,28 @@ class Game:
                     continue
                 character = self.player.location.characters[character_name]
                 # TODO: may want to change this to just the character name for ease of parsing later
-                description += character.description + ", "
+                description += character.name + ", "
         return description
 
     def describe_inventory(self) -> str:
         """
         Describes the player's inventory.
         """
+        inventory_description = "inventory: "
         if len(self.player.inventory) == 0:
-            empty_inventory = "You don't have anything."
-            self.ok(empty_inventory, [], "Describe the player's inventory.")
+            inventory_description += f"{self.player.name} has nothing in inventory."
+            # self.ok(empty_inventory, [], "Describe the player's inventory.")
         else:
             # descriptions = []  # JD logical issue?
-            inventory_description = "In your inventory, you have:\n"
+            inventory_description += f"In {self.player.name} inventory, {self.player.name} has: "
             for item_name in self.player.inventory:
                 item = self.player.inventory[item_name]
-                d = "* {item} - {item_description}\n"
+                d = "{item_description}, "
                 inventory_description += d.format(
-                    item=item_name, item_description=item.description
+                    # item=item_name, 
+                    item_description=item.description
                 )
-            self.ok(inventory_description)
+        return inventory_description
 
     # The methods below read and write a game to JSON
     def to_primitive(self):
