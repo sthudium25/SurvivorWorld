@@ -73,7 +73,7 @@ def generalize(game, character):
 
     # Get an enumerated list of the REFLECTION nodes for this character
     # MemoryType.REFLECTION == 3
-    reflection_ids = character.memory.get_observations_by_type(MemoryType.REFLECTION)
+    reflection_ids = character.memory.get_observations_by_type(MemoryType.REFLECTION.value)
     reflection_desc = character.memory.get_enumerated_description_list(reflection_ids, as_type="str")
 
     # Get an enumerated list of the action nodes for this character in this round
@@ -138,6 +138,7 @@ def add_generalizations_to_memory(game: "Game", character: "Character", generali
     Returns:
         None
     """
+    print(f"Adding {character.name}'s generalizations to memory")
     add_new_generalizations(game, character, generalizations)
     update_existing_generalizations(character, generalizations)
 
@@ -158,7 +159,7 @@ def add_new_generalizations(game: "Game", character: "Character", generalization
     else:
         for ref in new_gens:
             try:
-                desc = ref["statment"]
+                desc = ref["statement"]
             except KeyError:
                 # This is a mal-formed reflection, so skip it
                 continue
@@ -174,7 +175,7 @@ def add_new_generalizations(game: "Game", character: "Character", generalization
                                             character.location,
                                             success_status=True,
                                             memory_importance=ref_importance,
-                                            memory_type=MemoryType.REFLECTION)
+                                            memory_type=MemoryType.REFLECTION.value)
                 
 def update_existing_generalizations(character: "Character", generalizations: Dict):
     """
@@ -191,6 +192,7 @@ def update_existing_generalizations(character: "Character", generalizations: Dic
         pass
     else:
         for ref in updated_gens:
+            print(f"Updating generalization: {ref} for {character.name}")
             try:
                 prev_idx = int(ref["index"])
                 desc = ref["statement"]
