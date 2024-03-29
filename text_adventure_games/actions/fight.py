@@ -7,7 +7,7 @@ from . import preconditions as P
 
 class Attack(base.Action):
     ACTION_NAME = "attack"
-    ACTION_DESCRIPTION = "Attack someone with a weapon"
+    ACTION_DESCRIPTION = "Attack someone or something with a weapon or initiate combat or physical confrontation, also known as striking or hitting."
     ACTION_ALIASES = ["hit"]
 
     def __init__(

@@ -5,7 +5,7 @@ File: agent/memory_structures/memory_stream.py
 Description: Defines Agent memory classes
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Literal, Tuple, Union
 from enum import Enum
 from collections import defaultdict
 from dataclasses import dataclass    
@@ -27,10 +27,10 @@ class MemoryType(Enum):
 @dataclass
 class ObservationNode:
     node_id: int  # TODO: unique to this agent; represents the index in their memory
-    # node_tick: int  # The round tick on which this observation occurred
-    # node_round: int  # The round in which this occurred
+    node_round: int  # The round in which this occurred
+    node_tick: int  # The round tick on which this observation occurred
     node_level: int  # The observation level: 1 for novel, 2 for reflections, 3 for ????
-    node_loc: str
+    node_loc: str  # The name of the location in which the observation occurred
     node_description: str
     node_success: bool
     embedding_key: int  # Immediately get and store the embedding for faster retrieval later?
@@ -69,6 +69,8 @@ class MemoryStream:
         
         self.memory_embeddings = {}  # keys are the index of the observation
         self.keyword_nodes = defaultdict(lambda: defaultdict(list))
+        self.memory_type_nodes = defaultdict(list)  # keys are the value of the MemoryType enum
+        self.this_round_nodes = defaultdict(list)  # keys are the round number
 
         # A cache of the current querying statements about this agent
         # Cached embeddings of: Persona summary, goals, personal relationships
@@ -93,19 +95,10 @@ class MemoryStream:
         # Initialize stopwords
         self.stopwords = self._generate_stopwords()
 
-    def get_observation(self, node_id):
-        """
-        Get the ith observation
-
-        Args:
-            node_id (int): the index of the requested ObservationNode
-
-        Returns:
-            ObservationNode: an ObservationNode
-        """
-        return self.observations[node_id]
-    
+    # ----------- MEMORY CREATION -----------
     def add_memory(self,
+                   round,
+                   tick,
                    description,
                    keywords,
                    location,
@@ -113,7 +106,7 @@ class MemoryStream:
                    memory_importance,
                    memory_type):
         
-        if not isinstance(memory_type, MemoryType):
+        if not self.is_valid_memory_type(memory_type):
             valid_types = [type.name for type in MemoryType]
             raise ValueError(f"Memories must be created with valid type; one of {valid_types}")
             
@@ -130,22 +123,32 @@ class MemoryStream:
         memory_embedding = self.get_observation_embedding(description)
         self.memory_embeddings[node_id] = memory_embedding
 
-        if memory_type == MemoryType.ACTION:
+        if memory_type == MemoryType.ACTION.value:
             new_memory = self.add_action(node_id,
+                                         round,
+                                         tick,
                                          description,
                                          location,
                                          success_status,
                                          memory_importance,
                                          type=MemoryType.ACTION)
             
-        if memory_type == MemoryType.DIALOGUE:
+        if memory_type == MemoryType.DIALOGUE.value:
             pass
-        if memory_type == MemoryType.REFLECTION:
-            pass
+        if memory_type == MemoryType.REFLECTION.value:
+            new_memory = self.add_reflection(node_id,
+                                             round,
+                                             tick,
+                                             description,
+                                             location,
+                                             success_status,
+                                             memory_importance,
+                                             type=MemoryType.REFLECTION)
         
         # Add node to sequential memory
         self.observations.append(new_memory)
-
+        
+        # NODE CACHEING
         # Cache the node under its keywords
         # TODO: weigh the pros/cons of adding these at start vs. end of the kwd list
         for category, kws_list in keywords.items():
@@ -154,12 +157,18 @@ class MemoryStream:
                     self.keyword_nodes[category][word].append(node_id)
                 else:
                     self.keyword_nodes[category].update({word: [node_id]})
+
+        # Cache the node under the value of its MemoryType and its round ID.: 
+        self.memory_type_nodes[memory_type].append(node_id)
+        self.this_round_nodes[round].append(node_id)
         
         # increment the internal count of nodes
         self.num_observations += 1
             
     def add_action(self,
                    node_id,
+                   round,
+                   tick,
                    description,
                    location: str,
                    success_status: bool,
@@ -167,6 +176,8 @@ class MemoryStream:
                    type: MemoryType) -> None:
         
         new_action = ObservationNode(node_id,
+                                     node_round=round,
+                                     node_tick=tick,
                                      node_level=1,
                                      node_loc=location,
                                      node_description=description,
@@ -176,7 +187,64 @@ class MemoryStream:
                                      node_type=type)
         # print(f"Added {new_action.node_description} to {self.agent_id}'s memory")
         return new_action
+    
+    def add_reflection(self,
+                       node_id,
+                       round,
+                       tick,
+                       description,
+                       location: str,
+                       success_status: bool,
+                       memory_importance: int,
+                       type: MemoryType) -> None:
+        
+        new_reflection = ObservationNode(node_id,
+                                         node_round=round,
+                                         node_tick=tick,
+                                         node_level=2,
+                                         node_loc=location,
+                                         node_description=description,
+                                         node_success=success_status,
+                                         embedding_key=node_id,
+                                         node_importance=memory_importance,
+                                         node_type=type)  
+        return new_reflection
 
+    # ----------- GETTER METHODS -----------
+    def get_observation(self, node_id):
+        """
+        Get the ith observation
+
+        Args:
+            node_id (int): the index of the requested ObservationNode
+
+        Returns:
+            ObservationNode: an ObservationNode
+        """
+        return self.observations[node_id]
+    
+    def get_observation_description(self, node_id):
+        node = self.get_observation(node_id)
+        return node.node_description
+    
+    def get_enumerated_description_list(self, 
+                                        node_id_list, 
+                                        as_type: Literal["str", "tuple"] = True
+                                        ) -> Union[List[Tuple], List[str]]:
+        """
+        Args:
+            node_id_list (_type_): _description_
+            as_tuple (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            _type_: _description_
+        """
+        enum_nodes = list(zip(node_id_list, [self.get_observation_description(i) for i in node_id_list]))
+        if as_type == "tuple":
+            return enum_nodes
+        else:
+            return [f"{mem_id}. {mem_desc}\n" for mem_id, mem_desc in enum_nodes]
+    
     def get_observation_embedding(self, text):
         """
         Embed the text of an observation
@@ -190,12 +258,28 @@ class MemoryStream:
         embedded_vector = get_text_embedding(text)
         return embedded_vector
     
-    def get_observations_by_subject(self, subject):
-        return self.nodes_by_subject[subject]
+    def get_observations_by_round(self, round):
+        return self.this_round_nodes[round]
     
     def get_observations_by_type(self, obs_type):
-        return self.nodes_by_type[obs_type]
-    
+        """
+        Get a list of node_ids of a specified type
+
+        Args:
+            obs_type (int): a valid MemoryType value
+
+        Returns:
+            list: a list of nodes of type "obs_type"
+        """
+        if not self.is_valid_memory_type(obs_type):
+            raise ValueError(f"{obs_type} is not a supported MemoryType({list(MemoryType)}).")
+        
+        if isinstance(obs_type, MemoryType):
+            # Convert Enum to its value
+            obs_type = obs_type.value
+            
+        return self.memory_type_nodes[obs_type]
+
     def get_most_recent_summary(self):
         nodes = self.observations[-self.lookback:]
         summary = f"The last {self.lookback} observations in chronological order you have made are:"
@@ -213,18 +297,27 @@ class MemoryStream:
         Returns:
             np.array: an embedding of the node description
         """
-        return self.memory_embeddings[index]
+        if self.node_exists(index):
+            return self.memory_embeddings[index]
+        
+    def get_relationships_summary(self):
+        raise NotImplementedError
     
-    def replace_character(self, text, character_name, agent_descriptor):
-        # Escape any special regex characters in the descriptor and character_name
-        escaped_name = re.escape(character_name)
-        escaped_descriptor = re.escape(" ".join([w for w in agent_descriptor.split() if w not in self.stopwords]))
-        # Pattern to match 'the' optionally, then the descriptor optionally, followed by the character name
-        # The descriptor and the character name can occur together or separately
-        pattern = r'\b(?:the\s+)?(?:(?:{d}\s+)?{c}|{d})\b'.format(d=escaped_descriptor, c=escaped_name)
-        replacement = 'you'
-        return re.sub(pattern, replacement, text, flags=re.IGNORECASE)
-    
+    # ----------- SETTER METHODS -----------
+    def set_embedding(self, node_id, new_embedding):
+        """
+        Update the embedding for an existing node
+
+        Args:
+            node_id (int): id of a memory
+            new_embedding (np.ndarray): an embedding from OpenAI embeddings API
+        """
+        if not self.node_exists(node_id):
+            return False
+        else:
+            self.memory_embeddings.update({node_id: new_embedding})
+            return True
+        
     def set_query_embeddings(self, character):
         cached_queries = {}
         goal_summary = character.goals  # .get_goal_summary()???
@@ -239,79 +332,69 @@ class MemoryStream:
         # if relationships_embed is not None:
         #     cached_queries["relationships"] = get_text_embedding(relationship_summary)
         return cached_queries
-
+    
+    # ----------- UPDATE METHODS -----------
     def update_query_embeddings(self, character):
         raise NotImplementedError
     
-    def get_relationships_summary(self):
-        raise NotImplementedError
-
-    # def add_dialogue(self,
-    #                  round_tick: int,
-    #                  game_round: int,
-    #                  location: Location, 
-    #                  dialogue: str,
-    #                  description: str,
-    #                  sentiment) -> None:
+    def update_node_description(self, node_id, new_description) -> bool:
+        try:
+            node = self.get_observation(node_id)
+            node.node_description = new_description
+        except IndexError:
+            return False
+        else:
+            return True
         
-    #     node_id = self.num_observations + 1
+    def update_node_embedding(self, node_id, new_description) -> bool:
+        """
+        Update the embedding of a node
 
-    #     # TODO: parse Dialogue for speaker
-    #     spoken_word = dialogue.dialogue
-    #     speaker = dialogue.speaker
+        Args:
+            node_id (int): node id to switch
+            new_description (str): the updated string description
 
-    #     # Get embedding of the dialoge
-    #     dialogue_embedding = self.get_observation_embedding(dialogue)
-    #     embed_key = f"{game_round}_{round_tick}"
-    #     self.obs_embeddings[embed_key] = dialogue_embedding
+        Returns:
+            bool: success status
+        """
+        if not self.node_exists(node_id):
+            return False
+        else:
+            updated_embedding = self.get_observation_embedding(new_description)
+            success = self.set_embedding(node_id, updated_embedding)
+            return success
+    
+    # ----------- MISC HELPER/VALIDATION METHODS -----------
+    def replace_character(self, text, character_name, agent_descriptor):
+        # Escape any special regex characters in the descriptor and character_name
+        escaped_name = re.escape(character_name)
+        escaped_descriptor = re.escape(" ".join([w for w in agent_descriptor.split() if w not in self.stopwords]))
+        # Pattern to match 'the' optionally, then the descriptor optionally, followed by the character name
+        # The descriptor and the character name can occur together or separately
+        pattern = r'\b(?:the\s+)?(?:(?:{d}\s+)?{c}|{d})\b'.format(d=escaped_descriptor, c=escaped_name)
+        replacement = 'you'
+        return re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    
+    def node_exists(self, node_id):
+        return node_id < self.num_observations
+    
+    def is_valid_memory_type(self, memory_type):
+        """
+        Confirm that a memory type is valid.
+        Allows for either the value or the name to be used as input
 
-    #     new_dialoge = ObservationNode(node_id,
-    #                                   round_tick,
-    #                                   game_round,
-    #                                   location.name,
-    #                                   node_level=1,
-    #                                   node_context=spoken_word,
-    #                                   subject=speaker,
-    #                                   node_type="dialogue",
-    #                                   node_description=description,
-    #                                   embedding_key=embed_key,
-    #                                   node_sentiment=sentiment)
-        
-    #     self.observations.append(new_dialoge)
-    #     self.num_observations += 1
+        Args:
+            memory_type (MemoryType): the value to check
 
-    #     # TODO: store anything else?
-    #     self.nodes_by_subject[speaker].append(node_id)
-    #     self.nodes_by_type['dialogue'].append(node_id)
-
-    # def add_reflection(self,
-    #                    game_tick: int,
-    #                    game_round: int,
-    #                    location: Location, 
-    #                    reflection: Reflection,
-    #                    description: str,
-    #                    sentiment) -> None:
-        
-    #     node_id = self.num_observations + 1
-
-    #     reflection_embedding = self.get_observation_embedding(reflection)
-    #     embed_key = f"{node_id}_{game_tick}"
-    #     self.obs_embedding[embed_key] = reflection_embedding
-
-    #     new_reflection = ObservationNode(node_id,
-    #                                      game_tick,
-    #                                      game_round,
-    #                                      location.name,
-    #                                      node_context=reflection.conclusion,
-    #                                      subject=reflection.subject,
-    #                                      node_type="reflection",
-    #                                      node_description=description,
-    #                                      embedding_key=embed_key,
-    #                                      node_sentiment=sentiment)
-
-    #     self.observations.append(new_reflection)
-    #     self.num_observations += 1
-
-    #     # TODO: add anything else?
-    #     self.nodes_by_subject[reflection.subject].append(node_id)
-    #     self.nodes_by_type['reflection'].append(node_id)
+        Returns:
+            bool: if test passed
+        """
+        if isinstance(memory_type, MemoryType):
+            return True
+        try:
+            # Attempt to convert the input value to a MemoryType
+            _ = MemoryType(memory_type) 
+        except ValueError:
+            return False
+        else:
+            return True

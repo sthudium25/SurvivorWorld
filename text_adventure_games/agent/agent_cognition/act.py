@@ -60,10 +60,12 @@ def act(game, character):
 def generate_action(system, game_actions, user):
     client = set_up_openai_client("Helicone")
 
-    choices_str, _ = enumerate_dict_options(game_actions)
+    choices_str, options_list = enumerate_dict_options(game_actions, names_only=True)
     system += "".join([
         "Using the information provided, generate a short action statement in the present tense from your perspective. ",
-        "Be sure to mention any characters you wish to interact with by name. "
+        "Be sure to mention any characters you wish to interact with by name. ",
+        # "If you want to take a series of actions, separate each atomic action with a comma. ",
+        # "Otherwise, do not include commas in your action statement. ",
         "Examples could be:\n",
         "Go outside to the garden.\n",
         "Talk to Tom about strategy\n",

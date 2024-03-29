@@ -6,7 +6,7 @@ from ..gpt.gpt_helpers import gpt_get_action_importance
 from ..utils.general import (parse_location_description, 
                              find_difference_in_dict_lists)
 from ..agent.memory_stream import MemoryStream, MemoryType
-from ..agent.agent_cognition import act
+from ..agent.agent_cognition import act, reflect
 
 
 class Character(Thing):
@@ -127,7 +127,7 @@ class GenerativeAgent(Character):
         summary += self.get_alliance_summary()
         return summary
 
-    def engage(self, game, round, tick, 
+    def engage(self, game, 
                # vote
                ):
         """
@@ -141,6 +141,12 @@ class GenerativeAgent(Character):
         Returns:
             str: an action
         """
+        # If this is the end of a round, force reflection
+        # NOTE: This means theoretically, that characters reflect BEFORE voting. -- good or bad???
+        if game.tick == game.max_ticks_per_round - 1:
+            print(f"{self.name} has {len(self.memory.get_observations_by_type(3))}existing reflections")
+            reflect.reflect(game, self)
+
         self.percieve_location(game)
         return act.act(game, self)
  
@@ -178,17 +184,19 @@ class GenerativeAgent(Character):
                                                                        character=self)
                 
                 importance_score = gpt_get_action_importance(action_statement,
-                                                             game.parser.client, 
-                                                             game.parser.model, 
+                                                             client=game.parser.client, 
+                                                             model=game.parser.model, 
                                                              max_tokens=10)
                 keywords = game.parser.extract_keywords(action_statement)
 
-                self.memory.add_memory(description=action_statement,
+                self.memory.add_memory(round=game.round,
+                                       tick=game.tick,
+                                       description=action_statement,
                                        keywords=keywords,
-                                       location=self.location,
+                                       location=self.location.name,
                                        success_status=True,
                                        memory_importance=importance_score,
-                                       memory_type=MemoryType.ACTION)
+                                       memory_type=MemoryType.ACTION.value)
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):

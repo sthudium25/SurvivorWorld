@@ -109,7 +109,7 @@ def parse_location_description(text):
                 except ValueError:
                     # Likely not enough values to unpack
                     desc_type = description.split(":")[0]
-                    new_observations[desc_type] = [f'No {desc_type} here']
+                    new_observations[desc_type] = [f'No {desc_type}']
                     continue
                 if "(" in observed:
                     new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(';') if obs]
@@ -142,13 +142,37 @@ def find_difference_in_dict_lists(dict1, dict2):
                 diff[key] = [value2]
     return diff
 
-def enumerate_dict_options(options):
+# NOTE: previous version of the method below
+# def enumerate_dict_options(options):
+#     options_list = list(options.keys())
+#     choices_str = ""
+#     # Create a numbered list of options
+#     for i, option in enumerate(options_list):
+#         choices_str += "{i}. {option}\n".format(i=i, option=option)
+#     return choices_str, options_list
+
+def enumerate_dict_options(options, names_only=False):
+    """
+    Used by GPT-pick an option. Expects keys are descriptions and
+    values are the name of the corresponding option.
+
+    Args:
+        options (dict): Dict[description of option, option_name]
+
+    Returns:
+        _type_: _description_
+    """
     options_list = list(options.keys())
     choices_str = ""
     # Create a numbered list of options
-    for i, option in enumerate(options_list):
-        choices_str += "{i}. {option}\n".format(i=i, option=option)
-    return choices_str, options_list
+    if names_only:
+        for i, name in enumerate(options.values()):
+            choices_str += "{i}. {n}\n".format(i=i, n=name)
+        return choices_str, None
+    else:
+        for i, (k, v) in enumerate(options.items()):
+            choices_str += "{i}. {v}: {k}\n".format(i=i, v=v, k=k)
+        return choices_str, options_list
 
 def combine_dicts_helper(existing, new):
     for k, v in new.items():

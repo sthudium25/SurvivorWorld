@@ -25,7 +25,11 @@ def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
     return summary_statement
 
 
-def gpt_get_action_importance(statement, client, model, max_tokens):
+def gpt_get_action_importance(statement: str, client=None, model: str = "gpt-4", max_tokens: int = 10):
+
+    if not client:
+        client = set_up_openai_client("Helicone")
+
     system = "Gauge the importance of the provided sentence on a scale from 1 to 10, where 1 is mundane and 10 is critical."
     messages = [{"role": "system", "content": system},
                 {"role": "user", "content": statement}]
@@ -60,7 +64,7 @@ def gpt_pick_an_option(instructions, options, input_str):
     This function calls GPT to choose one option from a set of options.
     Its arguments are:
     * instructions - the system instructions
-    * options - a dictionary of option_descriptions -> option_names
+    * options - Dict[option_descriptions: option_names]
     * input_str - the user input which we are trying to match to one of the options
 
     The function generates an enumerated list of option descriptions
@@ -93,17 +97,6 @@ def gpt_pick_an_option(instructions, options, input_str):
         presence_penalty=0,
     )
     content = response.choices[0].message.content
-
-    # if self.verbose:
-    #     v = "{instructions}\n\n{choices_str}\nReturn just the number.\n---\n> {input_str}"
-    #     print(
-    #         v.format(
-    #             instructions=instructions,
-    #             choices_str=choices_str,
-    #             input_str=input_str,
-    #         )
-    #     )
-    #     print("---\nGPT's response was:", content)
 
     # Use regular expressions to match a number returned by OpenAI and select that option.
     pattern = r"\d+"
