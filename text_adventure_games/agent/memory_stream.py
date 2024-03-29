@@ -106,7 +106,7 @@ class MemoryStream:
                    memory_importance,
                    memory_type):
         
-        if not isinstance(memory_type, MemoryType):
+        if not self.is_valid_memory_type(memory_type):
             valid_types = [type.name for type in MemoryType]
             raise ValueError(f"Memories must be created with valid type; one of {valid_types}")
             
@@ -123,7 +123,7 @@ class MemoryStream:
         memory_embedding = self.get_observation_embedding(description)
         self.memory_embeddings[node_id] = memory_embedding
 
-        if memory_type == MemoryType.ACTION:
+        if memory_type == MemoryType.ACTION.value:
             new_memory = self.add_action(node_id,
                                          round,
                                          tick,
@@ -133,9 +133,9 @@ class MemoryStream:
                                          memory_importance,
                                          type=MemoryType.ACTION)
             
-        if memory_type == MemoryType.DIALOGUE:
+        if memory_type == MemoryType.DIALOGUE.value:
             pass
-        if memory_type == MemoryType.REFLECTION:
+        if memory_type == MemoryType.REFLECTION.value:
             new_memory = self.add_reflection(node_id,
                                              round,
                                              tick,
@@ -159,7 +159,7 @@ class MemoryStream:
                     self.keyword_nodes[category].update({word: [node_id]})
 
         # Cache the node under the value of its MemoryType and its round ID.: 
-        self.memory_type_nodes[memory_type.value].append(node_id)
+        self.memory_type_nodes[memory_type].append(node_id)
         self.this_round_nodes[round].append(node_id)
         
         # increment the internal count of nodes
@@ -271,8 +271,13 @@ class MemoryStream:
         Returns:
             list: a list of nodes of type "obs_type"
         """
-        if self.is_valid_memory_type(obs_type):
-            raise ValueError(f"{obs_type} is not a supported MemoryType({self.VALID_MEMORY_TYPES}).")
+        if not self.is_valid_memory_type(obs_type):
+            raise ValueError(f"{obs_type} is not a supported MemoryType({list(MemoryType)}).")
+        
+        if isinstance(obs_type, MemoryType):
+            # Convert Enum to its value
+            obs_type = obs_type.value
+            
         return self.memory_type_nodes[obs_type]
 
     def get_most_recent_summary(self):
@@ -384,9 +389,12 @@ class MemoryStream:
         Returns:
             bool: if test passed
         """
+        if isinstance(memory_type, MemoryType):
+            return True
         try:
             # Attempt to convert the input value to a MemoryType
-            _ = MemoryType(memory_type)
-            return True  
+            _ = MemoryType(memory_type) 
         except ValueError:
             return False
+        else:
+            return True
