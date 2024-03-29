@@ -8,8 +8,8 @@ from ..things import Character
 
 class Get(base.Action):
     ACTION_NAME = "get"
-    ACTION_DESCRIPTION = "Get something and add it to the inventory"
-    ACTION_ALIASES = ["take"]
+    ACTION_DESCRIPTION = "Acquire, get, take, pick up an item for personal use and add to inventory."
+    ACTION_ALIASES = ["take", "collect", "pick up"]
 
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
@@ -28,7 +28,7 @@ class Get(base.Action):
         * The item must be gettable
         """
         if not self.was_matched(self.character, self.item, "I don't see it."):
-            message = f"I don't see {self.item.name} in {self.location.name}."
+            message = f"I don't see this item in {self.location.name}."
             self.parser.fail(self.command, message, self.character)
             return False
         if not self.location.here(self.character):
@@ -39,8 +39,8 @@ class Get(base.Action):
             message = "There is no {name} in {loc}.".format(name=self.item.name, loc=self.location.name)
             self.parser.fail(self.command, message, self.character)
             return False
-        if not self.item.get_property("gettable"):
-            error_message = "{name} is not {property_name}.".format(
+        if self.item and not self.item.get_property("gettable"):
+            message = "{name} is not {property_name}.".format(
                 name=self.item.name.capitalize(), property_name="gettable"
             )
             self.parser.fail(self.command, message, self.character)
@@ -63,7 +63,7 @@ class Get(base.Action):
 
 class Drop(base.Action):
     ACTION_NAME = "drop"
-    ACTION_DESCRIPTION = "Drop something from the character's inventory"
+    ACTION_DESCRIPTION = "Drop or remove an item from possession, alternatively described as discarding or eliminating."
     ACTION_ALIASES = ["toss", "get rid of"]
 
     def __init__(
@@ -115,7 +115,7 @@ class Drop(base.Action):
 
 class Inventory(base.Action):
     ACTION_NAME = "inventory"
-    ACTION_DESCRIPTION = "Check the character's inventory"
+    ACTION_DESCRIPTION = "Check personal inventory, a list of items currently held and often referred to as checking belongings."
     ACTION_ALIASES = ["i"]
 
     def __init__(
@@ -150,7 +150,7 @@ class Inventory(base.Action):
 
 class Examine(base.Action):
     ACTION_NAME = "examine"
-    ACTION_DESCRIPTION = "Examine an item"
+    ACTION_DESCRIPTION = "Closely inspect or look at an object/item to learn more about it, including examining or scrutinizing."
     ACTION_ALIASES = ["look at", "x"]
 
     def __init__(
@@ -188,8 +188,8 @@ class Examine(base.Action):
 
 class Give(base.Action):
     ACTION_NAME = "give"
-    ACTION_DESCRIPTION = "Give something to someone"
-    ACTION_ALIASES = ["hand"]
+    ACTION_DESCRIPTION = "Give or transfer something (an item for example) to another individual. Also referred to as handing over."
+    ACTION_ALIASES = ["hand", "deliver", "offer"]
 
     def __init__(self, 
                  game, 
@@ -219,7 +219,7 @@ class Give(base.Action):
         * The item must be in the giver's inventory
         * The character must be at the same location as the recipient
         """
-        if not self.was_matched(self.character, self.item, "I don't see it."):
+        if not self.was_matched(self.giver, self.item, "I don't see it."):
             return False
         if not self.giver.is_in_inventory(self.item):
             return False
@@ -243,7 +243,7 @@ class Give(base.Action):
             item_name=self.item.name,
             recipient=self.recipient.name.capitalize(),
         )
-        self.parser.ok(self.command, description, self.character)
+        self.parser.ok(self.command, description, self.giver)
 
         if self.recipient.get_property("is_hungry") and self.item.get_property(
             "is_food"
@@ -273,7 +273,7 @@ class Give(base.Action):
 
 class Unlock_Door(base.Action):
     ACTION_NAME = "unlock door"
-    ACTION_DESCRIPTION = "Unlock a door"
+    ACTION_DESCRIPTION = "Unlock a door that is currently locked so that it may be opened"
 
     def __init__(self, game, command, character):
         super().__init__(game)
