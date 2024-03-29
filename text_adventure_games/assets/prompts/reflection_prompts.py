@@ -12,7 +12,7 @@ You'll also be able to see past reflections you have made.
 
 From the new actions, try to:
 1. update or elaborate upon previous reflections.
-2. identify several general truths about the environment. 
+2. identify only the most impactful general truths about the environment. 
 
 For each reflective statement you make, mimic one of the following structures that capture the logic of necessity or entailment:
 
@@ -40,5 +40,5 @@ Return a JSON structure like:
 }
 
 Remember, make generalized statements that are rooted in the facts you're provided. 
-Keep statements short where possible.
+Keep statements short where possible. Only capitalize the relationship words, not the whole sentence.
 """
