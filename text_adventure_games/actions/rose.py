@@ -7,7 +7,7 @@ from ..things import Item, Character
 
 class Pick_Rose(base.Action):
     ACTION_NAME = "pick rose"
-    ACTION_DESCRIPTION = "Pick a rose from a rosebush"
+    ACTION_DESCRIPTION = "Harvest a flower from a plant, specifically focusing on the act of picking."
 
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
@@ -62,7 +62,7 @@ class Pick_Rose(base.Action):
 
 class Smell_Rose(base.Action):
     ACTION_NAME = "smell rose"
-    ACTION_DESCRIPTION = "Smell the rose"
+    ACTION_DESCRIPTION = "Experience the scent of a floral object, focusing on the sense of smell"
 
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)

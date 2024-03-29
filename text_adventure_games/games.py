@@ -1,5 +1,6 @@
 from .things import Location, Character
 from . import parsing, actions, blocks
+from .utils.custom_logging import logger
 
 import json
 import inspect
@@ -24,9 +25,13 @@ class Game:
         player: Character,
         characters=None,
         custom_actions=None,
+        world_info=None,
     ):
         self.start_at = start_at
         self.player = player
+
+        # General world information that characters can have access to
+        self.world_info = world_info
 
         # Print the special commands associated with items in the game (helpful
         # for debugging and for novice players).
@@ -138,7 +143,7 @@ class Game:
         description += self.describe_exits() + "\n"
         description += self.describe_items() + "\n"
         description += self.describe_characters() + "\n"
-        # self.parser.ok(description)
+        description += self.describe_inventory() 
         return description
 
     def describe_current_location(self) -> str:
@@ -194,26 +199,29 @@ class Game:
                 if character_name == self.player.name:
                     continue
                 character = self.player.location.characters[character_name]
-                description += character.description + ", "
+                # TODO: may want to change this to just the character name for ease of parsing later
+                description += character.name + ", "
         return description
 
     def describe_inventory(self) -> str:
         """
         Describes the player's inventory.
         """
+        inventory_description = "inventory: "
         if len(self.player.inventory) == 0:
-            empty_inventory = "You don't have anything."
-            self.ok(empty_inventory, [], "Describe the player's inventory.")
+            inventory_description += f"{self.player.name} has nothing in inventory."
+            # self.ok(empty_inventory, [], "Describe the player's inventory.")
         else:
             # descriptions = []  # JD logical issue?
-            inventory_description = "In your inventory, you have:\n"
+            inventory_description += f"In {self.player.name} inventory, {self.player.name} has: "
             for item_name in self.player.inventory:
                 item = self.player.inventory[item_name]
-                d = "* {item} - {item_description}\n"
+                d = "{item_description}, "
                 inventory_description += d.format(
-                    item=item_name, item_description=item.description
+                    # item=item_name, 
+                    item_description=item.description
                 )
-            self.ok(inventory_description)
+        return inventory_description
 
     # The methods below read and write a game to JSON
     def to_primitive(self):
@@ -443,35 +451,38 @@ class Game:
 
 # Override methods or implement a new class?
 class SurvivorGame(Game):
-    def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, max_ticks=5):
-        super().__init__(start_at, player, characters, custom_actions)
-        self.max_ticks_per_round = max_ticks
+    def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, world_info=None, max_ticks=5):
+        super().__init__(start_at, player, characters, custom_actions, world_info)
+        self.logger = logger.CustomLogger(experiment_name="test-game-logger", sim_id=1).get_logger()
+        
         self.original_player_id = self.player.id
+        
+        # Game related tracking variables
+        self.max_ticks_per_round = max_ticks
+        self.round = 0
+        self.tick = 0
     
     # Override game loop 
     def game_loop(self):
-        # self.parser.parse_command("Come on in! Welcome to Survivor!")
-        # self.parser.parse_command("look\n", self.player)
-        round = 0
+
         while True:
             for tick in range(self.max_ticks_per_round):
+                self.tick = tick
                 # Confirming Round increments and character movement
-                print(f"ROUND: {round}.{tick}")
+                print(f"ROUND: {self.round}.{self.tick}")
                 for character in self.characters.values():  # naive ordering, not based on character initiative
                     print(f"Character: {character.name} (id: {character.id})")
                     # set the current player to the game's "player" for description purposes
                     self.player = character
-                    # if tick == self.max_ticks_per_round - 1:
-                    #     vote = True
-                    # else:
-                    #     vote = False
+
                     success = False
                     # Only move on to the next character when current takes a successful action
                     while not success:
                         if character.id == self.original_player_id:
+                            # TODO: How do we integrate the ability for a human player to engage?
                             command = character.engage(self,
-                                                       round, 
-                                                       tick, 
+                                                    #    self.round, 
+                                                    #    self.tick, 
                                                        # vote
                                                        )
                         else:
@@ -480,23 +491,26 @@ class SurvivorGame(Game):
                             # Action selection should happen in all(?) rounds except for the last one bc 
                             # at end of round the only valid action is vote()
                             command = character.engage(self,
-                                                       round, 
-                                                       tick, 
+                                                    #    self.round, 
+                                                    #    self.tick, 
                                                        # vote
                                                        )
-                            # command = input("\n>")
                         success = self.parser.parse_command(command,
-                                                            character,
-                                                            #   round,
-                                                            #   tick
+                                                            character
                                                             )
 
             if self.is_game_over():
                 break
 
             # Increment the rounds
-            round += 1
+            self.round += 1
+
+    # TODO: implement new game over check
+    # def is_game_over(self) -> bool:
+    #     pass
 
     def view_character_locations(self):
         for name, char in self.characters.items():
             print(f"{name} is in {char.location.name}\n")
+
+

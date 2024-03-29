@@ -1,13 +1,11 @@
+# local imports
 from . import base
-
-# from . import preconditions as P
-
 from ..things import Character  # Item  # , Location
 
 
 class Go(base.Action):
     ACTION_NAME = "go"
-    ACTION_DESCRIPTION = "Go in a direction"
+    ACTION_DESCRIPTION = "Go, move, continue, head in a specified compass direction or towards a location, including all cardinal directions and entrances/exits."
     ACTION_ALIASES = [
         "north",
         "n",
@@ -54,7 +52,7 @@ class Go(base.Action):
 
         if not self.location.get_connection(self.direction):
             d = "{location_name} does not have an exit '{direction}'"
-            description = d.format(
+            message = d.format(
                 location_name=self.location.name.capitalize(), direction=self.direction
             )
             # self.parser.fail(message)
@@ -70,7 +68,7 @@ class Go(base.Action):
                     direction=self.direction,
                 )
             # self.parser.fail(message)
-            self.parser.fail(self.command, message, self.character)
+            self.parser.fail(self.command, description, self.character)
             return False
 
         return True

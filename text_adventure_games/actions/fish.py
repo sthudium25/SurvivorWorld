@@ -1,3 +1,4 @@
+# local imports
 from text_adventure_games.things.characters import Character
 from . import base
 from . import preconditions as P
@@ -6,7 +7,7 @@ from ..things import Item
 
 class Catch_Fish(base.Action):
     ACTION_NAME = "catch fish"
-    ACTION_DESCRIPTION = "Catch fish with a pole"
+    ACTION_DESCRIPTION = "Catch fish with a pole. Generally, catch an aquatic animal or creature with a rod."
     ACTION_ALIASES = ["go fishing"]
 
     def __init__(self, game, command: str, character: Character):

@@ -7,16 +7,42 @@ Description: get/set any necessary API keys, constant values, etc.
 
 import json
 import os
+from os import PathLike
+from typing import Union
 
-def get_root_dir():
-    root = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir))
+def get_root_dir(n=2) -> Union[str, PathLike]:
+    """
+    With respect to this file (consts.py), get root directories n levels above.
+
+    Args:
+        n (int, optional): number of parents to climb. Defaults to 2.
+
+    Returns:
+        path: PathLike
+    """
+    path_components = [__file__] + [os.pardir] * n
+
+    root = os.path.abspath(os.path.join(*path_components))
+    # print(f"ROOT DIR: {root}")
     return root
 
+# TODO: helper method for finding any dir or file in this project
+# def find_path(name: Union[str, PathLike]) -> Union[str, PathLike]:
+#     """
+#     Given a name or path of a directory or file, discover its path within this project.
+
+#     Args:
+#         name (Union[str, PathLike]): _description_
+
+#     Returns:
+#         Union[str, PathLike]: _description_
+#     """
+
 def get_config_file():
-    config_path = os.path.join(get_root_dir(), "config.json")
+    config_path = os.path.join(get_root_dir(n=3), "config.json")
     if not os.path.exists(config_path):
         print("visible config not found, trying invisible option")
-        config_path = os.path.join(get_root_dir(), ".config.json")
+        config_path = os.path.join(get_root_dir(n=3), ".config.json")
         if not os.path.exists(config_path):
             raise FileNotFoundError("No config file found. Store your OpenAI key in a variable \"OPENAI_API_KEY\".")
 
@@ -38,7 +64,7 @@ def get_openai_api_key(organization):
     for org in config_vars["organizations"]:
         if organization in org:
             api_key = org[organization].get("OPENAI_API_KEY", None)
-            print(f"{api_key[:5]}...")
+            # print(f"{api_key[:5]}...")
             return api_key
     
     # If no matches found for org
@@ -67,10 +93,17 @@ def get_helicone_base_path(organization="Helicone"):
     print(f"{organization} not found in list of valid orgs. You may not have a base url set up for {organization}.")
     return None
     
-
-def get_assets_path():
-    asset_path = os.path.join(get_root_dir(), "assets")
+def get_assets_path() -> Union[str, PathLike]:
+    asset_path = os.path.join(get_root_dir(n=2), "assets")
     return asset_path
+
+def get_custom_logging_path():
+    logging_path = os.path.join(get_root_dir(n=1), "custom_logging")
+    return logging_path
+
+def get_output_logs_path():
+    output_logs = get_root_dir(n=3)
+    return output_logs
 
 # TODO: set up any global variables
 # TODO: I want a global list of the default archetype profiles we have access to in ../assets

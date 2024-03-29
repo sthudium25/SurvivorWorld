@@ -235,7 +235,7 @@ class ActionSequence(Action):
     Example: get pole, go out, south, catch fish with pole
     """
     ACTION_NAME = "sequence"
-    ACTION_DESCRIPTION = "Complete a sequence of actions specified in a list"
+    ACTION_DESCRIPTION = "Perform multiple actions in order, separated by commas"
 
     def __init__(
         self,
@@ -260,7 +260,7 @@ class ActionSequence(Action):
 
 class Quit(Action):
     ACTION_NAME = "quit"
-    ACTION_DESCRIPTION = "Quit the game"
+    ACTION_DESCRIPTION = "Quit the game. Terminate or exit the current session, also mentioned as leaving or stopping"
     ACTION_ALIASES = ["q"]
 
     def __init__(
@@ -288,7 +288,7 @@ class Quit(Action):
 
 class Describe(Action):
     ACTION_NAME = "describe"
-    ACTION_DESCRIPTION = "Describe the current location"
+    ACTION_DESCRIPTION = "Describe the current location by providing details about the surroundings, also commonly requested with terms like 'observe' or 'survey'."
     ACTION_ALIASES = ["look", "l"]
 
     def __init__(

@@ -1,5 +1,9 @@
+import logging
 from SurvivorWorld.text_adventure_games import games, things, actions, blocks
 from SurvivorWorld.text_adventure_games.things.characters import GenerativeAgent
+from SurvivorWorld.text_adventure_games.utils.build_agent import build_agent
+from SurvivorWorld.text_adventure_games.utils.custom_logging import logging_setup
+from SurvivorWorld.text_adventure_games.utils.custom_logging import logger
 
 class ActionCastle(games.Game):
     def __init__(
@@ -7,9 +11,10 @@ class ActionCastle(games.Game):
         start_at: things.Location,
         player: things.Character,
         characters=None,
-        custom_actions=None
+        custom_actions=None,
+        world_info=None
     ):
-        super().__init__(start_at, player, characters, custom_actions)
+        super().__init__(start_at, player, characters, custom_actions, world_info)
        
     def is_won(self) -> bool:
         """
@@ -33,9 +38,11 @@ class ActionCastleSurvivor(games.SurvivorGame):
         start_at: things.Location,
         player: things.Character,
         characters=None,
-        custom_actions=None
+        custom_actions=None,
+        world_info=None,
+        max_ticks=5
     ):
-        super().__init__(start_at, player, characters, custom_actions, max_ticks=5)
+        super().__init__(start_at, player, characters, custom_actions, world_info, max_ticks=max_ticks)
 
     def is_won(self) -> bool:
         """
@@ -457,7 +464,7 @@ class Door_Block(blocks.Block):
                 return True
         return False
 
-def build_game(type=1) -> games.Game:
+def build_game() -> games.Game:
     # Locations
     cottage = things.Location("Cottage", "You are standing in a small cottage.")
     garden_path = things.Location(
@@ -677,13 +684,11 @@ def build_game(type=1) -> games.Game:
     # The Game
     characters = [troll, guard, princess, ghost]
     custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
-    if type == 1:
-        game = ActionCastle(cottage, player, characters, custom_actions, gametype=type)
-    else:
-        game = ActionCastleSurvivor(cottage, player, characters, custom_actions)
+    
+    game = ActionCastle(cottage, player, characters, custom_actions, "You are playing ACTION CASTLE, an adventure game.")
     return game
 
-def build_mini_game() -> games.Game:
+def build_mini_game(experiment_name, sim_id, make_new_characters=False) -> games.Game:
     cottage = things.Location("Cottage", "A small cottage.")
     garden_path = things.Location(
         "Garden Path",
@@ -704,20 +709,22 @@ def build_mini_game() -> games.Game:
     fishing_pond.add_item(fishing_pole)
 
     # Troll
+    troll_persona = build_agent(agent_description="A grumpy old man sitting on his porch in a rocking chair",
+                                facts_new=make_new_characters,
+                                archetype="Hubris")
     troll = GenerativeAgent(
-        name="troll",
-        description="A mean troll",
-        persona="I am hungry. The guard promised to feed me if I guard the drawbridge and keep people out of the castle.",
+        troll_persona
     )
     troll.set_property("is_hungry", True)
     troll.set_property("character_type", "troll")
     fishing_pond.add_character(troll)
 
     # Mother
+    mother_persona = build_agent(agent_description="A homely mother who with a powerful spirit",
+                                 facts_new=make_new_characters,
+                                 archetype="Mother")
     mother = GenerativeAgent(
-        name="mother",
-        description="A motherly figure",
-        persona="I am a mother and I will do anything to protect my child",
+        mother_persona
     )
     mother.set_property("emotional_state", "happy")
     mother.set_property("is_married", True)
@@ -725,10 +732,11 @@ def build_mini_game() -> games.Game:
     cottage.add_character(mother)
 
     # Player
+    player_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
+                                 facts_new=make_new_characters,
+                                 archetype="Villain")
     player = GenerativeAgent(
-        name="The player",
-        description="You are a simple peasant destined for greatness.",
-        persona="I am on an adventure.",
+        player_persona
     )
     player.set_property("character_type", "human")
 
@@ -742,9 +750,24 @@ def build_mini_game() -> games.Game:
     # The Game
     characters = [troll, mother]
     custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
-    game = ActionCastleSurvivor(cottage, player, characters, custom_actions)
+    game = ActionCastleSurvivor(cottage, 
+                                player, 
+                                characters, 
+                                custom_actions, 
+                                world_info="You are in a rural town.",
+                                max_ticks=2)
+
+    # Logging data
+    # logging_setup.setup_logger(experiment_name, sim_id)
+
     return game
 
+def test_logging_setup(experiment_name, sim_id):
+    # Logging data
+    print("Creating custom logger")
+    # my_logger_obj = logger.CustomLogger(experiment_name, sim_id)
+    my_logger_obj = logging_setup.setup_logger(experiment_name, sim_id)
+    print(my_logger_obj.get_logger())
 
 if __name__ == "__main__":
     game = build_game()

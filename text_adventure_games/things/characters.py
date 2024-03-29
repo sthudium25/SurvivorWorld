@@ -6,6 +6,7 @@ from ..gpt.gpt_helpers import gpt_get_action_importance
 from ..utils.general import (parse_location_description, 
                              find_difference_in_dict_lists)
 from ..agent.memory_stream import MemoryStream, MemoryType
+from ..agent.agent_cognition import act, reflect
 
 
 class Character(Thing):
@@ -104,20 +105,16 @@ class Character(Thing):
 
 class GenerativeAgent(Character):
     
-    def __init__(self, name: str, description: str, persona: str):
-        super().__init__(name, description, persona)
-        # super().__init__(persona.facts["name"], persona.summary, persona="see subclass")
-        
-        # Set the Agent's persona:
-        # self.persona = persona
+    def __init__(self, persona):
+        super().__init__(persona.facts["Name"], persona.description, persona=persona.summary)
+
+        # Set the Agent's persona and initialize empty goals:
+        self.persona = persona
+        self.goals = ""
 
         # Initialize Agent's memory
-        self.memory = MemoryStream(self.id)
+        self.memory = MemoryStream(self)
         self.last_location_observations = None
-
-        # Custom Kani class here? which could store this character's bio as "always_included"
-        # Route from this Kani to Reflect, Act, Perceive Kanis?
-        # self.agent_ai = AgentKani(persona, name)  # I don't really want to store the persona in two places
 
     def get_character_summary(self):
         """
@@ -126,36 +123,37 @@ class GenerativeAgent(Character):
         Returns:
             str: a standard summary paragraph for this agent
         """
-        persona_summary = self.persona.get_personal_summary()
-        alliance_summary = self.get_alliance_summary()
-        return persona_summary + ' ' + alliance_summary
+        summary = self.persona.get_personal_summary()
+        summary += self.get_alliance_summary()
+        return summary
 
-    def engage(self, game, round, tick, 
+    def engage(self, game, 
                # vote
                ):
+        """
+        wrapper method for all agent cognition: perceive, retrieve, act, reflect, set goals
+
+        Args:
+            game (games.Game): The current game instance
+            round (int): the current round or episode
+            tick (_type_): the current time tick within the round
+
+        Returns:
+            str: an action
+        """
+        # If this is the end of a round, force reflection
+        # NOTE: This means theoretically, that characters reflect BEFORE voting. -- good or bad???
+        if game.tick == game.max_ticks_per_round - 1:
+            print(f"{self.name} has {len(self.memory.get_observations_by_type(3))}existing reflections")
+            reflect.reflect(game, self)
+
         self.percieve_location(game)
-        print(f"{self.name} has: {self.memory.num_observations} memories")
-                
-        # if vote:
-        #     # At end of round: agent votes and reflects
-        #     self.agent_ai.vote()
-        #     self.agent_ai.reflect()
-        # elif tick == 0:
-        #     # At start of round: agent plans
-        #     self.agent_ai.plan()
-        return input("\n>")
-        # self.agent_ai.full_round("Select an action to take.")
-        # need to access the game history if this player is in the same as the last one
-        # need to describe a new setting if this player is in a different location
+        return act.act(game, self)
  
+    # TODO: move perceive into an "agent_cognition" module
     def perceive(self, game):
         # Collect the latest information about the location
         location_description = game.describe()
-        # self.memory.append({"role": "user", "content": location_description})
-        # print(f"{self.name} has {len(self.memory)} memories.")
-        # It would be helpful to get lists of 
-        # * Item names, Character names, and the location
-        # These could be passed to Kani to help retrieve the relevant ObservationNodes
         return location_description
     
     def percieve_location(self, game):
@@ -177,31 +175,32 @@ class GenerativeAgent(Character):
         self.last_location_observations = location_observations.copy()
 
         # Create new observations from the differences
-        print(f"{self.name} observes:")
         for observations in diffs_perceived.values():
+            print(f"{self.name} sees: {observations}")
             for statement in observations:
+                # TODO: "create_action_statement" method is awkward as part of the Parser class
                 action_statement = game.parser.create_action_statement(command="describe",
                                                                        description=statement,
                                                                        character=self)
                 
                 importance_score = gpt_get_action_importance(action_statement,
-                                                             game.parser.client, 
-                                                             game.parser.model, 
+                                                             client=game.parser.client, 
+                                                             model=game.parser.model, 
                                                              max_tokens=10)
                 keywords = game.parser.extract_keywords(action_statement)
-                print(action_statement)
 
-                self.memory.add_memory(description=action_statement,
+                self.memory.add_memory(round=game.round,
+                                       tick=game.tick,
+                                       description=action_statement,
                                        keywords=keywords,
-                                       location=self.location,
+                                       location=self.location.name,
                                        success_status=True,
                                        memory_importance=importance_score,
-                                       memory_type=MemoryType.ACTION,
-                                       agent_name=self.name)
+                                       memory_type=MemoryType.ACTION.value)
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):
-        # TODO: it would be nicer to have characters listed in the location object
+        # NOTE: it would be nicer to have characters listed in the location object
         # however this is more state to maintain.
         """
         Given a character, identifies the other characters in the game that are in the same location
@@ -214,24 +213,15 @@ class GenerativeAgent(Character):
         """
         chars_in_view = []
         for char in game.characters.values():
-            print(f"{char.name} loc id: ", char.location.id)
             if char.location.id == self.location.id:
                 chars_in_view.append(char)
 
-        # DEBUG: 
-        if len(chars_in_view) > 0:
-            print("Characters in view of ", self.name)
-            for c in chars_in_view:
-                print(c.name)
         return chars_in_view
-
-    # def get_memories(self):
-    #     return [m['content'] for m in self.memory]
 
     # def reflect(self):
     #     # Look back at observations from this round
     #     pass
 
-    # def act(self):
-    #     # Intent determination here?
-    #     pass
+    def act(self):
+        # Intent determination here?
+        pass
