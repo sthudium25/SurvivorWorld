@@ -44,7 +44,7 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
         character (Character): a character instance
         query (str, optional): Keeping input query string optional for now but this would be
                                a non-memory input that we want to use as a retrieval seed. Defaults to None.
-        n (int): the number of relevant memories to return. Defaults to 50.
+        n (int): the number of relevant memories to return. Defaults to -1.
     """
     seach_keys = gather_keywords_for_search(game, character, query)
     memory_node_ids = get_relevant_memory_ids(seach_keys, character)
