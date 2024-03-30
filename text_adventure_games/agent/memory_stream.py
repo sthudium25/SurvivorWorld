@@ -36,6 +36,7 @@ class ObservationNode:
     embedding_key: int  # Immediately get and store the embedding for faster retrieval later?
     node_importance: int  # or could be float
     node_type: str = None  # the type of Observation
+    node_keywords: set = set()  # Keywords that were discovered in this node
     # agent_id: Optional[int] = field(default=None)  # ID of the agent making the observation, if relevant
     # associated_nodes: Optional[list[int]] = field(default_factory=list) 
 
@@ -118,6 +119,9 @@ class MemoryStream:
         description = self.replace_character(description, 
                                              self.agent_name.lower(), 
                                              agent_descriptor=self.agent_description)
+        
+        # Get a flattened list of keywords found in this memory
+        node_kwds = [w for kw_type in keywords.values() for w in kw_type]
 
         # Embed the description
         memory_embedding = self.get_observation_embedding(description)
@@ -131,7 +135,8 @@ class MemoryStream:
                                          location,
                                          success_status,
                                          memory_importance,
-                                         type=MemoryType.ACTION)
+                                         type=MemoryType.ACTION,
+                                         node_keywords=set(node_kwds))
             
         if memory_type == MemoryType.DIALOGUE.value:
             pass
@@ -143,7 +148,8 @@ class MemoryStream:
                                              location,
                                              success_status,
                                              memory_importance,
-                                             type=MemoryType.REFLECTION)
+                                             type=MemoryType.REFLECTION,
+                                             node_keywords=set(node_kwds))
         
         # Add node to sequential memory
         self.observations.append(new_memory)
@@ -173,7 +179,8 @@ class MemoryStream:
                    location: str,
                    success_status: bool,
                    memory_importance: int,
-                   type: MemoryType) -> None:
+                   type: MemoryType,
+                   node_keywords: set) -> None:
         
         new_action = ObservationNode(node_id,
                                      node_round=round,
@@ -184,7 +191,8 @@ class MemoryStream:
                                      node_success=success_status,
                                      embedding_key=node_id,
                                      node_importance=memory_importance,
-                                     node_type=type)
+                                     node_type=type,
+                                     node_keywords=node_keywords)
         # print(f"Added {new_action.node_description} to {self.agent_id}'s memory")
         return new_action
     
@@ -196,7 +204,8 @@ class MemoryStream:
                        location: str,
                        success_status: bool,
                        memory_importance: int,
-                       type: MemoryType) -> None:
+                       type: MemoryType,
+                       node_keywords: set) -> None:
         
         new_reflection = ObservationNode(node_id,
                                          node_round=round,
@@ -207,7 +216,8 @@ class MemoryStream:
                                          node_success=success_status,
                                          embedding_key=node_id,
                                          node_importance=memory_importance,
-                                         node_type=type)  
+                                         node_type=type,
+                                         node_keywords=node_keywords)  
         return new_reflection
 
     # ----------- GETTER METHODS -----------
