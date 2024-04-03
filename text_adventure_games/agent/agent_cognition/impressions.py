@@ -32,21 +32,96 @@ IMPRESSION_MAX_OUTPUT = 512
 
 class Impressions:
 
-    def __init__(self):
-        # keys are strings of the target agent "{name}_{id}"
-        self.impressions = defaultdict()
-
-    def get_impression(self, target: "Character"):
-        return self.impressions.get(f"{target.name}_{target.id}", None)
-
-    def set_impression(self, game: "Game", character: "Character", target: "Character"):
+    def __init__(self, name, id):
         """
-        Create a 
+        Structure of this dict is:
+        top level keys are strings of the target agent "{name}_{id}"
+        The inner dict contains the "impression": text describing the agent's impression of a target agent, 
+                                    "round": round in which the impression was made,  # probably mostly for logging?
+                                    "tick": tick on which the impression was made,  # probably mostly for logging?
+                                    "creation": the total ticks at time of creation.
 
         Args:
-            game (Game): _description_
-            character (Character): _description_
-            target (Character): _description_
+            name (str): _description_
+            id (int): _description_
+        """
+        
+        self.impressions = defaultdict(dict)
+        self.name = name
+        self.id = id
+
+    def get_impression(self, target: "Character"):
+        """
+        Get impressions of a target character
+
+        Args:
+            target (Character): the target requested
+
+        Returns:
+            str: the text of the impression
+        """
+        impression = self.impressions.get(f"{target.name}_{target.id}", None)
+        if impression:
+            return impression["impression"]
+        else:
+            return None
+    
+    def get_multiple_impressions(self, character_list) -> str:
+        """
+        Get impressions of several characters and concatenate these into a string.
+
+        Args:
+            character_list (list[Character]): a list of character objects
+
+        Returns:
+            str: concatenated impressions of the requested characters
+        """
+        char_impressions = ""
+        for char in character_list:
+            char_impressions += f"Your theory of mind of and relationship with {char.name}:\n"
+            char_impressions += str(self.get_impression(char))
+            char_impressions += "\n\n"
+
+        return char_impressions
+    
+    def update_impression(self, game: "Game", character: "Character", target: "Character") -> None:
+        """
+        Conditionally triggers and update of a character's impression of a target.
+        Simple heuristic: if the age is greater than max_ticks_per_round, then this impression should be updated.
+
+        Also, if no impression has been made yet then one should be made.
+
+        Args:
+            game (Game): the current game object
+            character (Character): the agent making the impression
+            target (Character): the target character of the impression
+
+        Returns:
+            None
+        """
+        total_ticks = game.total_ticks
+        should_update = False
+        impression = self.get_impression(target)
+        if not impression:
+            should_update = True
+        else:
+            impression_age = impression["creation"]
+            if (total_ticks - impression_age) > game.max_ticks_per_round:
+                should_update = True
+        if should_update:
+            self.set_impression(game, character, target)
+
+    def set_impression(self, game: "Game", character: "Character", target: "Character") -> None:
+        """
+        Create an impression of a character.
+
+        Args:
+            game (Game): the game
+            character (Character): the agent making the impression
+            target (Character): the target character of the impression
+        
+        Returns:
+            None
         """
         # get the agent's current impression of the target character
         target_impression = self.get_impression(target)
@@ -71,17 +146,37 @@ class Impressions:
         context_list = limit_context_length(context_list, 
                                             max_tokens=GPT4_MAX_TOKENS-IMPRESSION_MAX_OUTPUT,
                                             tokenizer=game.parser.tokenizer)
+        # TODO: add rules for min number memories here?
         
         impression = self.gpt_generate_impression(game, character, target.name, context_list, str(target_impression))
+        print(f"{character.name} impression of {target.name}: {impression}")
 
-        self.impressions.update({f"{target.name}_{target.id}": impression})
+        self.impressions.update({f"{target.name}_{target.id}": {"impression": impression,
+                                                                "round": game.round,
+                                                                "tick": game.tick,
+                                                                "creation": game.total_ticks}})
   
     def gpt_generate_impression(self, 
                                 game: "Game", 
                                 character: "Character", 
                                 target_name, 
                                 memories, 
-                                current_impression):
+                                current_impression) -> str:
+        """
+        Call to GPT to create a new impression of the target character.
+        System prompt uses: world info, agent personal summary, and the target's name
+        User prompt uses: target's name, a list of memories about the target, and the existing impression of the target.
+
+        Args:
+            game (Game): the game
+            character (Character): the character creating the impression
+            target_name (str): the name of the target of the impression
+            memories (list): a list of memory strings
+            current_impression (str): the existing impression of the target
+
+        Returns:
+            str: a new or updated impression
+        """
         client = set_up_openai_client("Helicone")
 
         system_prompt = ip.gpt_impressions_prompt.format(world_info=game.world_info,
@@ -106,7 +201,18 @@ class Impressions:
         impression = response.choices[0].message.content
         return impression
 
-    def build_user_message(self, target_name, memories_list, current_impression):
+    def build_user_message(self, target_name, memories_list, current_impression) -> str:
+        """
+        Helper method to build out the user message string for impression prompting.
+
+        Args:
+            target_name (str): name of the target
+            memories_list (list): list of relevant memories
+            current_impression (str): the existing impression of the character
+
+        Returns:
+            str: _description_
+        """
 
         message = "Person: {t}\n\n".format(t=target_name)
         if self.chronological:
