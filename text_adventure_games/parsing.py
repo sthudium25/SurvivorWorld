@@ -399,7 +399,6 @@ class GptParser(Parser):
             if w.pos_ in ["NOUN", "PROPN"]:
                 compounds = [j for j in w.children if j.dep_ == "compound"]
                 if compounds:
-                    print(compounds, w.text)
                     continue
             if "subj" in w.dep_:
                 if self.check_if_character_exists(w.text):
