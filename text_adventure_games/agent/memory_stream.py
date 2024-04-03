@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Literal, Tuple, Union
 from enum import Enum
 from collections import defaultdict
-from dataclasses import dataclass    
+from dataclasses import dataclass, field
 import re
 from spacy import load as spacyload
 # from uuid import uuid4
@@ -36,7 +36,7 @@ class ObservationNode:
     embedding_key: int  # Immediately get and store the embedding for faster retrieval later?
     node_importance: int  # or could be float
     node_type: str = None  # the type of Observation
-    node_keywords: set = set()  # Keywords that were discovered in this node
+    node_keywords: set = field(default_factory=set)  # Keywords that were discovered in this node
     # agent_id: Optional[int] = field(default=None)  # ID of the agent making the observation, if relevant
     # associated_nodes: Optional[list[int]] = field(default_factory=list) 
 
