@@ -389,13 +389,17 @@ class GptParser(Parser):
         outcome = f"ACTOR: {character.name}; LOCATION: {character.location}, ACTION: {command}; OUTCOME: {description}"
         summary = gpt_helpers.gpt_get_summary_description_of_action(outcome, self.client, self.model, max_tokens=100)
         return summary
-    
+
     def extract_keywords(self, text):
         if not text:
             return None
         doc = self.nlp(text)
         keys = defaultdict(list)
         for w in doc:
+            if w.pos_ in ["NOUN", "PROPN"]:
+                compounds = [j for j in w.children if j.dep_ == "compound"]
+                if compounds:
+                    continue
             if "subj" in w.dep_:
                 if self.check_if_character_exists(w.text):
                     keys['characters'].append(w.text)
@@ -406,6 +410,9 @@ class GptParser(Parser):
                     keys['characters'].append(w.text)
                 else:
                     keys['objects'].append(w.text)
+        for ent in doc.ents:
+            if ent.label_ == "PERSON" and self.check_if_character_exists(w.text):
+                keys["characters"].append(ent.text)
         return keys
     
     def add_command_to_history(self, 

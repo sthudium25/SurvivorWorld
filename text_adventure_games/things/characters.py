@@ -6,7 +6,7 @@ from ..gpt.gpt_helpers import gpt_get_action_importance
 from ..utils.general import (parse_location_description, 
                              find_difference_in_dict_lists)
 from ..agent.memory_stream import MemoryStream, MemoryType
-from ..agent.agent_cognition import act, reflect
+from ..agent.agent_cognition import act, reflect, impressions
 
 
 class Character(Thing):
@@ -110,6 +110,7 @@ class GenerativeAgent(Character):
 
         # Set the Agent's persona and initialize empty goals:
         self.persona = persona
+        self.impressions = impressions.Impressions(self.name, self.id)
         self.goals = ""
 
         # Initialize Agent's memory
@@ -144,10 +145,16 @@ class GenerativeAgent(Character):
         # If this is the end of a round, force reflection
         # NOTE: This means theoretically, that characters reflect BEFORE voting. -- good or bad???
         if game.tick == game.max_ticks_per_round - 1:
-            print(f"{self.name} has {len(self.memory.get_observations_by_type(3))}existing reflections")
+            print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
             reflect.reflect(game, self)
 
+        # Percieve the agent's surroundings 
         self.percieve_location(game)
+
+        # Update this agent's impressions of characters in the same location
+        self.update_character_impressions(game)
+
+        # act accordingly
         return act.act(game, self)
  
     # TODO: move perceive into an "agent_cognition" module
@@ -176,8 +183,9 @@ class GenerativeAgent(Character):
 
         # Create new observations from the differences
         for observations in diffs_perceived.values():
-            print(f"{self.name} sees: {observations}")
+            # print(f"{self.name} sees: {observations}")
             for statement in observations:
+                print(statement)
                 # TODO: "create_action_statement" method is awkward as part of the Parser class
                 action_statement = game.parser.create_action_statement(command="describe",
                                                                        description=statement,
@@ -213,15 +221,12 @@ class GenerativeAgent(Character):
         """
         chars_in_view = []
         for char in game.characters.values():
-            if char.location.id == self.location.id:
+            if char.location.id == self.location.id and char.id != self.id:
                 chars_in_view.append(char)
 
         return chars_in_view
 
-    # def reflect(self):
-    #     # Look back at observations from this round
-    #     pass
-
-    def act(self):
-        # Intent determination here?
-        pass
+    def update_character_impressions(self, game):
+        for target in self.get_characters_in_view(game):
+            self.impressions.update_impression(game, self, target)
+            

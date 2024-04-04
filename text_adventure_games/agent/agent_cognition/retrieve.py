@@ -44,7 +44,7 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
         character (Character): a character instance
         query (str, optional): Keeping input query string optional for now but this would be
                                a non-memory input that we want to use as a retrieval seed. Defaults to None.
-        n (int): the number of relevant memories to return. Defaults to 50.
+        n (int): the number of relevant memories to return. Defaults to -1.
     """
     seach_keys = gather_keywords_for_search(game, character, query)
     memory_node_ids = get_relevant_memory_ids(seach_keys, character)
@@ -83,8 +83,9 @@ def rank_nodes(character, node_ids, query):
     recency = character.memory.recency_alpha * recency
     importance = character.memory.importance_alpha * importance
     relevance = character.memory.relevance_alpha * relevance
+    total_score = recency + importance + relevance
 
-    node_scores = zip(node_ids, list(recency + importance + relevance))
+    node_scores = zip(node_ids, list(total_score))
 
     ranked_memory_ids = sorted(node_scores, key=lambda x: x[1])
 
@@ -138,9 +139,8 @@ def calculate_node_relevance(character, memory_ids, query):
     memory_embeddings = [character.memory.get_embedding(i) for i in memory_ids]
     if query:
         # if a query is passed, only this will be used to rank node relevance
-        query_embedding = get_text_embedding(query)
-        relevances = cosine_similarity(memory_embeddings, query_embedding)
-        # TODO: do I need to parse this new array since it's type ndarray?
+        query_embedding = get_text_embedding(query).reshape(1, -1)
+        relevances = cosine_similarity(memory_embeddings, query_embedding).flatten()
     else:
         # if no query is passed, then the default queries will be used: 
         # persona, goals, relationships, last perception

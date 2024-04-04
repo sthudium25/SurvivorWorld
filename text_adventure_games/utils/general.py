@@ -39,7 +39,7 @@ def extract_target_word(response):
     words = response.split()
     # For debugging purposes check when it fails to return only 1 word.
     if len(words) > 1:
-        print("target word list returned is: ", words)
+        # print("target word list returned is: ", words)
         return words[0].strip(string.punctuation)
     else:
         return words[0].strip(string.punctuation)
