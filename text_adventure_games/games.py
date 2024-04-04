@@ -144,6 +144,7 @@ class Game:
         description += self.describe_items() + "\n"
         description += self.describe_characters() + "\n"
         description += self.describe_inventory() 
+        # print(f"total description: {description}")
         return description
 
     def describe_current_location(self) -> str:
@@ -151,6 +152,7 @@ class Game:
         Describe the current location by printing its description field.
         """
         loc_description = f"location: {self.player.name} is at {self.player.location.description}"
+        # print(f"location description: {loc_description}")
         return loc_description
 
     def describe_exits(self) -> str:
@@ -167,6 +169,7 @@ class Game:
             description += f"From {self.player.location.name} {self.player.name} could go: "
             for exit in exits:
                 description += exit + ", "
+        # print(f"Exit description: {description}")
         return description
 
     def describe_items(self) -> str:
