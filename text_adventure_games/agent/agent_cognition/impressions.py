@@ -50,7 +50,7 @@ class Impressions:
         self.name = name
         self.id = id
 
-    def get_impression(self, target: "Character"):
+    def _get_impression(self, target: "Character", str_only=True):
         """
         Get impressions of a target character
 
@@ -61,8 +61,10 @@ class Impressions:
             str: the text of the impression
         """
         impression = self.impressions.get(f"{target.name}_{target.id}", None)
-        if impression:
+        if impression and str_only:
             return impression["impression"]
+        elif impression and not str_only:
+            return impression
         else:
             return None
     
@@ -79,7 +81,7 @@ class Impressions:
         char_impressions = ""
         for char in character_list:
             char_impressions += f"Your theory of mind of and relationship with {char.name}:\n"
-            char_impressions += str(self.get_impression(char))
+            char_impressions += str(self._get_impression(char))
             char_impressions += "\n\n"
 
         return char_impressions
@@ -101,14 +103,15 @@ class Impressions:
         """
         total_ticks = game.total_ticks
         should_update = False
-        impression = self.get_impression(target)
+        impression = self._get_impression(target, str_only=False)
         if not impression:
             should_update = True
         else:
             impression_age = impression["creation"]
             if (total_ticks - impression_age) > game.max_ticks_per_round:
                 should_update = True
-        if should_update:
+        # Don't make an impression until half a round has passed
+        if should_update and total_ticks > game.max_ticks_per_round / 2:
             self.set_impression(game, character, target)
 
     def set_impression(self, game: "Game", character: "Character", target: "Character") -> None:
@@ -124,7 +127,7 @@ class Impressions:
             None
         """
         # get the agent's current impression of the target character
-        target_impression = self.get_impression(target)
+        target_impression = self._get_impression(target)
         
         # Get relevant memories 
         if target_impression:
@@ -134,12 +137,12 @@ class Impressions:
             context_list = [node.node_description for node in nodes if target.name in node.node_keywords]
             self.chronological = True
         else:
-            # IF this agent has never reflected upon this target, get all relevant memories to them
+            # IF this agent has never reflected upon this target, get the 10 most relevant memories about them
             # TODO: how could this query be improved?
             # Relevant memories: least to most 
             context_list = retrieve.retrieve(game, 
                                              character, 
-                                             n=-1, 
+                                             n=10, 
                                              query=f"I want to remember everything I know about {target.name}")
             self.chronological = False
         
@@ -180,7 +183,8 @@ class Impressions:
         client = set_up_openai_client("Helicone")
 
         system_prompt = ip.gpt_impressions_prompt.format(world_info=game.world_info,
-                                                         persona_summary=character.persona.get_personal_summmary(),
+                                                         # TODO: need to replace this once personal summary is finalized
+                                                         persona_summary=character.persona.summary,
                                                          target_name=target_name)
         
         user_prompt = self.build_user_message(target_name, memories, current_impression)
