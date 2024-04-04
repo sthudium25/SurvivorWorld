@@ -183,8 +183,9 @@ class GenerativeAgent(Character):
 
         # Create new observations from the differences
         for observations in diffs_perceived.values():
-            print(f"{self.name} sees: {observations}")
+            # print(f"{self.name} sees: {observations}")
             for statement in observations:
+                print(statement)
                 # TODO: "create_action_statement" method is awkward as part of the Parser class
                 action_statement = game.parser.create_action_statement(command="describe",
                                                                        description=statement,
