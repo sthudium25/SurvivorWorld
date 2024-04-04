@@ -40,14 +40,14 @@ def act(game, character):
     # Add the theory of mind of agents that this agent has met
     impression_targets = character.get_characters_in_view(game)
 
-    user_messages += character.impressions.get_impressions_of_chars_in_view(impression_targets)
+    user_messages += character.impressions.get_multiple_impressions(impression_targets)
 
     # Retrieve the relevant memories to the situation
     user_messages += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: " 
     context_list = retrieve(game, character, query=None, n=-1)
 
     # Add a copy of the existing user message at the end of the memory context list 
-    context_list.append([user_messages[:]])
+    context_list.append(user_messages[:])
 
     # limit the context length here on the retrieved memories + the relationships
     context_list = limit_context_length(context_list, 
