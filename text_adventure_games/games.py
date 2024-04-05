@@ -144,6 +144,7 @@ class Game:
         description += self.describe_items() + "\n"
         description += self.describe_characters() + "\n"
         description += self.describe_inventory() 
+        # print(f"total description: {description}")
         return description
 
     def describe_current_location(self) -> str:
@@ -151,6 +152,7 @@ class Game:
         Describe the current location by printing its description field.
         """
         loc_description = f"location: {self.player.name} is at {self.player.location.description}"
+        # print(f"location description: {loc_description}")
         return loc_description
 
     def describe_exits(self) -> str:
@@ -167,6 +169,7 @@ class Game:
             description += f"From {self.player.location.name} {self.player.name} could go: "
             for exit in exits:
                 description += exit + ", "
+        # print(f"Exit description: {description}")
         return description
 
     def describe_items(self) -> str:
@@ -461,6 +464,7 @@ class SurvivorGame(Game):
         self.max_ticks_per_round = max_ticks
         self.round = 0
         self.tick = 0
+        self.total_ticks = 0
     
     # Override game loop 
     def game_loop(self):
@@ -471,7 +475,7 @@ class SurvivorGame(Game):
                 # Confirming Round increments and character movement
                 print(f"ROUND: {self.round}.{self.tick}")
                 for character in self.characters.values():  # naive ordering, not based on character initiative
-                    print(f"Character: {character.name} (id: {character.id})")
+                    # print(f"Character: {character.name} (id: {character.id})")
                     # set the current player to the game's "player" for description purposes
                     self.player = character
 
@@ -498,6 +502,8 @@ class SurvivorGame(Game):
                         success = self.parser.parse_command(command,
                                                             character
                                                             )
+                # Update the total ticks that have occurred in the game.
+                self.total_ticks += 1
 
             if self.is_game_over():
                 break
