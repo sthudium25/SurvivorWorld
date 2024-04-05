@@ -38,6 +38,16 @@ class Character(Thing):
         self.location = None
         self.memory = []
 
+    def __hash__(self):
+        return hash(self.id)
+    
+    def __eq__(self, other):
+        if not isinstance(other, Character):
+            # Don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return self.id == other.id
+
     def to_primitive(self):
         """
         Converts this object into a dictionary of values the can be safely
