@@ -28,7 +28,7 @@ class Dialogue:
         self.participants = participants
         self.characters_system = {}
         self.participants_number = len(participants)
-        self.dialogue_history = 'The dialogue just started.'
+        self.dialogue_history = f'The dialogue between {} just started.'
         self.max_tokens = 1000
         for participant in self.participants:
             self.characters_system[participant.name] = self.get_system_instructions(
@@ -39,7 +39,8 @@ class Dialogue:
         system_instructions += f"You are {character.persona.summary}"+ "\n"
         system_instructions += f"GOALS: {character.goals}. " + "/n"
         system_instructions += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: "
-        context_list = retrieve(self.game, character, query=None, n=-1)
+        context_list = retrieve(self.game, character, query=None, n=-1) #TODO: add query with context of dialogue
+        #TODO: Add retrieve only if new characters are mentioned. 
 
         # limit the context length here on the retrieved memories
         context_list = limit_context_length(context_list,
@@ -69,7 +70,7 @@ class Dialogue:
         try:
             messages = [{
                 "role": "system",
-                "content": self.characters_system[character.name]
+                "content": self.characters_system[character.name] #TODO: change to get_system method
             },
                 {
                 "role": "user",
