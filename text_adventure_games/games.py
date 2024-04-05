@@ -1,6 +1,7 @@
 from .things import Location, Character
 from . import parsing, actions, blocks
 from .utils.custom_logging import logger
+from .agent.agent_cognition.vote import VotingSession
 
 import json
 import inspect
@@ -465,6 +466,9 @@ class SurvivorGame(Game):
         self.round = 0
         self.tick = 0
         self.total_ticks = 0
+        
+        # Store exiled players in the jury for final vote
+        self.jury = {}
     
     # Override game loop 
     def game_loop(self):
@@ -484,21 +488,13 @@ class SurvivorGame(Game):
                     while not success:
                         if character.id == self.original_player_id:
                             # TODO: How do we integrate the ability for a human player to engage?
-                            command = character.engage(self,
-                                                    #    self.round, 
-                                                    #    self.tick, 
-                                                       # vote
-                                                       )
+                            command = character.engage(self)
                         else:
                             # Depending on the round, character.engage() should trigger different things
                             # Planning occurs at beginning of round, reflection at end.
                             # Action selection should happen in all(?) rounds except for the last one bc 
                             # at end of round the only valid action is vote()
-                            command = character.engage(self,
-                                                    #    self.round, 
-                                                    #    self.tick, 
-                                                       # vote
-                                                       )
+                            command = character.engage(self)
                         success = self.parser.parse_command(command,
                                                             character
                                                             )
@@ -519,4 +515,21 @@ class SurvivorGame(Game):
         for name, char in self.characters.items():
             print(f"{name} is in {char.location.name}\n")
 
+    def run_voting_session(self):
+        self.vote_session = VotingSession(self.characters)
+        self.vote_session.run(self)
+        exiled = self.vote_session.read_votes()
+        self.remove_exiled_player(exiled)
+        self.add_exiled_to_jury(exiled)
+
+    def remove_exiled_player(self, character):
+        game_chars = self.characters.copy().items()
+        
+        for name, agent in game_chars:
+            if agent == character:
+                _ = self.characters.pop(name)
+        
+    def add_exiled_to_jury(self, exiled):
+        exile_key = f"{exiled.name}_{exiled.id}".replace(" ", "")
+        self.jury.update({exile_key: exiled})
 
