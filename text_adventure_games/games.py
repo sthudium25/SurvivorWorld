@@ -1,11 +1,12 @@
+import json
+import inspect
+from collections import namedtuple
+
+from .agent.memory_stream import MemoryType
 from .things import Location, Character
 from . import parsing, actions, blocks
 from .utils.custom_logging import logger
 from .agent.agent_cognition.vote import VotingSession
-
-import json
-import inspect
-from collections import namedtuple
 
 
 class Game:
@@ -519,17 +520,53 @@ class SurvivorGame(Game):
         self.vote_session = VotingSession(self.characters)
         self.vote_session.run(self)
         exiled = self.vote_session.read_votes()
-        self.remove_exiled_player(exiled)
+        self.update_exile_state(exiled)
         self.add_exiled_to_jury(exiled)
 
-    def remove_exiled_player(self, character):
+    def update_exile_state(self, exiled_agent):
+        # Get the characters in the game
         game_chars = self.characters.copy().items()
         
+        # Loop over them
         for name, agent in game_chars:
-            if agent == character:
+            # Pass appropriate memories to each agent
+            if agent == exiled_agent:
+                self.add_exile_memory(self.characters[name],
+                                      exiled_name=exiled_agent.name, 
+                                      to_jury=True)
+                # remove the agent that was exiled
                 _ = self.characters.pop(name)
+            else:
+                self.add_exile_memory(self.characters[name], to_jury=False)
         
     def add_exiled_to_jury(self, exiled):
         exile_key = f"{exiled.name}_{exiled.id}".replace(" ", "")
         self.jury.update({exile_key: exiled})
 
+    def add_exile_memory(self, character, exiled_name: str, to_jury: bool = False):
+        vote_count = self.vote_session.tally.get(character.name)
+        vote_total = self.vote_session.tally.total()
+        if to_jury:
+            description = "".join([
+                f"{character.name} was exiled with {vote_count} votes of {vote_total}. ",
+                f"{character.name} will be added to a jury and will be able to cast a vote ",
+                "at the end of the game to determine the overall winner."
+            ])
+            
+        else:
+            description = "".join([
+                f"{character.name} survived the vote. {character.name} recieved ",
+                f"{vote_count} out of {vote_total} votes. ",
+                f"{exiled_name} was exiled from the game but now sits on the final jury. ",
+                "They will be allowed to cast a vote to help determine the game winner."
+            ])
+
+        desc_kwds = self.parser.extract_keywords(description)
+        character.memory.add_memory(self.round,
+                                    tick=self.tick, 
+                                    description=description, 
+                                    keywords=desc_kwds, 
+                                    location=None, 
+                                    success_status=True,
+                                    memory_importance=10, 
+                                    memory_type=MemoryType.ACTION.value)

@@ -9,13 +9,15 @@ import logging
 from typing import List, TYPE_CHECKING
 import openai
 
-from text_adventure_games.utils.general import set_up_openai_client
-
 # local imports
 from . import retrieve
 from text_adventure_games.assets.prompts import vote_prompt as vp
+from text_adventure_games.utils.general import set_up_openai_client
+from ..memory_stream import MemoryType
+
 if TYPE_CHECKING:
     from text_adventure_games.things import Character
+    from text_adventure_games.games import Game
 
 logger = logging.getLogger(__name__)
 VOTING_MAX_OUTPUT = 50
@@ -53,6 +55,7 @@ class VotingSession:
                     success = success
                     if success:
                         self.tally[vote_name] += 1
+                        self._add_vote_to_memory(game, voter, vote_name)
             except (openai.RateLimitError,
                     openai.APIConnectionError,
                     openai.APITimeoutError,
@@ -71,6 +74,18 @@ class VotingSession:
                 return None, False
             else:
                 return target_name, True
+            
+    def _add_vote_to_memory(self, game: "Game", voter: "Character", vote_target: str) -> None:
+        vote_desc = f"During the end of round session, {voter.name} voted for {vote_target} in secret."
+        vote_kwds = game.parser.extract_keywords(vote_desc)
+        voter.memory.add_memory(game.round,
+                                game.tick,
+                                vote_desc,
+                                keywords=vote_kwds,
+                                location=None,
+                                success_status=True,
+                                memory_importance=10,
+                                memory_type=MemoryType.ACTION.value)
 
     def read_votes(self):
         exiled_key, _ = self.tally.most_common(1)[0]
