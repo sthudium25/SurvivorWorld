@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 GPT4_MAX_TOKENS = 8192
 REFLECTION_MAX_OUTPUT = 512
+REEFLECTION_RETRIES = 5
 
 def reflect(game: "Game", character: "Character"):
     """
@@ -81,13 +82,17 @@ def generalize(game, character):
     this_round_mem_desc = character.memory.get_enumerated_description_list(this_round_mem_ids, as_type="str")
 
     generalizations = gpt_generalize(game, reflection_desc, this_round_mem_desc)
-    print(f"{character.name} generalized: {generalizations}")
-    add_generalizations_to_memory(game, character, generalizations)
+    # print(f"{character.name} generalized: {generalizations}")
+    if generalizations:
+        add_generalizations_to_memory(game, character, generalizations)
 
 def reflect_on_goals():
     pass
 
 def reflect_on_relationships():
+    pass
+
+def reflect_on_reflections():
     pass
 
 def gpt_generalize(game, reflections, new_observations):
@@ -107,25 +112,28 @@ def gpt_generalize(game, reflections, new_observations):
                                              tokenizer=game.parser.tokenizer)
     user_prompt_str = "".join(user_prompt_items)
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt_str},
-        ],
-        temperature=1,
-        top_p=1,
-        max_tokens=REFLECTION_MAX_OUTPUT,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
-    try:
-        out = json.loads(response.choices[0].message.content)
-    except json.JSONDecodeError:
-        # TODO: initiate retry logic here
-        pass
-    else:
-        return out
+    for i in range(REEFLECTION_RETRIES):
+        # print(f"retry {i}/{REEFLECTION_RETRIES} for this character")
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt_str},
+                ],
+                temperature=1,
+                top_p=1,
+                max_tokens=REFLECTION_MAX_OUTPUT,
+                frequency_penalty=0,
+                presence_penalty=0
+            )
+            
+            out = json.loads(response.choices[0].message.content)
+        except json.JSONDecodeError:
+            continue
+        else:
+            return out
+    return None
 
 def add_generalizations_to_memory(game: "Game", character: "Character", generalizations: Dict, ):
     """
@@ -138,7 +146,7 @@ def add_generalizations_to_memory(game: "Game", character: "Character", generali
     Returns:
         None
     """
-    print(f"Adding {character.name}'s generalizations to memory")
+    # print(f"Adding {character.name}'s generalizations to memory")
     add_new_generalizations(game, character, generalizations)
     update_existing_generalizations(character, generalizations)
 
@@ -153,7 +161,7 @@ def add_new_generalizations(game: "Game", character: "Character", generalization
     """
     try:
         new_gens = generalizations["new"]
-    except KeyError:
+    except (KeyError, TypeError):
         # TODO: maybe build in some retry logic?
         pass
     else:
@@ -187,12 +195,12 @@ def update_existing_generalizations(character: "Character", generalizations: Dic
     """
     try:
         updated_gens = generalizations["updated"]
-    except KeyError:
+    except (KeyError, TypeError):
         # TODO: again, do we want retry logic for reflections if GPT got JSON structure wrong?
         pass
     else:
         for ref in updated_gens:
-            print(f"Updating generalization: {ref} for {character.name}")
+            # print(f"Updating generalization: {ref} for {character.name}")
             try:
                 prev_idx = int(ref["index"])
                 desc = ref["statement"]
