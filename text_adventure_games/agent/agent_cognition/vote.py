@@ -6,6 +6,7 @@ Description: defines how agents vote for one another. This is specific to Surviv
 """
 from collections import Counter
 import logging
+from random import choice
 from typing import List, TYPE_CHECKING
 import openai
 
@@ -90,12 +91,27 @@ class VotingSession:
                                 memory_type=MemoryType.ACTION.value)
 
     def read_votes(self):
-        exiled_key, _ = self.tally.most_common(1)[0]
+        """
+        Count the cast votes and return the character with the highest tally.
+        In the case of a tie, a random choice is made.
+
+        Returns:
+            exiled: Character
+        """
+        top_count = None
+        try:
+            top_count = self.tally.most_common(1)[0][1]
+        except (KeyError, IndexError):
+            exiled_key, _ = self.tally.most_common(1)[0]
+        if top_count:
+            choices = [(c, v) for c, v in self.tally.items() if v == top_count]
+            exiled_key = choice(choices)[0]
+         
         exiled_participant = next((p for p in self.participants if p.name == exiled_key), None)
         return exiled_participant
     
     def _record_votes(self):
-        # TODO: possibly log the votes that each player reecieved during the round
+        # TODO: possibly log the votes that each player recieved during the round
         pass
 
     def _gather_voter_context(self, game: "Game", voter: "Character"):
