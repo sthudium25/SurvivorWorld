@@ -19,3 +19,7 @@ players to vote for:
 
 Who will you vote for? Return their name. My vote is: 
 """
+
+winner_memory_description = """
+{winner} won the game by recieving {for_votes} out of {total_votes}!!!
+"""
