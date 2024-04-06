@@ -8,7 +8,7 @@ from text_adventure_games.managers import Dialogue
 class Talk(base.Action):
     ACTION_NAME = "talk to"
     ACTION_DESCRIPTION = "Start a dialogue with someone"
-    ACTION_ALIASES = ["talk with", "chat with", "speak with"]
+    ACTION_ALIASES = ["talk with", "chat with", "speak with", "go talk to"]
 
     def __init__(
         self,
@@ -59,8 +59,6 @@ class Talk(base.Action):
         ** Starts a dialogue
         """
         #character.chars_in_view
-        description = f"{self.starter.name} initiated a dialogue with {self.talked_to.name}."
-        self.parser.ok(self.command, description, self.starter)
         dialogue = Dialogue(self.game, self.participants)
         dialogue_history = dialogue.dialogue_loop()
         self.parser.ok(self.command, dialogue_history, self.starter)

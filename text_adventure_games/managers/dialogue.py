@@ -28,24 +28,31 @@ class Dialogue:
         self.participants = participants
         self.characters_system = {}
         self.participants_number = len(participants)
-        self.dialogue_history = f'The dialogue between {} just started.'
+        self.dialogue_history = 'The dialogue just started.'
         self.max_tokens = 1000
         for participant in self.participants:
             self.characters_system[participant.name] = self.get_system_instructions(
                 participant)
+        self.characters_mentioned = [character.name for character in self.participants] # Characters mentioned so far in the dialogue
 
     def get_system_instructions(self, character):
         system_instructions = f"WORLD INFO: {self.game.world_info}" + "\n"
         system_instructions += f"You are {character.persona.summary}"+ "\n"
         system_instructions += f"GOALS: {character.goals}. " + "/n"
         system_instructions += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: "
-        context_list = retrieve(self.game, character, query=None, n=-1) #TODO: add query with context of dialogue
-        #TODO: Add retrieve only if new characters are mentioned. 
+        query = f"""You are in dialogue with:
+                                {', '.join([x.name for x in self.participants if x.name != character.name])}.\n
+                    Your goals are: {character.goals}. """
+        query += "\n" + self.dialogue_history.split("\n")[-1]
+        context_list = retrieve(self.game, character, query, n=-1)
 
         # limit the context length here on the retrieved memories
-        context_list = limit_context_length(context_list,
-                                            max_tokens=GPT4_MAX_TOKENS-ACTION_MAX_OUTPUT,
-                                            tokenizer=self.game.parser.tokenizer)
+        try:
+            context_list = limit_context_length(context_list,
+                                                max_tokens=GPT4_MAX_TOKENS-ACTION_MAX_OUTPUT,
+                                                tokenizer=self.game.parser.tokenizer)
+        except:
+            context_list = ["No memories"]
         # Then add these to the user message
         print(
             f"passing {len(context_list)} relevant memories to {character.name}")
@@ -70,7 +77,7 @@ class Dialogue:
         try:
             messages = [{
                 "role": "system",
-                "content": self.characters_system[character.name] #TODO: change to get_system method
+                "content": self.characters_system[character.name]
             },
                 {
                 "role": "user",
@@ -99,7 +106,15 @@ class Dialogue:
     def dialogue_loop(self):
         while True:
             for character in self.participants:
+                last_line = self.dialogue_history.split("\n")[-1]
+                keywords = self.game.parser.extract_keywords(last_line).get("characters", None)
+                if keywords:
+                    for k in keywords:
+                        if k not in self.characters_mentioned:
+                            for participant in self.participants:
+                                self.characters_system[participant.name] = self.get_system_instructions(participant)
                 response = self.get_gpt_response(character)
+                print(response)
                 self.add_to_dialogue_history(response)
                 if response == f"{character.name} leaves the conversation.":
                     self.participants.remove(character)
