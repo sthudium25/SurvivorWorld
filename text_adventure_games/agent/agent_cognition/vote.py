@@ -43,7 +43,8 @@ class VotingSession:
             return [p for p in self.participants if p != current_voter]
 
     def run(self, game):
-        for voter in self.participants:            
+        for voter in self.participants: 
+            # print(f"Voter: {voter.name}")
             # 1. Gather context for voter
             # 2. have them cast vote:
             system_prompt, user_prompt = self._gather_voter_context(game, voter)
@@ -51,6 +52,7 @@ class VotingSession:
                 success = False
                 while not success:
                     vote = self.gpt_cast_vote(system_prompt, user_prompt)
+                    # print(f"Vote received from {voter.name}: {vote}")
                     vote_name, success = self._validate_vote(game, vote, voter)
                     success = success
                     if success:
@@ -89,14 +91,14 @@ class VotingSession:
 
     def read_votes(self):
         exiled_key, _ = self.tally.most_common(1)[0]
-        exiled_participant = next((p for p in self.participants if f"{p.name}_{p.id}" == exiled_key), None)
+        exiled_participant = next((p for p in self.participants if p.name == exiled_key), None)
         return exiled_participant
     
     def _record_votes(self):
         # TODO: possibly log the votes that each player reecieved during the round
         pass
 
-    def _gather_voter_context(self, game, voter):
+    def _gather_voter_context(self, game: "Game", voter: "Character"):
         world_info = game.world_info
         persona = voter.persona.summary
         goals = voter.goals
@@ -114,7 +116,7 @@ class VotingSession:
                                            relationships, 
                                            hyperrelevant_memories)
         
-        user = self._build_system_prompt()
+        user = self._build_user_prompt(voter=voter)
         return system, user
     
     def _build_system_prompt(self, world, persona, goals, relations, memories):
@@ -160,3 +162,49 @@ class VotingSession:
 
         vote = response.choices[0].message.content
         return vote
+    
+
+class JuryVotingSession(VotingSession):
+    def __init__(self, jury_members: List["Character"], finalists: List["Character"]):
+        super().__init__(participants=jury_members)
+        self.finalists = finalists
+
+    def get_vote_options(self, current_voter: "Character", names_only=False):
+        """
+        Override the parent class version. 
+        Only need the finalists list, which is already separate from jury members
+
+        Args:
+            current_voter (Character): the jury member voting (only present for compatibility)
+            names_only (bool, optional): return agent names only or full Character objects. Defaults to False.
+
+        Returns:
+            _type_: _description_
+        """
+        if names_only:
+            return [f.name for f in self.finalists]
+        else:
+            return self.finalists
+
+    def _gather_voter_context(self, game, voter):
+        # Adjust to focus on the finalists and the criteria for selecting the winner
+        world_info = game.world_info  
+        persona = voter.persona.summary  # TODO: adjust with the proper summary when that is finalized
+        goals = "Select the deserving winner from the finalists based on the quality of their strategy, gameplay, and contributions."
+        relationships = voter.impressions.get_multiple_impressions(self.finalists)
+        
+        query = "".join([
+            f"Before the vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
+            "have done over the course of their game, focusing on their strategy, critical moves made, and strength as a player."
+        ])
+        hyperrelevant_memories = retrieve.retrieve(game, voter, n=20, query=query)
+        
+        system = self._build_system_prompt(world_info, persona, goals, relationships, hyperrelevant_memories)  
+        user = self._build_user_prompt(voter)  # This might remain similar or be adjusted to reflect the final vote context
+        
+        return system, user
+    
+    def determine_winner(self):
+        winner_key, _ = self.tally.most_common(1)[0]
+        winner = next((f for f in self.finalists if f.name == winner_key), None)
+        return winner
