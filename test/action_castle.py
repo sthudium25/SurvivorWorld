@@ -44,21 +44,6 @@ class ActionCastleSurvivor(games.SurvivorGame):
     ):
         super().__init__(start_at, player, characters, custom_actions, world_info, max_ticks=max_ticks)
 
-    def is_won(self) -> bool:
-        """
-        Checks whether the game has been won. For Action Castle, the game is won
-        once any character is sitting on the throne (has the property is_reigning).
-        """
-        for name, character in self.characters.items():
-            if character.get_property("is_reigning"):
-                self.parser.ok(
-                    "{name} is now reigns in ACTION CASTLE! {name} has won the game!".format(
-                        name=character.name.title()
-                    )
-                )
-                return True
-        return False
-
 
 # Actions
 class Unlock_Door(actions.Action):

@@ -1,3 +1,4 @@
+from typing import Union
 from .base import Thing
 from .items import Item
 from .locations import Location
@@ -37,6 +38,16 @@ class Character(Thing):
         self.inventory = {}
         self.location = None
         self.memory = []
+
+    def __hash__(self):
+        return hash(self.id)
+    
+    def __eq__(self, other):
+        if not isinstance(other, Character):
+            # Don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return self.id == other.id
 
     def to_primitive(self):
         """
@@ -108,7 +119,7 @@ class GenerativeAgent(Character):
     def __init__(self, persona):
         super().__init__(persona.facts["Name"], persona.description, persona=persona.summary)
 
-        # Set the Agent's persona and initialize empty goals:
+        # Set the Agent's persona, empty impressions, and initialize empty goals:
         self.persona = persona
         self.impressions = impressions.Impressions(self.name, self.id)
         self.goals = ""
@@ -128,25 +139,21 @@ class GenerativeAgent(Character):
         summary += self.get_alliance_summary()
         return summary
 
-    def engage(self, game, 
-               # vote
-               ):
+    def engage(self, game) -> Union[str, int]:
         """
         wrapper method for all agent cognition: perceive, retrieve, act, reflect, set goals
 
         Args:
-            game (games.Game): The current game instance
-            round (int): the current round or episode
-            tick (_type_): the current time tick within the round
+            game (Game): the current game object
 
         Returns:
-            str: an action
+            Union[str, int]: An action string or int flag -999 to trigger skipped action
         """
         # If this is the end of a round, force reflection
-        # NOTE: This means theoretically, that characters reflect BEFORE voting. -- good or bad???
         if game.tick == game.max_ticks_per_round - 1:
-            print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
-            reflect.reflect(game, self)
+            # print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
+            reflect.reflect(game, self)  # TODO: Evaluation of goals should be triggered within reflection
+            return -999
 
         # Percieve the agent's surroundings 
         self.percieve_location(game)
@@ -183,9 +190,9 @@ class GenerativeAgent(Character):
 
         # Create new observations from the differences
         for observations in diffs_perceived.values():
-            # print(f"{self.name} sees: {observations}")
+            print(f"{self.name} sees: {observations}")
             for statement in observations:
-                print(statement)
+                # print(statement)
                 # TODO: "create_action_statement" method is awkward as part of the Parser class
                 action_statement = game.parser.create_action_statement(command="describe",
                                                                        description=statement,

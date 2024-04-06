@@ -145,14 +145,14 @@ class Impressions:
                                              n=10, 
                                              query=f"I want to remember everything I know about {target.name}")
             self.chronological = False
-        
-        context_list = limit_context_length(context_list, 
-                                            max_tokens=GPT4_MAX_TOKENS-IMPRESSION_MAX_OUTPUT,
-                                            tokenizer=game.parser.tokenizer)
+        if context_list:
+            context_list = limit_context_length(context_list, 
+                                                max_tokens=GPT4_MAX_TOKENS-IMPRESSION_MAX_OUTPUT,
+                                                tokenizer=game.parser.tokenizer)
         # TODO: add rules for min number memories here?
         
         impression = self.gpt_generate_impression(game, character, target.name, context_list, str(target_impression))
-        print(f"{character.name} impression of {target.name}: {impression}")
+        # print(f"{character.name} impression of {target.name}: {impression}")
 
         self.impressions.update({f"{target.name}_{target.id}": {"impression": impression,
                                                                 "round": game.round,
@@ -225,9 +225,9 @@ class Impressions:
             ordering = "in order from least to most relevant"
 
         message += "Current theory of mind for {t} {o}:\n{i}\n\n".format(t=target_name, o=ordering, i=current_impression)
-
-        memory_str = "".join([f"{i}. {m}\n" for i, m in enumerate(memories_list)])
-        message += "Memories to consider in developing a theory of mind for {t}:\n{m}".format(t=target_name, 
-                                                                                              m=memory_str)
+        if memories_list:
+            memory_str = "".join([f"{i}. {m}\n" for i, m in enumerate(memories_list)])
+            message += "Memories to consider in developing a theory of mind for {t}:\n{m}".format(t=target_name, 
+                                                                                                  m=memory_str)
         
         return message
