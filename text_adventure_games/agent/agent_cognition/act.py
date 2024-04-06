@@ -39,7 +39,6 @@ def act(game, character):
 
     # Add the theory of mind of agents that this agent has met
     impression_targets = character.get_characters_in_view(game)
-
     user_messages += character.impressions.get_multiple_impressions(impression_targets)
 
     # Retrieve the relevant memories to the situation
