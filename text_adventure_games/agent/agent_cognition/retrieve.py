@@ -48,6 +48,8 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
     """
     seach_keys = gather_keywords_for_search(game, character, query)
     memory_node_ids = get_relevant_memory_ids(seach_keys, character)
+    if len(memory_node_ids) == 0:
+        return None
 
     # TODO: how many should be returned? default = all
     ranked_memory_ids = rank_nodes(character, memory_node_ids, query)
@@ -57,8 +59,7 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
     if n > 0:
         ranked_memory_ids = ranked_memory_ids[-n:]
 
-    # TODO: in what format do we want to return the relevant nodes?
-    # NOTE: currently just a list of strings
+    # NOTE: currently a list of strings
     game.logger.debug(f"{character.name} found {len(ranked_memory_ids)} relevant memories.", 
                       extra={"round": game.round, "tick": game.tick})
     return [character.memory.observations[t[0]].node_description for t in ranked_memory_ids]
