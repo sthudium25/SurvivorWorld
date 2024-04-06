@@ -152,7 +152,7 @@ class Impressions:
         # TODO: add rules for min number memories here?
         
         impression = self.gpt_generate_impression(game, character, target.name, context_list, str(target_impression))
-        print(f"{character.name} impression of {target.name}: {impression}")
+        # print(f"{character.name} impression of {target.name}: {impression}")
 
         self.impressions.update({f"{target.name}_{target.id}": {"impression": impression,
                                                                 "round": game.round,
