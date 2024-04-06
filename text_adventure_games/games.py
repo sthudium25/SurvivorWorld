@@ -8,7 +8,7 @@ from .things import Location, Character
 from . import parsing, actions, blocks
 from .utils.custom_logging import logger
 from .agent.agent_cognition.vote import VotingSession, JuryVotingSession
-from .assets.prompts import vote_prompt as vp
+from .assets.prompts import vote_prompt, world_info_prompt
 
 
 class Game:
@@ -28,14 +28,10 @@ class Game:
         start_at: Location,
         player: Character,
         characters=None,
-        custom_actions=None,
-        world_info=None,
+        custom_actions=None
     ):
         self.start_at = start_at
         self.player = player
-
-        # General world information that characters can have access to
-        self.world_info = world_info
 
         # Print the special commands associated with items in the game (helpful
         # for debugging and for novice players).
@@ -458,9 +454,17 @@ class Game:
 
 # Override methods or implement a new class?
 class SurvivorGame(Game):
-    def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, world_info=None, max_ticks=5):
-        super().__init__(start_at, player, characters, custom_actions, world_info)
-        self.logger = logger.CustomLogger(experiment_name="test-game-logger", sim_id=1).get_logger()
+    def __init__(self, 
+                 start_at: Location, 
+                 player: Character, 
+                 characters=None, 
+                 custom_actions=None, 
+                 max_ticks: int = 10, 
+                 num_finalists: int = 2,
+                 experiment_name: str = "exp1",
+                 experiment_id: int = 1):
+        super().__init__(start_at, player, characters, custom_actions)
+        self.logger = logger.CustomLogger(experiment_name=experiment_name, sim_id=experiment_id).get_logger()
         
         self.original_player_id = self.player.id
         
@@ -470,10 +474,18 @@ class SurvivorGame(Game):
         self.tick = 0
         self.total_ticks = 0
         
-        # Store exiled players in the jury for final vote
+        # Store end state variables: 
+        # Exiled players in jury cast the final vote
         self.jury = {}
-        self.num_finalists = 2
+        self.num_finalists = num_finalists
         self.winner_declared = False
+
+    def update_world_info(self):
+        params = {"contestant_count": len(self.characters),
+                  "n_finalists": self.num_finalists,
+                  "rounds_until_finals": len(self.characters) - self.num_finalists,
+                  "turns_left_this_round": self.max_ticks_per_round - (self.tick - 1)}
+        self.world_info = world_info_prompt.world_info.format(**params)
     
     # Override game loop 
     def game_loop(self):
@@ -482,6 +494,9 @@ class SurvivorGame(Game):
             for tick in range(self.max_ticks_per_round):
                 self.tick = tick
                 
+                # Update the world info with new tick and contestant counts
+                self.update_world_info()
+
                 # Confirming Round increments
                 print(f"ROUND: {self.round}.{self.tick}")
                 for character in permutation(list(self.characters.values())):  # random permuted ordering, not based on character initiative
@@ -624,9 +639,9 @@ class SurvivorGame(Game):
         
         vote_count = self.final_vote.tally.get(self.winner.name)
         vote_total = self.final_vote.tally.total()
-        description = vp.winner_memory_description.format(winner=self.winner.name,
-                                                          for_votes=vote_count,
-                                                          total_votes=vote_total)
+        description = vote_prompt.winner_memory_description.format(winner=self.winner.name,
+                                                                   for_votes=vote_count,
+                                                                   total_votes=vote_total)
         winner_kwds = self.parser.extract_keywords(description)
 
         # Pass this memory to all characters
