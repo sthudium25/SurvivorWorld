@@ -23,33 +23,19 @@ class Persona():
         # Agent traits
         self.facts = facts
         self.traits = {}
-        # self.affinities = {}
         self.summary = summarize_agent_facts(str(self.facts))
         self.description = f'A {facts["Age"]} year old {facts["Occupation"]} named {facts["Name"]}'
-
-    # NOTE: Removing this for now -- memory stored in GenerativeAgent()
-    # def initialize_memory(self, agent_id):
-    #     # Agent Memory
-    #     self.memory = ms.MemoryStream(agent_id)
 
     def add_trait(self, trait):
         if trait.name not in self.traits:
             self.traits[trait.name] = trait
 
-    def add_affinity(self, affinity):
-        if affinity.target.id not in self.affinities:
-            self.affinities[affinity.target.id] = affinity
-
     def get_trait_score(self, name: str):
         if name in self.traits:
             return self.traits[name].get_score()
-
-    def get_affinity_score(self, target_id: str):
-        if target_id in self.affinities:
-            return self.affinities[target_id].get_score()
         
     def get_trait_summary(self):
-        return [f"{tname} is {trait.adjective}" for tname, trait in self.traits.items()]
+        return [f"{tname} TENDS TO BE {trait.adjective}" for tname, trait in self.traits.items()]
     
     # def get_goal_summary(self):
     #     goal_summary = ""

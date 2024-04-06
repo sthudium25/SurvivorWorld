@@ -39,26 +39,26 @@ def act(game, character):
 
     # Add the theory of mind of agents that this agent has met
     impression_targets = character.get_characters_in_view(game)
-
     user_messages += character.impressions.get_multiple_impressions(impression_targets)
 
     # Retrieve the relevant memories to the situation
     user_messages += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: " 
     context_list = retrieve(game, character, query=None, n=-1)
 
-    # Add a copy of the existing user message at the end of the memory context list 
-    context_list.append(user_messages[:])
+    if context_list:
+        # Add a copy of the existing user message at the end of the memory context list 
+        context_list.append(user_messages[:])
 
-    # limit the context length here on the retrieved memories + the relationships
-    context_list = limit_context_length(context_list, 
-                                        max_tokens=GPT4_MAX_TOKENS-ACTION_MAX_OUTPUT, 
-                                        tokenizer=game.parser.tokenizer)
-    
-    # Then add these to the user message after popping the user messsage off 
-    context_list.pop()
+        # limit the context length here on the retrieved memories + the relationships
+        context_list = limit_context_length(context_list, 
+                                            max_tokens=GPT4_MAX_TOKENS-ACTION_MAX_OUTPUT, 
+                                            tokenizer=game.parser.tokenizer)
+        
+        # Then add these to the user message after popping the user messsage off 
+        context_list.pop()
 
-    # print(f"passing {len(context_list)} relevant memories to {character.name}")
-    user_messages += "".join([f"{m}\n" for m in context_list])
+        # print(f"passing {len(context_list)} relevant memories to {character.name}")
+        user_messages += "".join([f"{m}\n" for m in context_list])
 
     action_to_take = generate_action(system_prompt, available_actions, user_messages)
     game.logger.debug(f"{character.name} chose to take action: {action_to_take}")

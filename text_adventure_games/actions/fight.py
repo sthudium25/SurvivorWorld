@@ -58,7 +58,7 @@ class Attack(base.Action):
         if not self.was_matched(
             self.attacker,
             self.weapon,
-            error_message="{name} doesn't have a weapon.".format(
+            description="{name} doesn't have a weapon.".format(
                 name=self.attacker.name
             ),
         ):
