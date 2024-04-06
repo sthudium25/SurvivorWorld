@@ -35,6 +35,29 @@ def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):
     engine = OpenAIEngine(key, model=model, **kwargs)
     return engine
 
+def normalize_name(name):
+    common_prefixes = ["mr", "ms", "mrs", "dr", "sir", "lady", "captain", "prof", "professor"]
+    common_suffixes = ["jr", "sr", "ii", "iii", "iv", "phd", "md"]
+    # Convert to lowercase
+    name = name.lower()
+    # Remove non-alphanumeric characters
+    name = ''.join(e for e in name if e.isalnum() or e.isspace())
+    
+    # Split the name to handle prefixes and suffixes more effectively
+    name_parts = name.split()
+    
+    # Remove prefixes and suffixes
+    if name_parts:
+        if name_parts[0] in common_prefixes:
+            name_parts = name_parts[1:]  # Remove the first element (prefix)
+        if name_parts and name_parts[-1] in common_suffixes:
+            name_parts = name_parts[:-1]  # Remove the last element (suffix)
+    
+    # Rejoin the name parts
+    normalized_name = " ".join(name_parts)
+    
+    return normalized_name
+
 def extract_target_word(response):
     words = response.split()
     # For debugging purposes check when it fails to return only 1 word.
