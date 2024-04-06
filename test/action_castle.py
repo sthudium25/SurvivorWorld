@@ -39,10 +39,19 @@ class ActionCastleSurvivor(games.SurvivorGame):
         player: things.Character,
         characters=None,
         custom_actions=None,
-        world_info=None,
-        max_ticks=5
+        max_ticks=5,
+        num_finalists=2,
+        experiment_name="exp1",
+        experiment_id=1
     ):
-        super().__init__(start_at, player, characters, custom_actions, world_info, max_ticks=max_ticks)
+        super().__init__(start_at,
+                         player, 
+                         characters, 
+                         custom_actions, 
+                         max_ticks=max_ticks, 
+                         num_finalists=num_finalists,
+                         experiment_name=experiment_name,
+                         experiment_id=experiment_id)
 
 
 # Actions
@@ -673,7 +682,7 @@ def build_game() -> games.Game:
     game = ActionCastle(cottage, player, characters, custom_actions, "You are playing ACTION CASTLE, an adventure game.")
     return game
 
-def build_mini_game(experiment_name, sim_id, make_new_characters=False) -> games.Game:
+def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=2) -> games.Game:
     cottage = things.Location("Cottage", "A small cottage.")
     garden_path = things.Location(
         "Garden Path",
@@ -734,16 +743,12 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False) -> games
 
     # The Game
     characters = [troll, mother]
-    custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
+    # custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
     game = ActionCastleSurvivor(cottage, 
                                 player, 
                                 characters, 
-                                custom_actions, 
-                                world_info="You are in a rural town.",
-                                max_ticks=2)
-
-    # Logging data
-    # logging_setup.setup_logger(experiment_name, sim_id)
+                                custom_actions=None,
+                                max_ticks=max_ticks)
 
     return game
 
