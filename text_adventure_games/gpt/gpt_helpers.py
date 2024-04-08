@@ -126,6 +126,28 @@ def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
     summary_statement = response.choices[0].message.content
     return summary_statement
 
+def gpt_get_adjective_from_trait(anchored_trait, client, model, max_tokens):
+
+    system = "Generate an adjective that describes someone with the following trait."
+    prompt = f"""{anchored_trait['score']}% {anchored_trait['tname']} on a scale from 
+                 {anchored_trait['low_anchor']} (0) to {anchored_trait['high_anchor']} (100)."""
+
+    messages = [{"role": "system", "content": system},
+                {"role": "user", "content": prompt}]
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=1,
+        max_tokens=max_tokens,
+        top_p=0.5,
+        frequency_penalty=0,
+        presence_penalty=0
+    )
+
+    adjective = response.choices[0].message.content
+    return adjective
+
 
 def gpt_get_action_importance(statement: str, client=None, model: str = "gpt-4", max_tokens: int = 10):
 
