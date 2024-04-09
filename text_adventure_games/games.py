@@ -1,9 +1,14 @@
-from .things import Location, Character
-from . import parsing, actions, blocks
-
 import json
 import inspect
 from collections import namedtuple
+from numpy.random import permutation
+
+from .agent.memory_stream import MemoryType
+from .things import Location, Character
+from . import parsing, actions, blocks
+from .utils.custom_logging import logger
+from .agent.agent_cognition.vote import VotingSession, JuryVotingSession
+from .assets.prompts import vote_prompt, world_info_prompt
 
 
 class Game:
@@ -23,14 +28,10 @@ class Game:
         start_at: Location,
         player: Character,
         characters=None,
-        custom_actions=None,
-        world_info=None,
+        custom_actions=None
     ):
         self.start_at = start_at
         self.player = player
-
-        # General world information that characters can have access to
-        self.world_info = world_info
 
         # Print the special commands associated with items in the game (helpful
         # for debugging and for novice players).
@@ -142,7 +143,8 @@ class Game:
         description += self.describe_exits() + "\n"
         description += self.describe_items() + "\n"
         description += self.describe_characters() + "\n"
-        # self.parser.ok(description)
+        description += self.describe_inventory() 
+        # print(f"total description: {description}")
         return description
 
     def describe_current_location(self) -> str:
@@ -150,6 +152,7 @@ class Game:
         Describe the current location by printing its description field.
         """
         loc_description = f"location: {self.player.name} is at {self.player.location.description}"
+        # print(f"location description: {loc_description}")
         return loc_description
 
     def describe_exits(self) -> str:
@@ -166,6 +169,7 @@ class Game:
             description += f"From {self.player.location.name} {self.player.name} could go: "
             for exit in exits:
                 description += exit + ", "
+        # print(f"Exit description: {description}")
         return description
 
     def describe_items(self) -> str:
@@ -199,26 +203,28 @@ class Game:
                     continue
                 character = self.player.location.characters[character_name]
                 # TODO: may want to change this to just the character name for ease of parsing later
-                description += character.description + ", "
+                description += character.name + ", "
         return description
 
     def describe_inventory(self) -> str:
         """
         Describes the player's inventory.
         """
+        inventory_description = "inventory: "
         if len(self.player.inventory) == 0:
-            empty_inventory = "You don't have anything."
-            self.ok(empty_inventory, [], "Describe the player's inventory.")
+            inventory_description += f"{self.player.name} has nothing in inventory."
+            # self.ok(empty_inventory, [], "Describe the player's inventory.")
         else:
             # descriptions = []  # JD logical issue?
-            inventory_description = "In your inventory, you have:\n"
+            inventory_description += f"In {self.player.name} inventory, {self.player.name} has: "
             for item_name in self.player.inventory:
                 item = self.player.inventory[item_name]
-                d = "* {item} - {item_description}\n"
+                d = "{item_description}, "
                 inventory_description += d.format(
-                    item=item_name, item_description=item.description
+                    # item=item_name, 
+                    item_description=item.description
                 )
-            self.ok(inventory_description)
+        return inventory_description
 
     # The methods below read and write a game to JSON
     def to_primitive(self):
@@ -448,60 +454,206 @@ class Game:
 
 # Override methods or implement a new class?
 class SurvivorGame(Game):
-    def __init__(self, start_at: Location, player: Character, characters=None, custom_actions=None, world_info=None, max_ticks=5):
-        super().__init__(start_at, player, characters, custom_actions, world_info)
-        self.max_ticks_per_round = max_ticks
+    def __init__(self, 
+                 start_at: Location, 
+                 player: Character, 
+                 characters=None, 
+                 custom_actions=None, 
+                 max_ticks: int = 10, 
+                 num_finalists: int = 2,
+                 experiment_name: str = "exp1",
+                 experiment_id: int = 1):
+        super().__init__(start_at, player, characters, custom_actions)
+        self.logger = logger.CustomLogger(experiment_name=experiment_name, sim_id=experiment_id).get_logger()
+        
         self.original_player_id = self.player.id
+        
+        # Game related tracking variables
+        self.max_ticks_per_round = max_ticks
+        self.round = 0
+        self.tick = 0
+        self.total_ticks = 0
+        
+        # Store end state variables: 
+        # Exiled players in jury cast the final vote
+        self.jury = {}
+        self.num_finalists = num_finalists
+        self.winner_declared = False
+
+    def update_world_info(self):
+        params = {"contestant_count": len(self.characters),
+                  "n_finalists": self.num_finalists,
+                  "rounds_until_finals": len(self.characters) - self.num_finalists,
+                  "turns_left_this_round": self.max_ticks_per_round - (self.tick - 1)}
+        self.world_info = world_info_prompt.world_info.format(**params)
     
     # Override game loop 
     def game_loop(self):
-        # self.parser.parse_command("Come on in! Welcome to Survivor!")
-        # self.parser.parse_command("look\n", self.player)
-        round = 0
+
         while True:
             for tick in range(self.max_ticks_per_round):
-                # Confirming Round increments and character movement
-                print(f"ROUND: {round}.{tick}")
-                for character in self.characters.values():  # naive ordering, not based on character initiative
-                    print(f"Character: {character.name} (id: {character.id})")
-                    # set the current player to the game's "player" for description purposes
-                    self.player = character
-                    # if tick == self.max_ticks_per_round - 1:
-                    #     vote = True
-                    # else:
-                    #     vote = False
-                    success = False
-                    # Only move on to the next character when current takes a successful action
-                    while not success:
-                        if character.id == self.original_player_id:
-                            command = character.engage(self,
-                                                       round, 
-                                                       tick, 
-                                                       # vote
-                                                       )
-                        else:
-                            # Depending on the round, character.engage() should trigger different things
-                            # Planning occurs at beginning of round, reflection at end.
-                            # Action selection should happen in all(?) rounds except for the last one bc 
-                            # at end of round the only valid action is vote()
-                            command = character.engage(self,
-                                                       round, 
-                                                       tick, 
-                                                       # vote
-                                                       )
-                            # command = input("\n>")
-                        success = self.parser.parse_command(command,
-                                                            character,
-                                                            #   round,
-                                                            #   tick
-                                                            )
+                self.tick = tick
+                
+                # Update the world info with new tick and contestant counts
+                self.update_world_info()
 
+                # Confirming Round increments
+                print(f"ROUND: {self.round}.{self.tick}")
+                for character in permutation(list(self.characters.values())):  # random permuted ordering, not based on character initiative
+                    print(f"It is: {character.name}'s turn")
+                    self.turn_handler(character)
+
+                # Update the total ticks that have occurred in the game.
+                self.total_ticks += 1
+            
+            # NOTE: this placement allows agents to reflect prior to voting.
+            self.handle_voting_sessions()
             if self.is_game_over():
                 break
 
             # Increment the rounds
-            round += 1
+            self.round += 1
+
+    def turn_handler(self, character):
+        # set the current player to the game's "player" for description purposes
+        self.player = character
+
+        success = False
+        # Only move on to the next character when current takes a successful action
+        while not success:
+            if character.id == self.original_player_id:
+                # TODO: How do we integrate the ability for a human player to engage?
+                command = character.engage(self)
+            else:
+                command = character.engage(self)
+
+            if self._should_enact_command(command):
+                success = self.parser.parse_command(command, character)
+            else:
+                success = True
+
+    def is_game_over(self) -> bool:
+        if self.game_over:
+            return True
+        return self.is_won()
+    
+    def is_won(self):
+        """
+        Checks whether the game has been won. For SurvivorWorld, the game is won
+        once any has been voted the victor.
+        """
+        if self.winner_declared:
+            print(f"Congratulations!! {self.winner.name} won the game! They're the ultimate Survivor. Jeff is so proud of u")
+            return True
+        return False
+            
+    def _should_enact_command(self, command):
+        if isinstance(command, int):
+            if command == -999:
+                return False
+        elif isinstance(command, str):
+            return True
+        else:
+            raise ValueError(f"command: {command} must be str or int; got {type(command)}")
 
     def view_character_locations(self):
         for name, char in self.characters.items():
             print(f"{name} is in {char.location.name}\n")
+
+    def handle_voting_sessions(self):
+        if len(self.characters) == self.num_finalists:
+            # This should trigger the end of game
+            self.run_jury_session()
+        # If we've reached the end of a round, run a voting session to exile someone.
+        elif self.tick == (self.max_ticks_per_round - 1):
+            self.run_voting_session()
+
+    def run_voting_session(self):
+        self.vote_session = VotingSession(self.characters.values())
+        self.vote_session.run(self)
+        exiled = self.vote_session.read_votes()
+        self.update_exile_state(exiled)
+        self.add_exiled_to_jury(exiled)
+        print(f"{exiled.name} was exiled from the group and now sits on the jury.")
+
+    def update_exile_state(self, exiled_agent):
+        # Get the characters in the game
+        game_chars = self.characters.copy().items()
+        
+        # Loop over them
+        for name, agent in game_chars:
+            # Pass appropriate memories to each agent
+            if agent == exiled_agent:
+                self.add_exile_memory(self.characters[name],
+                                      exiled_name=exiled_agent.name, 
+                                      to_jury=True)
+                # remove the agent that was exiled
+                _ = self.characters.pop(name)
+            else:
+                self.add_exile_memory(self.characters[name],
+                                      exiled_name=exiled_agent.name,
+                                      to_jury=False)
+        
+    def add_exiled_to_jury(self, exiled):
+        # exile_key = f"{exiled.name}_{exiled.id}".replace(" ", "")
+        self.jury.update({exiled.name: exiled})
+
+    def add_exile_memory(self, character, exiled_name: str, to_jury: bool = False):
+        vote_count = self.vote_session.tally.get(character.name)
+        vote_total = self.vote_session.tally.total()
+        if to_jury:
+            description = "".join([
+                f"{character.name} was exiled with {vote_count} votes of {vote_total}. ",
+                f"{character.name} will be added to a jury and will be able to cast a vote ",
+                "at the end of the game to determine the overall winner."
+            ])
+            
+        else:
+            description = "".join([
+                f"{character.name} survived the vote. {character.name} recieved ",
+                f"{vote_count} out of {vote_total} votes. ",
+                f"{exiled_name} was exiled from the game but now sits on the final jury. ",
+                "They will be allowed to cast a vote to help determine the game winner."
+            ])
+
+        desc_kwds = self.parser.extract_keywords(description)
+        character.memory.add_memory(self.round,
+                                    tick=self.tick, 
+                                    description=description, 
+                                    keywords=desc_kwds, 
+                                    location=None, 
+                                    success_status=True,
+                                    memory_importance=10, 
+                                    memory_type=MemoryType.ACTION.value)
+        
+    def run_jury_session(self):
+        self.final_vote = JuryVotingSession(jury_members=list(self.jury.values()), 
+                                            finalists=list(self.characters.values()))
+        self.final_vote.run(self)
+        winner = self.final_vote.determine_winner()
+        self.winner = winner
+        self.winner_declared = True
+        self._add_winner_memory()
+
+    def _add_winner_memory(self):
+        
+        vote_count = self.final_vote.tally.get(self.winner.name)
+        vote_total = self.final_vote.tally.total()
+        description = vote_prompt.winner_memory_description.format(winner=self.winner.name,
+                                                                   for_votes=vote_count,
+                                                                   total_votes=vote_total)
+        winner_kwds = self.parser.extract_keywords(description)
+
+        # Pass this memory to all characters
+        everyone = list(self.characters.values()) + list(self.jury.values())
+        for c in everyone:
+            c.memory.add_memory(round=self.round,
+                                tick=self.tick, 
+                                description=description, 
+                                keywords=winner_kwds, 
+                                location=None, 
+                                success_status=True,
+                                memory_importance=10, 
+                                memory_type=MemoryType.ACTION.value)
+        
+        

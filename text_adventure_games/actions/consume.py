@@ -6,7 +6,7 @@ from . import preconditions as P
 
 class Eat(base.Action):
     ACTION_NAME = "eat"
-    ACTION_DESCRIPTION = "Eat something"
+    ACTION_DESCRIPTION = "Ingest food items for nourishment."
 
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
@@ -65,7 +65,7 @@ class Eat(base.Action):
 
 class Drink(base.Action):
     ACTION_NAME = "drink"
-    ACTION_DESCRIPTION = "Drink something"
+    ACTION_DESCRIPTION = "Drink a liquid."
 
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)
@@ -138,7 +138,7 @@ class Drink(base.Action):
 
 class Light(base.Action):
     ACTION_NAME = "light"
-    ACTION_DESCRIPTION = "Light something flammable like a lamp or a candle"
+    ACTION_DESCRIPTION = "Ignite something flammable like a lamp or a candle. Also includes turning on a light"
 
     def __init__(self, game, command: str, character: Character):
         super().__init__(game)

@@ -1,8 +1,110 @@
+import logging
 import re
+import time
+from typing import Callable, Dict
+import openai
 import tiktoken
+from types import SimpleNamespace
 
 # local imports
 from ..utils.general import set_up_openai_client, enumerate_dict_options
+
+logger = logging.getLogger(__name__)
+
+class GptCallHandler:
+    """
+    A class to make calls to GPT more uniform.
+    User can pass desired OpenAI kwargs (right now just the basic ones) to set up a client and model params.
+    Then use the "generate" method to initiate a call to GPT with error handling and retries
+
+    Returns:
+        _type_: _description_
+    """
+    
+    DEFAULT_API_ORG = "Helicone"
+
+    def __init__(self, kwargs: Dict, max_retries: int = 5):
+        self.args = SimpleNamespace(**kwargs)
+        self._set_default_args()
+        self.max_retries = max_retries
+
+    def _set_default_args(self):
+        # set up a client
+        if not hasattr(self.args, "client"):
+            if not hasattr(self.args, "org"):
+                self.args.client = set_up_openai_client(self.DEFAULT_API_ORG)
+            else:
+                self.args.client = set_up_openai_client(self.args.org)
+        # set the model params
+        if not hasattr(self.args, "model"):
+            self.args.model = "gpt-4"
+        if not hasattr(self.args, "temperature"):
+            self.args.temperature = 1
+        if not hasattr(self.args, "max_tokens"):
+            self.args.max_tokens = 256
+        if not hasattr(self.args, "top_p"):
+            self.args.top_p = 0.75
+        if not hasattr(self.args, "frequency_penalty"):
+            self.args.freqency_penalty = 0
+        if not hasattr(self.args, "presence_penalty"):
+            self.args.presence_penalty = 0
+
+    def generate(self, func: Callable) -> str:
+        """
+        A wrapper for making a call to OpenAI API.
+        It expects a function as an argument that should produce the messages argument.        
+
+        Args:
+            func (Callable): _description_
+
+        Returns:
+            str: _description_
+        """
+        # Generate messages
+        messages = func()
+
+        i = 0
+        while i < self.max_retries:
+            try:
+                response = self.args.client.chat.completions.create(
+                    model=self.args.model,
+                    messages=messages,
+                    temperature=self.args.temperature,
+                    max_tokens=self.args.max_tokens,
+                    top_p=self.args.top_p,
+                    frequency_penalty=self.args.frequency_penalty,
+                    presency_penalty=self.args.presence_penalty
+                )
+            except (RuntimeError,
+                    openai.error.RateLimitError,
+                    openai.error.ServiceUnavailableError, 
+                    openai.error.APIError, 
+                    openai.error.APIConnectionError) as e:
+                # log the error; should go to an error/warning specific log
+                logger.error("GPT Error: {}".format(e)) 
+                time.sleep(1)
+                continue
+            else:
+                return response.choices[0].message.content
+        
+
+# Alternatively, heres a basic wrapper method to catch OpenAI related errors
+def gpt_call_wrapper(gpt_call: Callable, retries=5):
+    i = 0
+    while i < retries:
+        try:
+            response = gpt_call()
+        except (RuntimeError,
+                openai.error.RateLimitError,
+                openai.error.ServiceUnavailableError, 
+                openai.error.APIError, 
+                openai.error.APIConnectionError) as e:
+            # log the error; should go to an error/warning specific log
+            logger.error("GPT Error: {}".format(e)) 
+            time.sleep(1)
+            continue
+        else:
+            return response.choices[0].message.content
 
 
 def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
@@ -25,7 +127,11 @@ def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
     return summary_statement
 
 
-def gpt_get_action_importance(statement, client, model, max_tokens):
+def gpt_get_action_importance(statement: str, client=None, model: str = "gpt-4", max_tokens: int = 10):
+
+    if not client:
+        client = set_up_openai_client("Helicone")
+
     system = "Gauge the importance of the provided sentence on a scale from 1 to 10, where 1 is mundane and 10 is critical."
     messages = [{"role": "system", "content": system},
                 {"role": "user", "content": statement}]
@@ -60,7 +166,7 @@ def gpt_pick_an_option(instructions, options, input_str):
     This function calls GPT to choose one option from a set of options.
     Its arguments are:
     * instructions - the system instructions
-    * options - a dictionary of option_descriptions -> option_names
+    * options - Dict[option_descriptions: option_names]
     * input_str - the user input which we are trying to match to one of the options
 
     The function generates an enumerated list of option descriptions
@@ -93,17 +199,6 @@ def gpt_pick_an_option(instructions, options, input_str):
         presence_penalty=0,
     )
     content = response.choices[0].message.content
-
-    # if self.verbose:
-    #     v = "{instructions}\n\n{choices_str}\nReturn just the number.\n---\n> {input_str}"
-    #     print(
-    #         v.format(
-    #             instructions=instructions,
-    #             choices_str=choices_str,
-    #             input_str=input_str,
-    #         )
-    #     )
-    #     print("---\nGPT's response was:", content)
 
     # Use regular expressions to match a number returned by OpenAI and select that option.
     pattern = r"\d+"

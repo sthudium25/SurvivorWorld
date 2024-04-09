@@ -5,7 +5,7 @@ from ..things import Character  # Item  # , Location
 
 class Go(base.Action):
     ACTION_NAME = "go"
-    ACTION_DESCRIPTION = "Go in a direction"
+    ACTION_DESCRIPTION = "Go, move, continue, head in a specified compass direction or towards a location, including all cardinal directions and entrances/exits."
     ACTION_ALIASES = [
         "north",
         "n",

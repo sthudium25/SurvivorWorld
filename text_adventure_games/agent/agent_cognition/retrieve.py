@@ -44,10 +44,12 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
         character (Character): a character instance
         query (str, optional): Keeping input query string optional for now but this would be
                                a non-memory input that we want to use as a retrieval seed. Defaults to None.
-        n (int): the number of relevant memories to return. Defaults to 50.
+        n (int): the number of relevant memories to return. Defaults to -1.
     """
     seach_keys = gather_keywords_for_search(game, character, query)
     memory_node_ids = get_relevant_memory_ids(seach_keys, character)
+    if len(memory_node_ids) == 0:
+        return None
 
     # TODO: how many should be returned? default = all
     ranked_memory_ids = rank_nodes(character, memory_node_ids, query)
@@ -57,8 +59,9 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
     if n > 0:
         ranked_memory_ids = ranked_memory_ids[-n:]
 
-    # TODO: in what format do we want to return the relevant nodes?
-    # NOTE: currently just a list of strings
+    # NOTE: currently a list of strings
+    game.logger.debug(f"{character.name} found {len(ranked_memory_ids)} relevant memories.", 
+                      extra={"round": game.round, "tick": game.tick})
     return [character.memory.observations[t[0]].node_description for t in ranked_memory_ids]
 
 def rank_nodes(character, node_ids, query):
@@ -81,8 +84,9 @@ def rank_nodes(character, node_ids, query):
     recency = character.memory.recency_alpha * recency
     importance = character.memory.importance_alpha * importance
     relevance = character.memory.relevance_alpha * relevance
+    total_score = recency + importance + relevance
 
-    node_scores = zip(node_ids, list(recency + importance + relevance))
+    node_scores = zip(node_ids, list(total_score))
 
     ranked_memory_ids = sorted(node_scores, key=lambda x: x[1])
 
@@ -136,9 +140,8 @@ def calculate_node_relevance(character, memory_ids, query):
     memory_embeddings = [character.memory.get_embedding(i) for i in memory_ids]
     if query:
         # if a query is passed, only this will be used to rank node relevance
-        query_embedding = get_text_embedding(query)
-        relevances = cosine_similarity(memory_embeddings, query_embedding)
-        # TODO: do I need to parse this new array since it's type ndarray?
+        query_embedding = get_text_embedding(query).reshape(1, -1)
+        relevances = cosine_similarity(memory_embeddings, query_embedding).flatten()
     else:
         # if no query is passed, then the default queries will be used: 
         # persona, goals, relationships, last perception
@@ -165,8 +168,8 @@ def get_relevant_memory_ids(seach_keys, character):
     for kw_type, search_words in seach_keys.items():
         for w in search_words:
             node_ids = character.memory.keyword_nodes[kw_type][w]
-            # memory_ids.extend(list(set(node_ids)))
             memory_ids.extend(node_ids)
+
     # print(f"Gathered ids: {list(set(memory_ids))}")
     # print(f"Character observations count: {len(character.memory.observations)}")
     # print(f"Character num_observations counter: {character.memory.num_observations}")
@@ -176,7 +179,7 @@ def get_relevant_memory_ids(seach_keys, character):
 def gather_keywords_for_search(game, character, query):
     # gather memories from which keywords will be extracted
     retrieval_kwds = {}
-    # 1. last n memories by default
+    # 1. last n memories by default - this is like "short term memory"
     for node in character.memory.observations[-character.memory.lookback:]:
         node_kwds = game.parser.extract_keywords(node.node_description)  # a dict
         if node_kwds:
@@ -211,7 +214,6 @@ def minmax_normalize(lst, target_min: int, target_max: int):
     Returns:
         np.array: range normalized values
     """
-    # TODO: consider the case where range_val == 0
     min_val = min(lst)
     max_val = max(lst)
     range_val = max_val - min_val
@@ -219,6 +221,8 @@ def minmax_normalize(lst, target_min: int, target_max: int):
     # If there is no variance in the values, they will not contribute to the score
     if range_val == 0:
         out = [0.5] * len(lst)
+        return out
+
     out = [((x - min_val) * (target_max - target_min) / range_val + target_min) for x in lst]
     return np.array(out)
 

@@ -1,3 +1,4 @@
+from typing import Union
 from .base import Thing
 from .items import Item
 from .locations import Location
@@ -6,7 +7,7 @@ from ..gpt.gpt_helpers import gpt_get_action_importance
 from ..utils.general import (parse_location_description, 
                              find_difference_in_dict_lists)
 from ..agent.memory_stream import MemoryStream, MemoryType
-from ..agent.agent_cognition import act
+from ..agent.agent_cognition import act, reflect, impressions
 
 
 class Character(Thing):
@@ -37,6 +38,16 @@ class Character(Thing):
         self.inventory = {}
         self.location = None
         self.memory = []
+
+    def __hash__(self):
+        return hash(self.id)
+    
+    def __eq__(self, other):
+        if not isinstance(other, Character):
+            # Don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return self.id == other.id
 
     def to_primitive(self):
         """
@@ -108,8 +119,9 @@ class GenerativeAgent(Character):
     def __init__(self, persona):
         super().__init__(persona.facts["Name"], persona.description, persona=persona.summary)
 
-        # Set the Agent's persona and initialize empty goals:
+        # Set the Agent's persona, empty impressions, and initialize empty goals:
         self.persona = persona
+        self.impressions = impressions.Impressions(self.name, self.id)
         self.goals = ""
 
         # Initialize Agent's memory
@@ -127,21 +139,29 @@ class GenerativeAgent(Character):
         summary += self.get_alliance_summary()
         return summary
 
-    def engage(self, game, round, tick, 
-               # vote
-               ):
+    def engage(self, game) -> Union[str, int]:
         """
         wrapper method for all agent cognition: perceive, retrieve, act, reflect, set goals
 
         Args:
-            game (games.Game): The current game instance
-            round (int): the current round or episode
-            tick (_type_): the current time tick within the round
+            game (Game): the current game object
 
         Returns:
-            str: an action
+            Union[str, int]: An action string or int flag -999 to trigger skipped action
         """
+        # If this is the end of a round, force reflection
+        if game.tick == game.max_ticks_per_round - 1:
+            # print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
+            reflect.reflect(game, self)  # TODO: Evaluation of goals should be triggered within reflection
+            return -999
+
+        # Percieve the agent's surroundings 
         self.percieve_location(game)
+
+        # Update this agent's impressions of characters in the same location
+        self.update_character_impressions(game)
+
+        # act accordingly
         return act.act(game, self)
  
     # TODO: move perceive into an "agent_cognition" module
@@ -172,23 +192,26 @@ class GenerativeAgent(Character):
         for observations in diffs_perceived.values():
             print(f"{self.name} sees: {observations}")
             for statement in observations:
+                # print(statement)
                 # TODO: "create_action_statement" method is awkward as part of the Parser class
                 action_statement = game.parser.create_action_statement(command="describe",
                                                                        description=statement,
                                                                        character=self)
                 
                 importance_score = gpt_get_action_importance(action_statement,
-                                                             game.parser.client, 
-                                                             game.parser.model, 
+                                                             client=game.parser.client, 
+                                                             model=game.parser.model, 
                                                              max_tokens=10)
                 keywords = game.parser.extract_keywords(action_statement)
 
-                self.memory.add_memory(description=action_statement,
+                self.memory.add_memory(round=game.round,
+                                       tick=game.tick,
+                                       description=action_statement,
                                        keywords=keywords,
-                                       location=self.location,
+                                       location=self.location.name,
                                        success_status=True,
                                        memory_importance=importance_score,
-                                       memory_type=MemoryType.ACTION)
+                                       memory_type=MemoryType.ACTION.value)
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):
@@ -205,15 +228,12 @@ class GenerativeAgent(Character):
         """
         chars_in_view = []
         for char in game.characters.values():
-            if char.location.id == self.location.id:
+            if char.location.id == self.location.id and char.id != self.id:
                 chars_in_view.append(char)
 
         return chars_in_view
 
-    # def reflect(self):
-    #     # Look back at observations from this round
-    #     pass
-
-    def act(self):
-        # Intent determination here?
-        pass
+    def update_character_impressions(self, game):
+        for target in self.get_characters_in_view(game):
+            self.impressions.update_impression(game, self, target)
+            

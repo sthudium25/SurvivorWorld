@@ -35,16 +35,37 @@ def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):
     engine = OpenAIEngine(key, model=model, **kwargs)
     return engine
 
+def normalize_name(name):
+    common_prefixes = ["mr", "ms", "mrs", "dr", "sir", "lady", "captain", "prof", "professor"]
+    common_suffixes = ["jr", "sr", "ii", "iii", "iv", "phd", "md"]
+    # Convert to lowercase
+    name = name.lower()
+    # Remove non-alphanumeric characters
+    name = ''.join(e for e in name if e.isalnum() or e.isspace())
+    
+    # Split the name to handle prefixes and suffixes more effectively
+    name_parts = name.split()
+    
+    # Remove prefixes and suffixes
+    if name_parts:
+        if name_parts[0] in common_prefixes:
+            name_parts = name_parts[1:]  # Remove the first element (prefix)
+        if name_parts and name_parts[-1] in common_suffixes:
+            name_parts = name_parts[:-1]  # Remove the last element (suffix)
+    
+    # Rejoin the name parts
+    normalized_name = " ".join(name_parts)
+    
+    return normalized_name
 
 def extract_target_word(response):
     words = response.split()
     # For debugging purposes check when it fails to return only 1 word.
     if len(words) > 1:
-        print("target word list returned is: ", words)
+        # print("target word list returned is: ", words)
         return words[0].strip(string.punctuation)
     else:
         return words[0].strip(string.punctuation)
-
 
 def extract_enumerated_list(response):
     # Split the response string into lines
@@ -60,7 +81,6 @@ def extract_enumerated_list(response):
         if match:
             extracted_words.append(match.group(1))
     return extracted_words
-
 
 def extract_json_from_string(s: str):
     # print(f"Pre-JSON extraction string from GPT: {s}")
@@ -112,14 +132,13 @@ def parse_location_description(text):
                 except ValueError:
                     # Likely not enough values to unpack
                     desc_type = description.split(":")[0]
-                    new_observations[desc_type] = [f'No {desc_type} here']
+                    new_observations[desc_type] = [f'No {desc_type}']
                     continue
                 if "(" in observed:
                     new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(';') if obs]
                 else:
                     new_observations[desc_type] = [f"{player} {obs}" for obs in observed.split(',') if obs]
     return new_observations
-
 
 def find_difference_in_dict_lists(dict1, dict2):
     if dict1 is None:
@@ -146,13 +165,37 @@ def find_difference_in_dict_lists(dict1, dict2):
                 diff[key] = [value2]
     return diff
 
-def enumerate_dict_options(options):
+# NOTE: previous version of the method below
+# def enumerate_dict_options(options):
+#     options_list = list(options.keys())
+#     choices_str = ""
+#     # Create a numbered list of options
+#     for i, option in enumerate(options_list):
+#         choices_str += "{i}. {option}\n".format(i=i, option=option)
+#     return choices_str, options_list
+
+def enumerate_dict_options(options, names_only=False):
+    """
+    Used by GPT-pick an option. Expects keys are descriptions and
+    values are the name of the corresponding option.
+
+    Args:
+        options (dict): Dict[description of option, option_name]
+
+    Returns:
+        _type_: _description_
+    """
     options_list = list(options.keys())
     choices_str = ""
     # Create a numbered list of options
-    for i, option in enumerate(options_list):
-        choices_str += "{i}. {option}\n".format(i=i, option=option)
-    return choices_str, options_list
+    if names_only:
+        for i, name in enumerate(options.values()):
+            choices_str += "{i}. {n}\n".format(i=i, n=name)
+        return choices_str, None
+    else:
+        for i, (k, v) in enumerate(options.items()):
+            choices_str += "{i}. {v}: {k}\n".format(i=i, v=v, k=k)
+        return choices_str, options_list
 
 def combine_dicts_helper(existing, new):
     for k, v in new.items():

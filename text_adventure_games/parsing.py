@@ -14,7 +14,7 @@ import re
 import json
 import tiktoken
 import spacy
-from jellyfish import jaro_winkler_similarity
+from jellyfish import jaro_winkler_similarity, levenshtein_distance
 # from openai import OpenAI
 # import numpy as np
 
@@ -23,7 +23,7 @@ from text_adventure_games.things.base import Thing
 from .things import Character, Item, Location
 from . import actions, blocks
 from .utils.general import (set_up_openai_client, 
-                            # set_up_kani_engine,
+                            normalize_name
                             )
 # from .gpt.parser_kani import DescriptorKani
 from .gpt import gpt_helpers 
@@ -188,7 +188,10 @@ class Parser:
     def parse_command(self, command: str, character: Character):
         # print("\n>", command, "\n", flush=True)
         # add this command to the history
-        # self.add_command_to_history(command)
+        if self.command_repeated(command):
+            print(f"Command {command} was repeated. Possibly mis-labeled as an ActionSequence.")
+            return False
+        Parser.add_command_to_history(self, command)
         action = self.parse_action(command, character)
         if not action:
             self.fail(command, "No action could be matched from command", character)
@@ -196,7 +199,12 @@ class Parser:
         else:
             action()
             return True
-
+        
+    def command_repeated(self, command: str) -> bool:
+        if len(self.command_history) == 0:
+            return False
+        return command == self.command_history[-1]["content"]
+    
     @staticmethod
     def split_command(command: str, keyword: str) -> tuple[str, str]:
         """
@@ -238,12 +246,25 @@ class Parser:
         return self.game.player
     
     def check_if_character_exists(self, name):
-        nchar = len(name)
-        threshold = max(0.75, (nchar - 2 / nchar))
-        for char_names in self.game.characters:
-            # Heuristic that this name is PROBABLY a character in the game
-            if jaro_winkler_similarity(char_names.lower(), name.lower()) > threshold:
-                return True
+        # First O(1) check for a perfect fit
+        if name in self.game.characters:
+            return True
+        # If not exact match, do the more expensive checks
+        norm_name = normalize_name(name)
+        nchar = len(norm_name)
+        lev_threshold = 1 if nchar < 5 else 2 if nchar < 12 else 3
+        jaro_threshold = max(0.75, ((nchar - 2) / nchar))
+        
+        for char_name in self.game.characters:
+            norm_compare_name = normalize_name(char_name)
+            
+            # Several heuristics that this name is PROBABLY a character in the game
+            if jaro_winkler_similarity(norm_compare_name, norm_name) > jaro_threshold:
+                True
+            if name.lower() in char_name.lower():
+                True
+            if levenshtein_distance(norm_compare_name, norm_name) < lev_threshold:
+                True
         return False
 
     def get_character_location(self, character: Character) -> Location:
@@ -376,51 +397,23 @@ class GptParser(Parser):
             return content
         except Exception as e:
             return f"Something went wrong with GPT: {e}"
-        
-    # def gpt_describe(self, system_instructions, character):
-    #     engine = set_up_kani_engine()
-    #     narrator_ai = DescriptorKani(character, 
-    #                                  engine=engine,
-    #                                  system_prompt=system_instructions,
-    #                                  desired_response_tokens=256)
-    #     for mem in character.memory:
-    #         narrator_ai.add_to_history(mem)
-
-    #     response = narrator_ai.chat_round_str(f"Describe the current setting for {character.name}")
-    #     return response
-        
-    # NOTE: Moved to gpt_helpers
-    # def limit_context_length(self, command_history, max_tokens, max_turns=1000):
-    #     """
-    #     This method limits the length of the command_history 
-    #     to be less than the max_tokens and less than max_turns. 
-    #     The least recent messages are disregarded from the context. 
-    #     This function is non-destructive and doesn't modify command_history.
-    #     """
-    #     total_tokens = 0
-    #     limited_history = []
-
-    #     for message in reversed(command_history):
-    #         msg_tokens = len(self.tokenizer.encode(message["content"]))
-    #         if total_tokens + msg_tokens > max_tokens:
-    #             break
-    #         total_tokens += msg_tokens
-    #         limited_history.append(message)
-    #         if len(limited_history) >= max_turns:
-    #             break
-    #     return list(reversed(limited_history)) 
     
     def create_action_statement(self, command: str, description: str, character: Character):
-        outcome = f"ACTOR: {character.name}; ACTION: {command}; OUTCOME: {description}"
+        outcome = f"ACTOR: {character.name}; LOCATION: {character.location.name}, ACTION: {command}; OUTCOME: {description}"
         summary = gpt_helpers.gpt_get_summary_description_of_action(outcome, self.client, self.model, max_tokens=100)
         return summary
-    
+
     def extract_keywords(self, text):
         if not text:
             return None
         doc = self.nlp(text)
         keys = defaultdict(list)
         for w in doc:
+            if w.pos_ in ["NOUN", "PROPN"]:
+                # print(f"Found noun: {w.text}")
+                compounds = [j for j in w.children if j.dep_ == "compound"]
+                if compounds:
+                    continue
             if "subj" in w.dep_:
                 if self.check_if_character_exists(w.text):
                     keys['characters'].append(w.text)
@@ -431,9 +424,19 @@ class GptParser(Parser):
                     keys['characters'].append(w.text)
                 else:
                     keys['objects'].append(w.text)
+        for ent in doc.ents:
+            if ent.label_ == "PERSON" and self.check_if_character_exists(ent.text):
+                keys["characters"].append(ent.text)
         return keys
     
-    def add_command_to_history(self, summary, keywords, character, importance, success, type):
+    def add_command_to_history(self, 
+                               command, 
+                               summary, 
+                               keywords, 
+                               character, 
+                               importance, 
+                               success, 
+                               type):
         """
         Add a summarized command and outcome to the command history
         Thenn add memories to character memory
@@ -445,12 +448,14 @@ class GptParser(Parser):
             success (bool???): the success status of the action
         """
         # This is a user or agent-supplied command so it should be logged as a ChatMessage.user
-        super().add_command_to_history(summary)
+        super().add_command_to_history(command)
         for char in character.chars_in_view:
-            print(f'passing {character.name}\'s action to {char.name}')
-            char.memory.add_memory(summary.lower(), 
+            # print(f'passing {character.name}\'s action to {char.name}')
+            char.memory.add_memory(self.game.round,
+                                   self.game.tick,
+                                   summary.lower(), 
                                    keywords, 
-                                   character.location, 
+                                   character.location.name, 
                                    success,
                                    importance, 
                                    type)
@@ -479,17 +484,20 @@ class GptParser(Parser):
         if isinstance(thing, Character):
             summary_of_action = self.create_action_statement(command, description, thing)
             importance_of_action = gpt_helpers.gpt_get_action_importance(summary_of_action,
-                                                                         self.client, 
-                                                                         self.model, 
+                                                                         client=self.client, 
+                                                                         model=self.model, 
                                                                          max_tokens=10)
             keywords = self.extract_keywords(summary_of_action)
-            # TODO: ensure that we can set the correct type of memory node
-            self.add_command_to_history(summary_of_action, 
+            
+            # Make sure that the Narrator GPT knows about the character names 
+            command = f"{thing.name}'s action: {command}"
+            self.add_command_to_history(command,
+                                        summary_of_action, 
                                         keywords, 
                                         thing,  
                                         importance_of_action,
                                         success=True, 
-                                        type=MemoryType.ACTION)
+                                        type=MemoryType.ACTION.value)
 
         # system_instructions = """You are the narrator for a text adventure game. 
         # You create short, evocative descriptions of the scenes in the game.
@@ -522,20 +530,6 @@ class GptParser(Parser):
             description (str): a description of the outcome
             thing (things.Thing): an object of type Thing
         """
-        # FIRST: we add summarize the FAILED action and send it as a memory to the appropriate characters
-        if isinstance(thing, Character):
-            summary_of_action = self.create_action_statement(command, description, thing)
-            importance_of_action = gpt_helpers.gpt_get_action_importance(summary_of_action,
-                                                                         self.client, 
-                                                                         self.model, 
-                                                                         max_tokens=10)
-            keywords = self.extract_keywords(summary_of_action)
-            self.add_command_to_history(summary_of_action, 
-                                        keywords, 
-                                        thing,  
-                                        importance_of_action,
-                                        success=False, 
-                                        type=MemoryType.ACTION)
         
         # SECOND: get a description of the failure to write to the console
         system_instructions = "".join(
@@ -547,6 +541,27 @@ class GptParser(Parser):
         )
 
         response = self.gpt_describe(system_instructions, self.command_history)
+
+        # FIRST: we add summarize the FAILED action and send it as a memory to the appropriate characters
+        if isinstance(thing, Character):
+            # summary_of_action = self.create_action_statement(command, description, thing)
+            importance_of_action = gpt_helpers.gpt_get_action_importance(response,
+                                                                         self.client, 
+                                                                         self.model, 
+                                                                         max_tokens=10)
+            keywords = self.extract_keywords(response)
+            
+            # Make sure that the Narrator GPT knows about the character names 
+            command = f"{thing.name}'s action: {command}"
+
+            # For failures, use the GPT feedback to help guide the agent.
+            self.add_command_to_history(command,
+                                        response, 
+                                        keywords, 
+                                        thing,  
+                                        importance_of_action,
+                                        success=False, 
+                                        type=MemoryType.ACTION.value)
         if self.verbose:
             print("GPT's Error Description:")
         self.add_description_to_history(response)
@@ -596,9 +611,6 @@ class GptParser3(GptParser2):
         self.model = model
 
     def extract_digit(self, text):
-        # extracted_digit = list(filter(str.isdigit, text))
-        # return extracted_digit[0]
-
         return re.findall(r"[-]?\d+", text)[0]
     
     def get_characters_and_find_current(self, character=None):
