@@ -128,7 +128,6 @@ def create_persona(facts: Dict,
             p.add_trait(trait)
     elif archetype:
         profile = get_archetype_profiles(archetype)
-        p.add_game_theory_strategy(archetype_game_theory_mapping[archetype]) # Sets default strategy
         for scale in profile['traits']:
             low, high, target, name = scale['lowAnchor'], scale['highAnchor'], scale['targetScore'], scale["name"]
             dichotomy = (low, high)
@@ -142,6 +141,7 @@ def create_persona(facts: Dict,
             # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model=model)
             p.add_trait(trait)
+        p.add_game_theory_strategy(archetype_game_theory_mapping[archetype]) # Sets default strategy based on archetype
     else:
         raise ValueError("One of trait_scores or archetype must be specified.")
     
