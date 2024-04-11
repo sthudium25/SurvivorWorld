@@ -103,6 +103,18 @@ def create_persona(facts: Dict,
     Returns:
         _type_: _description_
     """
+    archetype_game_theory_mapping = {
+        "Hubris": "Backstabbing",  # Given their self-centered and assertive traits.
+        "Villain": "Backstabbing",  # Villains are typically manipulative and self-serving.
+        "Hero": "Cooperation",  # Heroes are often altruistic and collaborative.
+        "Student": "Tit-for-Tat",  # Students are learners and may adapt their strategy based on others.
+        "Leader": "Cooperation",  # Leaders are usually cooperative, aiming to unite and guide.
+        "Damsel in Distress": "Cooperation",  # Likely to seek help and cooperate in situations.
+        "Mother": "Cooperation",  # Embodying nurturing and caring traits, inclined to help and cooperate.
+        "Warrior": "Backstabbing",  # Focused and combative, might prioritize individual goals over cooperation.
+        "Sage Advisor": "Tit-for-Tat",  # Wise and adaptive, responding strategically to the actions of others.
+    }
+
     p = Persona(facts)
 
     if trait_scores:
@@ -116,9 +128,16 @@ def create_persona(facts: Dict,
             p.add_trait(trait)
     elif archetype:
         profile = get_archetype_profiles(archetype)
+        p.add_game_theory_strategy(archetype_game_theory_mapping[archetype]) # Sets default strategy
         for scale in profile['traits']:
             low, high, target, name = scale['lowAnchor'], scale['highAnchor'], scale['targetScore'], scale["name"]
             dichotomy = (low, high)
+
+            # Add wiggle/variance to the score (+/- 5%)
+            # Personas are only *instantiations* of archetypes, so they can vary
+            random_wiggle = np.random.uniform(-5, 5)
+            target = target + target * random_wiggle / 100
+
             trait = TraitScale(name, dichotomy, score=target)
             # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model=model)

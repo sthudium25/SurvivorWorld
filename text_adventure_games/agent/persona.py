@@ -28,10 +28,20 @@ class Persona():
         self.traits = {}
         self.summary = summarize_agent_facts(str(self.facts))
         self.description = f'A {self.facts["Age"]} year old {self.facts["Occupation"]} named {self.facts["Name"]}'
+        self.game_theory_strategy = ""
 
     def add_trait(self, trait):
         if trait.name not in self.traits:
             self.traits[trait.name] = trait
+
+        # Set default game_theory_strategy based on "cooperation" trait
+        if trait.name == "cooperation":
+            if trait.score < 33:
+                self.game_theory_strategy = "backstab"
+            elif trait.score >= 34 and trait.score <= 66:
+                self.game_theory_strategy = "tit-for-tat"
+            else:
+                self.game_theory_strategy = "cooperate"
 
     def get_trait_score(self, name: str):
         if name in self.traits:
@@ -40,6 +50,9 @@ class Persona():
     def get_trait_summary(self):
         return [f"{tname} TENDS TO BE {self.traits[tname].get_adjective()}" for tname in self.traits]
     
+    def set_game_theory_strategy(self, strategy):
+        self.game_theory_strategy = strategy
+
     # Method for saving the one or multiples personas to a Character
     # def save_persona(self,...
 
@@ -53,12 +66,14 @@ class Persona():
     #     goal_summary += f" You goal for the entire game is to {self.goals['long-term']}."
     #     return goal_summary
         
+    # Made more natural-language friendly, not just a list of facts/traits, etc.
     def get_personal_summary(self):
-        summary = "Your name is"
-        summary += f' {self.facts["Name"]} and you are {self.facts["Age"]} years old.'
-        summary += f' You enjoy {" ".join(self.facts["Likes"][:3])}'
-        summary += f' but dislike {" ". join(self.facts["Dislikes"][:3])}.'
-        summary += f' Back home in {self.facts["Home city"]} you work as a {self.facts["Occupation"]}.'
-        summary += f' Your {" ".join(self.get_trait_summary())}.'
-        # summary += f' Your goals are {self.get_goal_summary()}'
+        summary = f"Meet {self.facts['Name']}, a {self.facts['Age']}-year-old {self.facts['Occupation']} from {self.facts['Home city']}."
+        summary += f" {self.facts['Name']} is passionate about {', '.join(self.facts['Likes'][:3])}"
+        summary += f" but has aversions to {', '.join(self.facts['Dislikes'][:3])}."
+        summary += f" In the game, {self.facts['Name']}'s strategy is {self.game_theory_strategy},"
+        summary += f" reflecting their {' and '.join(self.get_trait_summary())}."
+        # Include goals if available and relevant
+        if self.get_goal_summary():
+            summary += f" They are driven by goals such as {self.get_goal_summary()}."
         return summary
