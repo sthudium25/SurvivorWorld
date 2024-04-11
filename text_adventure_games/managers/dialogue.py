@@ -1,5 +1,10 @@
 import tiktoken
+from text_adventure_games.gpt.gpt_helpers import limit_context_length
 from ..utils.general import set_up_openai_client
+from ..agent.agent_cognition.retrieve import retrieve
+
+GPT4_MAX_TOKENS = 8192
+ACTION_MAX_OUTPUT = 100
 
 
 class Dialogue:
@@ -26,42 +31,42 @@ class Dialogue:
         self.dialogue_history = 'The dialogue just started.'
         self.max_tokens = 1000
         for participant in self.participants:
-            self.characters_system[participant.name] = self.get_system_instructions(participant)
-
-    def get_persona(self, character):
-        """This method turns a character's persona
-        into a string for system instructions
-        """
-        try:
-            return character.persona
-        except Exception as e:
-            return f"""You are {character.name}, a contestant on the
-            reality TV show Survivor."""
-
-    def get_memory(self, character):
-        """This method turns a character's memories into a string 
-        for system instructions
-        """
-        try:
-            return character.memory
-        except Exception as e:
-            memory = f"""Your goal is to win Survivor.
-              To do so, you need to decide who to vote for and convince other people to not vote for you.
-              There are {len(self.game.characters)} people remaining: {[char.name for char in self.game.characters]}."""
-            return memory
+            self.characters_system[participant.name] = self.get_system_instructions(
+                participant)
+        self.characters_mentioned = [character.name for character in self.participants] # Characters mentioned so far in the dialogue
 
     def get_system_instructions(self, character):
-        system_instructions = self.get_persona(character) + "\n" + self.get_memory(character) + "\n"
+        system_instructions = f"WORLD INFO: {self.game.world_info}" + "\n"
+        system_instructions += f"You are {character.persona.summary}"+ "\n"
+        system_instructions += f"GOALS: {character.goals}. " + "/n"
+        system_instructions += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: "
+        query = f"""You are in dialogue with:
+                                {', '.join([x.name for x in self.participants if x.name != character.name])}.\n
+                    Your goals are: {character.goals}. """
+        query += "\n" + self.dialogue_history.split("\n")[-1]
+        context_list = retrieve(self.game, character, query, n=-1)
+
+        # limit the context length here on the retrieved memories
+        try:
+            context_list = limit_context_length(context_list,
+                                                max_tokens=GPT4_MAX_TOKENS-ACTION_MAX_OUTPUT,
+                                                tokenizer=self.game.parser.tokenizer)
+        except:
+            context_list = ["No memories"]
+        # Then add these to the user message
+        print(
+            f"passing {len(context_list)} relevant memories to {character.name}")
+        system_instructions += "".join([f"{m}\n" for m in context_list])
         system_instructions += (f"""You are in dialogue with:
                                 {', '.join([x.name for x in self.participants if x.name != character.name])}.\n""")
-        system_instructions +=(f"""When it's your turn to speak,
+        system_instructions += (f"""When it's your turn to speak,
                                 you can say something or walk away form the conversation.
-                                If you say something, start with: '{character.name}says: '.
+                                If you say something, start with: '{character.name} says: '.
                                 If you walk away, say only: '{character.name} leaves the conversation.'.
                                 If you feel like the last two lines have not added new information
                                 or people are speaking in circles, end the conversation.""")
         return system_instructions
-    
+
     def get_dialogue_history(self):
         return self.dialogue_history
 
@@ -74,7 +79,7 @@ class Dialogue:
                 "role": "system",
                 "content": self.characters_system[character.name]
             },
-            {
+                {
                 "role": "user",
                 "content": self.get_dialogue_history()
             }
@@ -92,15 +97,22 @@ class Dialogue:
             return content
         except Exception as e:
             return f"Something went wrong with GPT: {e}"
-    
+
     def is_dialogue_over(self):
         if len(self.participants) <= 1:
             return True
         return False
-    
+
     def dialogue_loop(self):
         while True:
             for character in self.participants:
+                last_line = self.dialogue_history.split("\n")[-1]
+                keywords = self.game.parser.extract_keywords(last_line).get("characters", None)
+                if keywords:
+                    for k in keywords:
+                        if k not in self.characters_mentioned:
+                            for participant in self.participants:
+                                self.characters_system[participant.name] = self.get_system_instructions(participant)
                 response = self.get_gpt_response(character)
                 print(response)
                 self.add_to_dialogue_history(response)
@@ -109,3 +121,4 @@ class Dialogue:
             if self.is_dialogue_over():
                 print("The conversation is over")
                 break
+        return self.dialogue_history
