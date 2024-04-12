@@ -8,22 +8,20 @@
 3. [Installation](#installation)
 4. [Quickstart](#quickstart)
 5. [Results](#results)
-6. [Project Wireframe](#project-wireframe)
+6. [Repo Directory](#repo-directory)
 
 -------------
 
 ## Project Summary
 
-This repository accompanies our work in "[WORKING TITLE] A Framework for Designing Generative Agents in Competitive Environments". This work builds upon the great work of Joon Sung Park, Bodhisattwa Prasad Majumder, and others who have led the exploration of using LMs as generative agents. We develop a framework to extend prior works to new environments, namely competitive game environments that require agent collaboration, deception, and strategic planning. We hope to answer the following questions that fall into two categories: 
+This repository accompanies our work, "[WORKING TITLE] A Framework for Designing Generative Agents in Competitive Environments". This work builds upon the great work of Joon Sung Park, Bodhisattwa Prasad Majumder, and others who have led the exploration of using LMs as generative agents. We develop a framework to extend prior works to new environments, namely competitive game environments that require agent collaboration, deception, and strategic planning. We hope to answer the following questions that fall into two categories: 
 
-[THESE QUESTIONS ARE IN PROGRESS]
 1. Agent performance and behavior:
-  * how do generative agents perform in competitive environments?
-  * What factors (such as group power dynamics or internal personality) influence agent performance and are these influences consistent across trials?
+  * How does an agent’s Persona impact their performance in the competitive game environment?
 
 2. Agent goal setting and achievement:
-  * Can we develop a better understanding of how generative agents process and develop goals?
-  * How quickly are intermediate goals met and are agent actions consistent with prior planning?
+  * How long do agents pursue each of their goals? What is the completion percentage of the goals they set for themselves?
+  * What is the impact of cognitive modules on agent performance and goal setting? (e.g. without inference over relationships in the game, do goals become less directed toward interaction with other agents?)
 
 -------------
 
@@ -93,7 +91,19 @@ Save this file as `config.json` or `.config.json` at the package root.
 
 -------------
 
-## Project Wirefraame
+## Repo Directory
 
+To assist with navigation and readability of the code in this project, below is an breif description of the major components. Look within the `text_adventure_games` folder.
 
+### Top-level interaction 
+1. Game setup files...
 
+### Environment and Game Engine
+1. `games.py`: The Game class keeps track of the state of the world, and describes what the player sees as they move through different locations.
+   * This class is extended to implement, `SurvivorGame`, a round and tick based system that handles game details specific to Survivor.
+   * To extend this engine to your own game, you can do the same. Modifying the `game_loop` and `is_game_over` methods allows for customization of your game rules.
+
+2. `parsing.py`: The parser is the module that handles the natural language understanding in the game.
+   * Several `GptParser`s allow mapping of a wide range of natural language statements onto the valid action space.
+
+### Agent
