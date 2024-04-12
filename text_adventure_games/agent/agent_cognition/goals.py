@@ -87,7 +87,7 @@ class Goals:
         
         goal = response.choices[0].message.content
         # for experimentation purposes
-        self.goal_tracking(goal, game)
+        self.goal_update(goal, game)
         return goal
     
     def goal_update(self, goal: str, game: "Game"):
