@@ -35,9 +35,9 @@ class ObservationNode:
     node_success: bool
     embedding_key: int  # Immediately get and store the embedding for faster retrieval later?
     node_importance: int  # or could be float
+    node_is_self: int  # ID of the agent making the observation, if relevant
     node_type: str = None  # the type of Observation
     node_keywords: set = field(default_factory=set)  # Keywords that were discovered in this node
-    node_is_self: int  # ID of the agent making the observation, if relevant
     # associated_nodes: Optional[list[int]] = field(default_factory=list) 
 
 
@@ -373,25 +373,33 @@ class MemoryStream:
             self.memory_embeddings.update({node_id: new_embedding})
             return True
         
-    def set_query_embeddings(self, character):
+    def set_query_embeddings(self, character, round: int = 0):
+        """
+        Default "queries" for determining relevance when no explicit query has been passed to retrieve()
+
+        Args:
+            character (Character): agent of this memory
+            round (int, optional): the round in the game. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
         cached_queries = {}
-        goal_summary = character.goals  # .get_goal_summary()???
-        # relationship_summary = self.get_relationships_summary()
+        current_goal_embed = character.goals.get_goal_embedding(round=round)
         persona_embed = get_text_embedding(character.persona.summary)
         if persona_embed is not None:
             cached_queries["persona"] = persona_embed
-        goals_embed = get_text_embedding(goal_summary)
-        if goals_embed is not None:
-            cached_queries["goals"] = goals_embed
-        # relationships_embed = get_text_embedding(relationship_summary)
-        # if relationships_embed is not None:
-        #     cached_queries["relationships"] = get_text_embedding(relationship_summary)
+        if current_goal_embed is not None:
+            cached_queries["goals"] = current_goal_embed
         return cached_queries
     
-    # ----------- UPDATE METHODS -----------
-    def update_query_embeddings(self, character):
-        raise NotImplementedError
+    def set_goal_query(self, goal_embedding):
+        try:
+            self.query_embeddings.update({"goals": goal_embedding})
+        except KeyError as e:
+            print("Goal query embedding update failed. Skipping. Caught:\n", e)
     
+    # ----------- UPDATE METHODS -----------
     def update_node_description(self, node_id, new_description) -> bool:
         try:
             node = self.get_observation(node_id)
