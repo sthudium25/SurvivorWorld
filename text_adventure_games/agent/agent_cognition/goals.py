@@ -114,15 +114,15 @@ class Goals:
         self.goals[round] = {}
         for line in goal.split('\n'):
             if 'Low Priority' in line:
-                self.goals[round]['Low Priority:'] = line.replace('Low Priority: ', '')
+                self.goals[round]['Low Priority'] = line.replace('Low Priority: ', '')
             elif 'Medium Priority' in line:
-                self.goals[round]['Medium Priority:'] = line.replace('Medium Priority: ', '')
+                self.goals[round]['Medium Priority'] = line.replace('Medium Priority: ', '')
             elif 'High Priority' in line:
-                self.goals[round]['High Priority:'] = line.replace('High Priority: ', '')
+                self.goals[round]['High Priority'] = line.replace('High Priority: ', '')
         self.goal_embeddings.update({round: goal_embedding})
         self.update_goals_in_memory(round)
 
-    def get_goals(self, round=-1, priority="all"):
+    def get_goals(self, round=-1, priority="all", as_str=False):
         """
         Getter function for goal
             Args:
@@ -133,12 +133,30 @@ class Goals:
                 The goal
         """
         if round != -1 and priority != "all":
-            return self.goals[round][priority]
+            goal = self.goals[round][priority]
         elif round != -1 and priority == "all":
-            return self.goals[round]
+            goal = self.goals[round]
         else:
-            return self.goals
-        
+            goal = self.goals
+
+        if as_str:
+            return self.stringify_goal(goal)
+        return goal
+    
+    def stringify_goal(self, goal):
+        if isinstance(goal, str):
+            return goal
+        goal_str = ""
+        try:
+            if len(goal) > 1:
+                goal_str = str(goal)
+            else:
+                for g in goal.values():
+                    goal_str += g + " "
+            return goal_str
+        except TypeError:
+            return goal_str
+
     def _create_goal_embedding(self, goal: str) -> np.ndarray:
         goal_embedding = get_text_embedding(goal)
         return goal_embedding
@@ -148,7 +166,7 @@ class Goals:
     
     def update_goals_in_memory(self, round):
         curr_embedding = self.get_goal_embedding(round)
-        if curr_embedding:
+        if curr_embedding is not None:
             self.character.memory.set_goal_query(curr_embedding)
 
     # def evaluate_goals(game: "Game", character: "Character"):
