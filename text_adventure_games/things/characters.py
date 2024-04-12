@@ -111,13 +111,23 @@ class Character(Thing):
 
 class GenerativeAgent(Character):
     
-    def __init__(self, persona, with_goals: bool):
+    def __init__(self, 
+                 persona,
+                 use_goals: bool = True, 
+                 use_impressions: bool = True):
         super().__init__(persona.facts["Name"], persona.description, persona=persona.summary)
+
+        # Cognition settings
+        self.use_goals = use_goals
+        self.use_impressions = use_impressions
 
         # Set the Agent's persona, empty impressions, and initialize empty goals:
         self.persona = persona
-        self.impressions = impressions.Impressions(self.name, self.id)
-        if with_goals:
+        if use_impressions:
+            self.impressions = impressions.Impressions(self.name, self.id)
+        else:
+            self.impressions = None
+        if use_goals:
             self.goals = goals.Goals(self)
         else:
             self.goals = None
@@ -126,6 +136,7 @@ class GenerativeAgent(Character):
         self.memory = MemoryStream(self)
         self.last_location_observations = None
 
+    # TODO: this is probably a redundant method than we can delete
     def get_character_summary(self):
         """
         Get a summary of the traits for this agent
@@ -151,15 +162,16 @@ class GenerativeAgent(Character):
         if game.tick == game.max_ticks_per_round - 1:
             # print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
             reflect.reflect(game, self)  # TODO: Evaluation of goals should be triggered within reflection
-            if self.goals is not None:
+            if self.use_goals:
                 self.goals.gpt_generate_goals(game)
             return -999
 
         # Percieve the agent's surroundings 
-        self.percieve(game)
+        self.perceive(game)
 
         # Update this agent's impressions of characters in the same location
-        self.update_character_impressions(game)
+        if self.use_impressions:
+            self.update_character_impressions(game)
 
         # act accordingly
         return act.act(game, self)
