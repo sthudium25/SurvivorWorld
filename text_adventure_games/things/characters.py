@@ -156,7 +156,7 @@ class GenerativeAgent(Character):
         if game.tick == game.max_ticks_per_round - 1:
             # print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
             reflect.reflect(game, self)  # TODO: Evaluation of goals should be triggered within reflection
-            if self.goals != None:
+            if self.goals is not None:
                 self.goals.gpt_generate_goals(game)
             return -999
 
