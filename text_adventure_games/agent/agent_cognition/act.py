@@ -29,7 +29,7 @@ def act(game, character):
         # TODO: replace first line of prompt with more descriptive character summary
         f"WORLD INFO: {game.world_info}",
         f"You are {character.persona.summary}. ", 
-        f"Your current GOALS: {character.goals}. "
+        f"Your current GOALS: {character.goals}. " #TODO: make it optional
         "Given the context of your environment, past memories, ",
         "and interpretation of relationships with other characters,",
         "select a next action that advances your goals or strategy. "

@@ -7,7 +7,7 @@ from ..gpt.gpt_helpers import gpt_get_action_importance
 from ..utils.general import (parse_location_description, 
                              find_difference_in_dict_lists)
 from ..agent.memory_stream import MemoryStream, MemoryType
-from ..agent.agent_cognition import act, reflect, impressions
+from ..agent.agent_cognition import act, reflect, impressions, goals
 
 
 class Character(Thing):
@@ -116,13 +116,16 @@ class Character(Thing):
 
 class GenerativeAgent(Character):
     
-    def __init__(self, persona):
+    def __init__(self, persona, with_goals: bool):
         super().__init__(persona.facts["Name"], persona.description, persona=persona.summary)
 
         # Set the Agent's persona, empty impressions, and initialize empty goals:
         self.persona = persona
         self.impressions = impressions.Impressions(self.name, self.id)
-        self.goals = ""
+        if with_goals == True:
+            self.goals = goals.Goals(self)
+        else:
+            self.goals = None
 
         # Initialize Agent's memory
         self.memory = MemoryStream(self)
@@ -153,6 +156,8 @@ class GenerativeAgent(Character):
         if game.tick == game.max_ticks_per_round - 1:
             # print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
             reflect.reflect(game, self)  # TODO: Evaluation of goals should be triggered within reflection
+            if self.goals != None:
+                self.goals.gpt_generate_goals(game)
             return -999
 
         # Percieve the agent's surroundings 
