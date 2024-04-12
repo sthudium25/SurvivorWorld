@@ -183,7 +183,8 @@ def add_new_generalizations(game: "Game", character: "Character", generalization
                                             character.location,
                                             success_status=True,
                                             memory_importance=ref_importance,
-                                            memory_type=MemoryType.REFLECTION.value)
+                                            memory_type=MemoryType.REFLECTION.value,
+                                            actor_id=character.id)
                 
 def update_existing_generalizations(character: "Character", generalizations: Dict):
     """

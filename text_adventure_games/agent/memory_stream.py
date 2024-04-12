@@ -37,7 +37,7 @@ class ObservationNode:
     node_importance: int  # or could be float
     node_type: str = None  # the type of Observation
     node_keywords: set = field(default_factory=set)  # Keywords that were discovered in this node
-    # agent_id: Optional[int] = field(default=None)  # ID of the agent making the observation, if relevant
+    node_is_self: int  # ID of the agent making the observation, if relevant
     # associated_nodes: Optional[list[int]] = field(default_factory=list) 
 
 
@@ -105,7 +105,8 @@ class MemoryStream:
                    location,
                    success_status,
                    memory_importance,
-                   memory_type):
+                   memory_type,
+                   actor_id):
         
         if not self.is_valid_memory_type(memory_type):
             valid_types = [type.name for type in MemoryType]
@@ -127,6 +128,9 @@ class MemoryStream:
         memory_embedding = self.get_observation_embedding(description)
         self.memory_embeddings[node_id] = memory_embedding
 
+        # Check if this action was done by this agent
+        self_is_actor = int(actor_id == self.agent_id)
+
         if memory_type == MemoryType.ACTION.value:
             new_memory = self.add_action(node_id,
                                          round,
@@ -136,7 +140,8 @@ class MemoryStream:
                                          success_status,
                                          memory_importance,
                                          type=MemoryType.ACTION,
-                                         node_keywords=set(node_kwds))
+                                         node_keywords=set(node_kwds),
+                                         node_is_self=self_is_actor)
             
         if memory_type == MemoryType.DIALOGUE.value:
             pass
@@ -149,7 +154,8 @@ class MemoryStream:
                                              success_status,
                                              memory_importance,
                                              type=MemoryType.REFLECTION,
-                                             node_keywords=set(node_kwds))
+                                             node_keywords=set(node_kwds),
+                                             node_is_self=self_is_actor)
         
         # Add node to sequential memory
         self.observations.append(new_memory)
