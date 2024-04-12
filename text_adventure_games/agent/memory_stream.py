@@ -22,7 +22,7 @@ class MemoryType(Enum):
     ACTION = 1
     DIALOGUE = 2
     REFLECTION = 3
-    # TODO: add a fourth type that specifies an agent observed an event (did not participate in it)?
+    PERCEPT = 4
 
 @dataclass
 class ObservationNode:
@@ -157,12 +157,22 @@ class MemoryStream:
                                              node_keywords=set(node_kwds),
                                              node_is_self=self_is_actor)
         
+        if memory_type == MemoryType.PERCEPT.value:
+            new_memory = self.add_perception(node_id,
+                                             round,
+                                             tick,
+                                             description,
+                                             location,
+                                             success_status,
+                                             memory_importance,
+                                             type=MemoryType.PERCEPT,
+                                             node_keywords=set(node_kwds),
+                                             node_is_self=self_is_actor)
         # Add node to sequential memory
         self.observations.append(new_memory)
         
         # NODE CACHEING
         # Cache the node under its keywords
-        # TODO: weigh the pros/cons of adding these at start vs. end of the kwd list
         for category, kws_list in keywords.items():
             for word in kws_list:
                 if word in self.keyword_nodes[category]:
@@ -186,7 +196,8 @@ class MemoryStream:
                    success_status: bool,
                    memory_importance: int,
                    type: MemoryType,
-                   node_keywords: set) -> None:
+                   node_keywords: set,
+                   node_is_self: int) -> None:
         
         new_action = ObservationNode(node_id,
                                      node_round=round,
@@ -198,8 +209,8 @@ class MemoryStream:
                                      embedding_key=node_id,
                                      node_importance=memory_importance,
                                      node_type=type,
-                                     node_keywords=node_keywords)
-        # print(f"Added {new_action.node_description} to {self.agent_id}'s memory")
+                                     node_keywords=node_keywords,
+                                     node_is_self=node_is_self)
         return new_action
     
     def add_reflection(self,
@@ -211,7 +222,8 @@ class MemoryStream:
                        success_status: bool,
                        memory_importance: int,
                        type: MemoryType,
-                       node_keywords: set) -> None:
+                       node_keywords: set,
+                       node_is_self: int) -> None:
         
         new_reflection = ObservationNode(node_id,
                                          node_round=round,
@@ -223,8 +235,35 @@ class MemoryStream:
                                          embedding_key=node_id,
                                          node_importance=memory_importance,
                                          node_type=type,
-                                         node_keywords=node_keywords)  
+                                         node_keywords=node_keywords,
+                                         node_is_self=node_is_self)  
         return new_reflection
+    
+    def add_perception(self,
+                       node_id,
+                       round,
+                       tick,
+                       description,
+                       location: str,
+                       success_status: bool,
+                       memory_importance: int,
+                       type: MemoryType,
+                       node_keywords: set,
+                       node_is_self: int) -> None:
+
+        new_perception = ObservationNode(node_id,
+                                         node_round=round,
+                                         node_tick=tick,
+                                         node_level=1,
+                                         node_loc=location,
+                                         node_description=description,
+                                         node_success=success_status,
+                                         embedding_key=node_id,
+                                         node_importance=memory_importance,
+                                         node_type=type,
+                                         node_keywords=node_keywords,
+                                         node_is_self=node_is_self)
+        return new_perception
 
     # ----------- GETTER METHODS -----------
     def get_observation(self, node_id):
