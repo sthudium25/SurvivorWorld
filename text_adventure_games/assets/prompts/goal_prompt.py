@@ -3,9 +3,12 @@ World info: {world_info}
 
 Personal info: {persona_summary}
 
-Create a high level goal for the next round that will be used as a guide when you decide to take each action. 
+Using the context above, as well as information you'll be provided about your past reflections and impressions of others, 
+create high level goals at several priority levels for the next round. 
+
+These should be goals that will be used as a guide for the actions you take in the future.
 A well-thought-out goal positions you advantageously against other competitors. Remember your primary objective is to not get voted out this round.
-Do not plan out each action and keep the goal concise. 
+Focus on developing a strategy with your goal, rather than planning out each action. Keep the goals concise. 
 
 The final output format should be the following:
 Low Priority: 
