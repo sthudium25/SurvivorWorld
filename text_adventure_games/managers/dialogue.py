@@ -31,13 +31,12 @@ class Dialogue:
         self.dialogue_history = 'The dialogue just started.'
         self.max_tokens = 1000
         for participant in self.participants:
-            self.characters_system[participant.name] = self.get_system_instructions(
-                participant)
-        self.characters_mentioned = [character.name for character in self.participants] # Characters mentioned so far in the dialogue
+            self.characters_system[participant.name] = self.get_system_instructions(participant)
+        self.characters_mentioned = [character.name for character in self.participants]  # Characters mentioned so far in the dialogue
 
     def get_system_instructions(self, character):
         system_instructions = f"WORLD INFO: {self.game.world_info}" + "\n"
-        system_instructions += f"You are {character.persona.summary}"+ "\n"
+        system_instructions += f"You are {character.persona.summary}" + "\n"
         system_instructions += f"GOALS: {character.goals}. " + "/n"
         system_instructions += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: "
         query = f"""You are in dialogue with:
@@ -51,7 +50,7 @@ class Dialogue:
             context_list = limit_context_length(context_list,
                                                 max_tokens=GPT4_MAX_TOKENS-ACTION_MAX_OUTPUT,
                                                 tokenizer=self.game.parser.tokenizer)
-        except:
+        except Exception:
             context_list = ["No memories"]
         # Then add these to the user message
         print(
