@@ -7,8 +7,10 @@ Description: defines how agents reflect upon their past experiences
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from collections import defaultdict
-from text_adventure_games.utils.general import set_up_openai_client
-from text_adventure_games.assets import goal_prompt
+
+import numpy as np
+from text_adventure_games.utils.general import set_up_openai_client, get_text_embedding
+from text_adventure_games.assets.prompts import goal_prompt
 
 if TYPE_CHECKING:
     from text_adventure_games.things.characters import Character
@@ -36,6 +38,7 @@ class Goals:
         """
         self.character = character
         self.goals = defaultdict(dict)
+        self.goal_embeddings = defaultdict(np.ndarray)
 
     def gpt_generate_goals(self, game: "Game") -> str:
         """
@@ -55,23 +58,7 @@ class Goals:
         system_prompt = goal_prompt.gpt_goals_prompt.format(world_info=game.world_info, 
                                                             persona_summary=self.character.persona.summary)
 
-        # retrieving apt reflection nodes
-        reflection_raw = []
-        node_ids = self.character.memory.get_observations_by_round(game.round)
-        for node_id in node_ids:
-            node = self.character.memory.get_observation(node_id)
-            if node.node_type.value == 3:
-                reflection_raw.append(node.node_description)
-        reflection = " ".join(reflection_raw)
-
-        # get all character objects
-        char_objects = []
-        for char in game.characters:
-            char_objects.append(char)
-        
-        impressions_str = self.character.impressions.get_multiple_impression(char_objects)
-        user_prompt = {"Reflection of previous round: \n{ref} \n\n Impressions: \n{imp}"}.format(ref=reflection,
-                                                                                                 imp=impressions_str)
+        user_prompt = self.build_user_prompt(game)
         
         messages = [
             {"role": "system", "content": system_prompt},
@@ -86,11 +73,40 @@ class Goals:
             top_p=1)
         
         goal = response.choices[0].message.content
+        
+        # get embedding of goal
+        goal_embed = self._create_goal_embedding(goal)
         # for experimentation purposes
-        self.goal_update(goal, game)
+        self.goal_update(goal, goal_embed, game)
         return goal
     
-    def goal_update(self, goal: str, game: "Game"):
+    def build_user_prompt(self, game):
+        # retrieving apt reflection nodes
+        reflection_raw = []
+        node_ids = self.character.memory.get_observations_by_round(game.round)
+        for node_id in node_ids:
+            node = self.character.memory.get_observation(node_id)
+            if node.node_type.value == 3:
+                reflection_raw.append(node.node_description)
+        reflection = "\n".join(reflection_raw)
+
+        # get all character objects
+        char_objects = list(game.characters.values())
+        
+        if self.character.use_impressions:
+            impressions_str = self.character.impressions.get_multiple_impressions(char_objects)
+        else:
+            impressions_str = None
+
+        user_prompt = "Additional context for creating your goal:\n"
+        if reflection:
+            user_prompt += f"Reflections on this round:\n{reflection}\n\n"
+        if impressions_str:
+            user_prompt += f"Impressions: \n{impressions_str}\n"
+        user_prompt += "If you want to update your goals, do so now."
+        return user_prompt
+    
+    def goal_update(self, goal: str, goal_embedding: np.ndarray, game: "Game"):
         """
         Maintains the dictionary of goals for the character by round
         """
@@ -103,6 +119,8 @@ class Goals:
                 self.goals[round]['Medium Priority:'] = line.replace('Medium Priority: ', '')
             elif 'High Priority' in line:
                 self.goals[round]['High Priority:'] = line.replace('High Priority: ', '')
+        self.goal_embeddings.update({round: goal_embedding})
+        self.update_goals_in_memory(round)
 
     def get_goals(self, round=-1, priority="all"):
         """
@@ -120,6 +138,18 @@ class Goals:
             return self.goals[round]
         else:
             return self.goals
+        
+    def _create_goal_embedding(self, goal: str) -> np.ndarray:
+        goal_embedding = get_text_embedding(goal)
+        return goal_embedding
+
+    def get_goal_embedding(self, round: int):
+        return self.goal_embeddings.get(round, None)
+    
+    def update_goals_in_memory(self, round):
+        curr_embedding = self.get_goal_embedding(round)
+        if curr_embedding:
+            self.character.memory.set_goal_query(curr_embedding)
 
     # def evaluate_goals(game: "Game", character: "Character"):
     #  #TODO : Separate file with other evalaution - maybe create a new module
