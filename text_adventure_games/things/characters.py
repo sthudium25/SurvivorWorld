@@ -1,8 +1,6 @@
 from typing import Union
 from .base import Thing
 from .items import Item
-from .locations import Location
-from ..gpt.agent_kani import AgentKani
 from ..gpt.gpt_helpers import gpt_get_action_importance
 from ..utils.general import (parse_location_description, 
                              find_difference_in_dict_lists)
@@ -122,7 +120,7 @@ class GenerativeAgent(Character):
         # Set the Agent's persona, empty impressions, and initialize empty goals:
         self.persona = persona
         self.impressions = impressions.Impressions(self.name, self.id)
-        if with_goals == True:
+        if with_goals:
             self.goals = goals.Goals(self)
         else:
             self.goals = None
@@ -216,7 +214,8 @@ class GenerativeAgent(Character):
                                        location=self.location.name,
                                        success_status=True,
                                        memory_importance=importance_score,
-                                       memory_type=MemoryType.ACTION.value)
+                                       memory_type=MemoryType.ACTION.value,
+                                       actor_id=self.id)
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):

@@ -451,14 +451,15 @@ class GptParser(Parser):
         super().add_command_to_history(command)
         for char in character.chars_in_view:
             # print(f'passing {character.name}\'s action to {char.name}')
-            char.memory.add_memory(self.game.round,
-                                   self.game.tick,
-                                   summary.lower(), 
-                                   keywords, 
-                                   character.location.name, 
-                                   success,
-                                   importance, 
-                                   type)
+            char.memory.add_memory(round=self.game.round,
+                                   tick=self.game.tick,
+                                   description=summary.lower(), 
+                                   keywords=keywords, 
+                                   location=character.location.name, 
+                                   success_status=success,
+                                   memory_importance=importance, 
+                                   memory_type=type,
+                                   actor_id=character.id)
 
     def ok(self, command: str, description: str, thing: Thing) -> None:
         """
