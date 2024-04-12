@@ -80,6 +80,8 @@ class Impressions:
         """
         char_impressions = ""
         for char in character_list:
+            if char.id == self.id:
+                continue
             char_impressions += f"Your theory of mind of and relationship with {char.name}:\n"
             char_impressions += str(self._get_impression(char))
             char_impressions += "\n\n"
