@@ -624,7 +624,8 @@ class SurvivorGame(Game):
                                     location=None, 
                                     success_status=True,
                                     memory_importance=10, 
-                                    memory_type=MemoryType.ACTION.value)
+                                    memory_type=MemoryType.ACTION.value,
+                                    actor_id=character.id)
         
     def run_jury_session(self):
         self.final_vote = JuryVotingSession(jury_members=list(self.jury.values()), 
@@ -654,6 +655,7 @@ class SurvivorGame(Game):
                                 location=None, 
                                 success_status=True,
                                 memory_importance=10, 
-                                memory_type=MemoryType.ACTION.value)
+                                memory_type=MemoryType.ACTION.value,
+                                actor_id=c.id)
         
         
