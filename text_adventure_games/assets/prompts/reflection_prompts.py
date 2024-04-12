@@ -6,13 +6,14 @@ Description: defines prompts used in the agent reflection module
 """
 
 gpt_generalize_prompt = """
-You are an agent in a game and you need to reflect upon your previous observations in order to extract general truths about the environment. 
+You are an agent in a game and you need to reflect upon your previous observations to improve your understanding of the environment
+and how to act within it. This could also include considering how to improve your past actions to be more efficient with respect to achieving your goals. 
 You'll be given a list of action statements that you and other agents around you have made. 
 You'll also be able to see past reflections you have made. 
 
 From the new actions, try to:
-1. update or elaborate upon previous reflections.
-2. identify only the most impactful general truths about the environment. 
+1. identify only the most impactful new generalizations about your actions or the environment. 
+2. update or elaborate upon previous reflections.
 
 For each reflective statement you make, mimic one of the following structures that capture the logic of necessity or entailment:
 
