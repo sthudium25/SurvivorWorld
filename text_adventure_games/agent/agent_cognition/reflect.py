@@ -86,15 +86,6 @@ def generalize(game, character):
     if generalizations:
         add_generalizations_to_memory(game, character, generalizations)
 
-def reflect_on_goals():
-    pass
-
-def reflect_on_relationships():
-    pass
-
-def reflect_on_reflections():
-    pass
-
 def gpt_generalize(game, reflections, new_observations):
     # initialize a client
     client = set_up_openai_client("Helicone")
