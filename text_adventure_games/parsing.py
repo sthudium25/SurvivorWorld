@@ -248,23 +248,43 @@ class Parser:
     def check_if_character_exists(self, name):
         # First O(1) check for a perfect fit
         if name in self.game.characters:
-            return True
+            return True, name
         # If not exact match, do the more expensive checks
         norm_name = normalize_name(name)
+        if not norm_name:
+            return False, None
+        
         nchar = len(norm_name)
+        if nchar <= 2:
+            return False, None
         lev_threshold = 1 if nchar < 5 else 2 if nchar < 12 else 3
-        jaro_threshold = max(0.75, ((nchar - 2) / nchar))
+        try:
+            jaro_threshold = max(0.75, ((nchar - 2) / nchar))
+        except ZeroDivisionError:
+            jaro_threshold = 0.8
         
         for char_name in self.game.characters:
-            norm_compare_name = normalize_name(char_name)
-            
-            # Several heuristics that this name is PROBABLY a character in the game
-            if jaro_winkler_similarity(norm_compare_name, norm_name) > jaro_threshold:
-                True
-            if name.lower() in char_name.lower():
-                True
-            if levenshtein_distance(norm_compare_name, norm_name) < lev_threshold:
-                True
+            norm_char_name = normalize_name(char_name)
+            if self.is_partial_name(norm_name, norm_char_name):
+                return True, char_name
+            # Ensure the length ratio doesn't exceed a certain threshold before comparing
+            length_ratio = len(norm_char_name) / (len(norm_name) + 0.01)  # Avoid division by zero
+            if not (0.5 < length_ratio < 2):  
+                continue
+
+            # Perform similarity checks if lengths are reasonably similar
+            if jaro_winkler_similarity(norm_char_name, norm_name) > jaro_threshold:
+                if levenshtein_distance(norm_char_name, norm_name) < lev_threshold:
+                    return True, char_name
+        return False, None
+
+    def is_partial_name(self, candidate_name, comparison_name):
+        cand_parts = candidate_name.split()
+        comp_parts = comparison_name.split()
+        if cand_parts[0] == comp_parts[0]:
+            return True
+        if cand_parts[-1] == comp_parts[-1]:
+            return True
         return False
 
     def get_character_location(self, character: Character) -> Location:
@@ -406,27 +426,40 @@ class GptParser(Parser):
     def extract_keywords(self, text):
         if not text:
             return None
+        custom_stopwords = {"he", "it", "i", "you", "she", "they", "we", "us", 
+                            "'s", "this", "that", "these", "those", "them"}
+
         doc = self.nlp(text)
-        keys = defaultdict(list)
+        keys = defaultdict(set)
         for w in doc:
-            if w.pos_ in ["NOUN", "PROPN"]:
-                # print(f"Found noun: {w.text}")
+            if w.text.lower() in custom_stopwords:
+                continue
+
+            if w.pos_ in ["PROPN"]:
                 compounds = [j for j in w.children if j.dep_ == "compound"]
                 if compounds:
                     continue
             if "subj" in w.dep_:
-                if self.check_if_character_exists(w.text):
-                    keys['characters'].append(w.text)
+                exists, name = self.check_if_character_exists(w.text)
+                if exists:
+                    keys['characters'].add(name)
                 else:
-                    keys['misc_deps'].append(w.text)
+                    keys['misc_deps'].add(w.text)
             if "obj" in w.dep_:
-                if self.check_if_character_exists(w.text):
-                    keys['characters'].append(w.text)
+                exists, name = self.check_if_character_exists(w.text)
+                if exists:
+                    keys['characters'].add(name)
                 else:
-                    keys['objects'].append(w.text)
+                    keys['objects'].add(w.text)
         for ent in doc.ents:
-            if ent.label_ == "PERSON" and self.check_if_character_exists(ent.text):
-                keys["characters"].append(ent.text)
+            # print(ent, ent.label_)
+            if ent.label_ in ["PERSON", "ORG", "GPE"]:
+                exists, name = self.check_if_character_exists(ent.text)
+                if exists:
+                    keys["characters"].add(name)
+
+        keys = {k: list(v) for k, v in keys.items()}
+
         return keys
     
     def add_command_to_history(self, 

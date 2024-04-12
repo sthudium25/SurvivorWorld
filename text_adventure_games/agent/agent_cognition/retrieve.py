@@ -148,7 +148,7 @@ def calculate_node_relevance(character, memory_ids, query):
         # Take the average relevance of all of these
         default_embeddings = np.array(list(character.memory.query_embeddings.values()))
         raw_relevance = cosine_similarity(memory_embeddings, default_embeddings)
-        relevances = np.mean(raw_relevance, axis=1)
+        relevances = np.max(raw_relevance, axis=1)
     
     relevances_sc = minmax_normalize(relevances, 0, 1)
     return relevances_sc
@@ -186,10 +186,14 @@ def gather_keywords_for_search(game, character, query):
             retrieval_kwds = combine_dicts_helper(existing=retrieval_kwds, new=node_kwds)
 
     # 2. goals
-    # TODO: need to confirm how goals are stored and if any parsing needs to done to pass them as a string    
-    goal_kwds = game.parser.extract_keywords(character.goals)
-    if goal_kwds:
-        retrieval_kwds = combine_dicts_helper(retrieval_kwds, goal_kwds)
+    # TODO: need to confirm how goals are stored and if any parsing needs to done to pass them as a string  
+    prev_round = max(0, game.round - 1)
+    current_goals = character.goals.get_goals(round=prev_round, as_str=True)
+
+    if current_goals:
+        goal_kwds = game.parser.extract_keywords(current_goals)
+        if goal_kwds:
+            retrieval_kwds = combine_dicts_helper(retrieval_kwds, goal_kwds)
 
     # 3. Other keywords
     if query:

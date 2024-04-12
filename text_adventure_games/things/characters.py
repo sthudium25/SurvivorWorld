@@ -1,11 +1,8 @@
 from typing import Union
 from .base import Thing
 from .items import Item
-from ..gpt.gpt_helpers import gpt_get_action_importance
-from ..utils.general import (parse_location_description, 
-                             find_difference_in_dict_lists)
 from ..agent.memory_stream import MemoryStream, MemoryType
-from ..agent.agent_cognition import act, reflect, impressions, goals
+from ..agent.agent_cognition import act, reflect, impressions, goals, perceive
 
 
 class Character(Thing):
@@ -114,13 +111,23 @@ class Character(Thing):
 
 class GenerativeAgent(Character):
     
-    def __init__(self, persona, with_goals: bool):
+    def __init__(self, 
+                 persona,
+                 use_goals: bool = True, 
+                 use_impressions: bool = True):
         super().__init__(persona.facts["Name"], persona.description, persona=persona.summary)
+
+        # Cognition settings
+        self.use_goals = use_goals
+        self.use_impressions = use_impressions
 
         # Set the Agent's persona, empty impressions, and initialize empty goals:
         self.persona = persona
-        self.impressions = impressions.Impressions(self.name, self.id)
-        if with_goals:
+        if use_impressions:
+            self.impressions = impressions.Impressions(self.name, self.id)
+        else:
+            self.impressions = None
+        if use_goals:
             self.goals = goals.Goals(self)
         else:
             self.goals = None
@@ -129,6 +136,7 @@ class GenerativeAgent(Character):
         self.memory = MemoryStream(self)
         self.last_location_observations = None
 
+    # TODO: this is probably a redundant method than we can delete
     def get_character_summary(self):
         """
         Get a summary of the traits for this agent
@@ -154,68 +162,22 @@ class GenerativeAgent(Character):
         if game.tick == game.max_ticks_per_round - 1:
             # print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
             reflect.reflect(game, self)  # TODO: Evaluation of goals should be triggered within reflection
-            if self.goals is not None:
+            if self.use_goals:
                 self.goals.gpt_generate_goals(game)
             return -999
 
         # Percieve the agent's surroundings 
-        self.percieve_location(game)
+        self.perceive(game)
 
         # Update this agent's impressions of characters in the same location
-        self.update_character_impressions(game)
+        if self.use_impressions:
+            self.update_character_impressions(game)
 
         # act accordingly
         return act.act(game, self)
- 
-    # TODO: move perceive into an "agent_cognition" module
-    def perceive(self, game):
-        # Collect the latest information about the location
-        location_description = game.describe()
-        return location_description
     
-    def percieve_location(self, game):
-        """
-        Gather rudimentary information about the current location of the Agent
-        and store these observations as new memories (of type MemoryType.ACTION).
-
-        Args:
-            game (games.Game): the current game object
-        """
-        location_description = self.perceive(game)
-        location_observations = parse_location_description(location_description)
-
-        # check for differences between observations
-        diffs_perceived = find_difference_in_dict_lists(self.last_location_observations,
-                                                        location_observations)
-
-        # Replace the last perception with the current one
-        self.last_location_observations = location_observations.copy()
-
-        # Create new observations from the differences
-        for observations in diffs_perceived.values():
-            print(f"{self.name} sees: {observations}")
-            for statement in observations:
-                # print(statement)
-                # TODO: "create_action_statement" method is awkward as part of the Parser class
-                action_statement = game.parser.create_action_statement(command="describe",
-                                                                       description=statement,
-                                                                       character=self)
-                
-                importance_score = gpt_get_action_importance(action_statement,
-                                                             client=game.parser.client, 
-                                                             model=game.parser.model, 
-                                                             max_tokens=10)
-                keywords = game.parser.extract_keywords(action_statement)
-
-                self.memory.add_memory(round=game.round,
-                                       tick=game.tick,
-                                       description=action_statement,
-                                       keywords=keywords,
-                                       location=self.location.name,
-                                       success_status=True,
-                                       memory_importance=importance_score,
-                                       memory_type=MemoryType.ACTION.value,
-                                       actor_id=self.id)
+    def perceive(self, game):
+        perceive.percieve_location(game, self)
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):
@@ -238,6 +200,11 @@ class GenerativeAgent(Character):
         return chars_in_view
 
     def update_character_impressions(self, game):
+        """
+        Update this agent's impression of nearby characters
+
+        Args:
+            game (Game): the current game object
+        """
         for target in self.get_characters_in_view(game):
             self.impressions.update_impression(game, self, target)
-            
