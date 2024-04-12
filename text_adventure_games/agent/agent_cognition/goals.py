@@ -21,7 +21,6 @@ GPT4_MAX_TOKENS = 8192
 # 2. Obtain a list of memories
 # 3. ask 
 
-
 #TODO: max output length ? - TBD
 #TODO: summarize impressions for goals ? - TBD
 #TODO: pass previous round plan - try passing in system prompt - try on playground first
