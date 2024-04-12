@@ -186,10 +186,18 @@ def gather_keywords_for_search(game, character, query):
             retrieval_kwds = combine_dicts_helper(existing=retrieval_kwds, new=node_kwds)
 
     # 2. goals
-    # TODO: need to confirm how goals are stored and if any parsing needs to done to pass them as a string    
-    goal_kwds = game.parser.extract_keywords(character.goals)
-    if goal_kwds:
-        retrieval_kwds = combine_dicts_helper(retrieval_kwds, goal_kwds)
+    # TODO: need to confirm how goals are stored and if any parsing needs to done to pass them as a string  
+    prev_round = game.round - 1 
+    current_goals = character.goals.get_goals(round=prev_round)
+
+    if current_goals:
+        goal_str = ""
+        for goal in current_goals.values():
+            goal_str += goal + " "
+        goal_kwds = game.parser.extract_keywords(goal_str)
+
+        if goal_kwds:
+            retrieval_kwds = combine_dicts_helper(retrieval_kwds, goal_kwds)
 
     # 3. Other keywords
     if query:
