@@ -741,8 +741,28 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
     lamp.add_command_hint("light lamp")
     player.add_to_inventory(lamp)
 
+    #Fourth character
+    fourth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
+                                 facts_new=make_new_characters,
+                                 archetype="Villain")
+    fourth = GenerativeAgent(
+        fourth_persona
+    )
+    fourth.set_property("character_type", "human")
+    garden_path.add_character(fourth)
+
+    #Fifth character
+    fifth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
+                                 facts_new=make_new_characters,
+                                 archetype="Villain")
+    fifth = GenerativeAgent(
+        fifth_persona
+    )
+    fifth.set_property("character_type", "human")
+    fishing_pond.add_character(fifth)
+
     # The Game
-    characters = [troll, mother]
+    characters = [troll, mother, fourth, fifth]
     # custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
     game = ActionCastleSurvivor(cottage, 
                                 player, 
