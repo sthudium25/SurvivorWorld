@@ -682,7 +682,7 @@ def build_game() -> games.Game:
     game = ActionCastle(cottage, player, characters, custom_actions, "You are playing ACTION CASTLE, an adventure game.")
     return game
 
-def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=10) -> games.Game:
+def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=3) -> games.Game:
     cottage = things.Location("Cottage", "A small cottage.")
     garden_path = things.Location(
         "Garden Path",
