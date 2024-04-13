@@ -11,7 +11,7 @@ class Dialogue:
     """This class handles dialogue happening between 2 or more characters.
     """
 
-    def __init__(self, game, participants):
+    def __init__(self, game, participants, command):
         """
         Args:
             participants (List(Character)): sorted list of 
@@ -28,7 +28,7 @@ class Dialogue:
         self.participants = participants
         self.characters_system = {}
         self.participants_number = len(participants)
-        self.dialogue_history = 'The dialogue just started.'
+        self.dialogue_history = f'{command}. The dialogue just started.'
         self.max_tokens = 1000
         for participant in self.participants:
             self.characters_system[participant.name] = self.get_system_instructions(participant)
