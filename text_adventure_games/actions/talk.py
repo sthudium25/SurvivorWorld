@@ -63,6 +63,6 @@ class Talk(base.Action):
         ** Starts a dialogue
         """
         #character.chars_in_view
-        dialogue = Dialogue(self.game, self.participants)
+        dialogue = Dialogue(self.game, self.participants, self.command)
         dialogue_history = dialogue.dialogue_loop()
         self.parser.ok(self.command, dialogue_history, self.starter)
