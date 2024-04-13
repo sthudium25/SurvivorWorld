@@ -38,6 +38,7 @@ class Dialogue:
         system_instructions = f"WORLD INFO: {self.game.world_info}" + "\n"
         system_instructions += f"You are {character.persona.summary}" + "\n"
         system_instructions += f"GOALS: {character.goals}. " + "/n"
+        system_instructions += f"REFLECTIONS ON OTHERS: {character.impressions.get_multiple_impressions(self.game.characters.values())}\n\n"
         system_instructions += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: "
         query = f"""You are in dialogue with:
                                 {', '.join([x.name for x in self.participants if x.name != character.name])}.\n
