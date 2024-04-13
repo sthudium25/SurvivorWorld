@@ -44,7 +44,7 @@ class Dialogue:
                                 {', '.join([x.name for x in self.participants if x.name != character.name])}.\n
                     Your goals are: {character.goals}. """
         query += "\n" + self.dialogue_history.split("\n")[-1]
-        context_list = retrieve(self.game, character, query, n=-1)
+        context_list = retrieve(self.game, character, query, n=20)
 
         # limit the context length here on the retrieved memories
         try:
