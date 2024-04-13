@@ -26,7 +26,7 @@ class BaseScale:
                  score: int = 50,
                  min: int = 0,
                  max: int = 100):
-        self.min_desciptor, self.max_desciptor = dichotomy
+        self.min_descriptor, self.max_descriptor = dichotomy
         self.min = min
         self.max = max
         self.score = score
@@ -36,14 +36,14 @@ class BaseScale:
         # This wording was ranked most interpretable by GPT 3.5 and 4
         # over a number of trials
         return f"""On a scale from {self.min} to {self.max}, 
-        where {self.min} is {self.min_desciptor}
-        and {self.max} is {self.max_desciptor},
+        where {self.min} is {self.min_descriptor}
+        and {self.max} is {self.max_descriptor},
         a score of {self.score}"""
 
     def update_score(self, delta: int):
         """
         Update the score of this scale by some delta
-        It wiill be truncated to the scale limits
+        It will be truncated to the scale limits
 
         Args:
             delta (int): _description_
@@ -93,7 +93,7 @@ class TraitScale(BaseScale):
         "outlook": ("Pessimistic", "Optimistic"),
         "initiative": ("Passive", "Assertive"),
         "generosity": ("Selfish", "Generous"),
-        "social": ("Follower", "Learder"),
+        "social": ("Follower", "Leader"),
         "mind": ("Creative", "Logical"),
         "openness": ("Close-minded", "Open-minded"),
         "stress": ("Anxious", "Calm")
@@ -120,7 +120,7 @@ class TraitScale(BaseScale):
         self.score = new_score
 
     def set_adjective(self, model="gpt-3.5-turbo"):
-        low, high = self.min_desciptor, self.max_desciptor
+        low, high = self.min_descriptor, self.max_descriptor
         adj = get_target_adjective(low=low,
                                    high=high,
                                    target=self.score, 

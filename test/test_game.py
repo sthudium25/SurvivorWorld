@@ -57,7 +57,7 @@ def game_fixture():
     cliffs.add_connection("climb", beach)
     cliffs.add_connection("jump", death)
     beach.add_connection("south", ocean)
-    ocean.add_connection("north", beach)
+    # ocean.add_connection("north", beach)
 
     # Add some items
     machete = things.Item(

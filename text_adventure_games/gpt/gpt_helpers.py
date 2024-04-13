@@ -243,19 +243,92 @@ def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None):
     if len(history) > 0:
         if isinstance(history[0], dict):
             # this indicates that we're parsing ChatMessages, so should extract the "content" string
-            extract = lambda x: x["content"]
+            
+            # original method
+            # extract = lambda x: x["content"]
+
+            # new method
+            # pad with 3 tokens and include both role & content
+            extract = lambda x: get_prompt_token_count(content=x["content"], role=x["role"], pad_reply=False, tokenizer=tokenizer)
+            
+            # each reply carries 3 tokens via "<|start|>assistant<|message|>" that need to be added once
+            total_tokens += 3
         elif isinstance(history[0], str):
             # this indicates that we're parsing a list of strings
-            extract = lambda x: x
+
+            # original method
+            # extract = lambda x: x
+
+            # new method
+            extract = lambda x: len(tokenizer.encode(x))
         else:
             raise TypeError("Elements in history must be either dict or str")
         
     for message in reversed(history):
-        msg_tokens = len(tokenizer.encode(extract(message)))
+        # original version
+        # msg_tokens = len(tokenizer.encode(extract(message)))
+
+        # new version
+        msg_tokens = extract(message)
+        
         if total_tokens + msg_tokens > max_tokens:
             break
         total_tokens += msg_tokens
         limited_history.append(message)
         if len(limited_history) >= max_turns:
             break
-    return list(reversed(limited_history)) 
+
+    return list(reversed(limited_history))
+
+
+def get_prompt_token_count(content=None, role=None, pad_reply=False, tokenizer=None):
+    """
+    This method retrieves the token count for a given prompt.
+    It takes into consideration the content/role structure
+    utilized by GPT's API.
+
+    Args:
+        content (str): the prompt content
+        role (str): the prompt role
+        pad_reply (bool): True adds a padding to account for GPT's reply
+                          being primed with <|start|>assistant<|message|>.
+                          GPT only adds one reply primer for the entire
+                          collective messages given as input. Thus, this
+                          defaults to False to avoid repeatedly
+                          accounting for the reply primer in each message
+                          in the larger passed messages. It should only
+                          be set to true in the final message given in
+                          GPT's prompt.
+        tokenizer (_type_, optional): _description_. Defaults to None.
+
+    Raises:
+        TypeError: _description_
+        TypeError: _description_
+
+    Returns:
+        _type_: _description_
+    """
+
+    if not isinstance(content, str):
+        raise TypeError("content must be a string, not ", type(content))
+    if not isinstance(role, str):
+        raise TypeError("role must be a string, not ", type(role))
+    
+    if not tokenizer:
+        tokenizer = tiktoken.get_encoding("cl100k_base")
+
+    # pad messages with 3 tokens to account for GPT content/role JSON structure
+    token_count = 3
+
+    # if accounting for GPT's reply being primed with <|start|>assistant<|message|>
+    if pad_reply:
+        token_count += 3
+
+    # if checking message content
+    if content:
+        token_count += len(tokenizer.encode(content))
+    # if checking message role
+    if role:
+        token_count += len(tokenizer.encode(role))
+
+    return token_count

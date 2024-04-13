@@ -5,7 +5,7 @@ File: agent_cognition/impressions.py
 Description: defines how agents store interpersonal impressions and theory-of-mind of other characters. 
              This assumes that "set_impression" will be called at least once at the end of a round.
              So, in the case that this agent has already made an impression about a person, only memories from 
-             the last round should be reasoned over; other memories are theoretically already enocded in the agent's 
+             the last round should be reasoned over; other memories are theoretically already encoded in the agent's 
              impressions of the target.
 
              However, if a player comes across a new target, all relevant memories to the target will be pulled.
@@ -88,7 +88,7 @@ class Impressions:
     
     def update_impression(self, game: "Game", character: "Character", target: "Character") -> None:
         """
-        Conditionally triggers and update of a character's impression of a target.
+        Conditionally triggers an update of a character's impression of a target.
         Simple heuristic: if the age is greater than max_ticks_per_round, then this impression should be updated.
 
         Also, if no impression has been made yet then one should be made.

@@ -14,9 +14,9 @@ class Character(Thing):
     """
     This class represents the player and non-player characters (NPC).
     Characters have:
-    * A name (cab be general like "gravedigger")
-    * A description ('You might want to talk to the gravedigger, specially if
-      your looking for a friend, he might be odd but you will find a friend in
+    * A name (can be general like "gravedigger")
+    * A description ('You might want to talk to the gravedigger, especially if
+      you're looking for a friend. He might be odd but you will find a friend in
       him.')
     * A persona written in the first person ("I am low paid labor in this town.
       I do a job that many people shun because of my contact with death. I am
@@ -149,19 +149,7 @@ class GenerativeAgent(Character):
         Returns:
             Union[str, int]: An action string or int flag -999 to trigger skipped action
         """
-        # If this is the end of a round, force reflection
-        if game.tick == game.max_ticks_per_round - 1:
-            # print(f"{self.name} has {len(self.memory.get_observations_by_type(3))} existing reflections")
-            reflect.reflect(game, self)  # TODO: Evaluation of goals should be triggered within reflection
-            return -999
-
-        # Percieve the agent's surroundings 
-        self.percieve_location(game)
-
-        # Update this agent's impressions of characters in the same location
-        self.update_character_impressions(game)
-
-        # act accordingly
+        self.perceive_location(game)
         return act.act(game, self)
  
     # TODO: move perceive into an "agent_cognition" module
@@ -170,7 +158,7 @@ class GenerativeAgent(Character):
         location_description = game.describe()
         return location_description
     
-    def percieve_location(self, game):
+    def perceive_location(self, game):
         """
         Gather rudimentary information about the current location of the Agent
         and store these observations as new memories (of type MemoryType.ACTION).
