@@ -88,7 +88,8 @@ def get_or_create_base_facts(description: str, make_new=False, model='gpt-3.5-tu
 def create_persona(facts: Dict,
                    trait_scores: List = None,
                    archetype=None,
-                   model='gpt-3.5-turbo'):
+                   model='gpt-3.5-turbo',
+                   file_path=None):
     """_summary_
 
     Args:
@@ -115,7 +116,17 @@ def create_persona(facts: Dict,
         "Sage Advisor": "Tit-for-Tat",  # Wise and adaptive, responding strategically to the actions of others.
     }
 
+    # If Filepath given, load persona from file.
+    if file_path is not None:
+        if not os.path.isfile(file_path): # check that filepath exists
+            raise FileNotFoundError(f"No file found at {file_path}")
+    
+        return Persona.import_persona(file_path)
+
+    # Otherwise, create New Persona
     p = Persona(facts)
+
+    # TODO: Property of Character (Troll, etc.)
 
     if trait_scores:
         scores = validate_trait_scores(trait_scores)
@@ -141,9 +152,9 @@ def create_persona(facts: Dict,
             # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model=model)
             p.add_trait(trait)
-        p.add_game_theory_strategy(archetype_game_theory_mapping[archetype]) # Sets default strategy based on archetype
+        p.set_game_theory_strategy(archetype_game_theory_mapping[archetype]) # Sets default strategy based on archetype
     else:
-        raise ValueError("One of trait_scores or archetype must be specified.")
+        raise ValueError("One of either trait_scores or archetype must be specified.")
     
     return p
 
@@ -165,7 +176,7 @@ def build_agent(agent_description,
     
     p = create_persona(facts, trait_scores, archetype=archetype, model=model)
     return p
-    
+
     # TODO: How to add affinities? We need the game information to know how many 
     # characters exist in the world. This may need to happen later
     # Maybe once characters are set, there is a start up sequence that sets 

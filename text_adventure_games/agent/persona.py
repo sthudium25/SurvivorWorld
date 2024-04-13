@@ -62,7 +62,12 @@ class Persona():
 
     # Export a persona into a json file ({person's name}.json)
     def export_persona(self):
-        filename = 'SurvivorWorld/text_adventure_games/assets/personas/' + self.facts['Name'] + ".json"
+        # Uniquely ID's persona by concatenated trait scores
+        unique_id = ''.join(str(trait.score) for trait in self.traits.values())
+
+        filedir = 'SurvivorWorld/text_adventure_games/assets/personas/'
+        filename = self.facts['Name'] + "_" + unique_id + ".json"
+        filepath = filedir + filename
 
         persona_dict = { # Convert the persona to a dictionary
             'traits': {tname: trait.__dict__ for tname, trait in self.traits.items()},
@@ -73,8 +78,10 @@ class Persona():
             'game_theory_strategy': self.game_theory_strategy,
         }
 
-        with open(filename, 'w') as f:
+        with open(filepath, 'w') as f:
             json.dump(persona_dict, f)
+
+        print(f"Successfully exported persona to {filepath}")
 
     # Import a persona from a file.
     @classmethod
@@ -92,13 +99,6 @@ class Persona():
         persona.game_theory_strategy = persona_dict['game_theory_strategy']
 
         return persona
-
-    # def get_goal_summary(self):
-    #     goal_summary = ""
-    #     goal_summary += f"to accomplish {self.goals['flex']}"
-    #     goal_summary += f" but importantly must {self.goals['short-term']}."
-    #     goal_summary += f" You goal for the entire game is to {self.goals['long-term']}."
-    #     return goal_summary
         
     # Made more natural-language friendly, not just a list of facts/traits, etc.
     def get_personal_summary(self):
@@ -112,8 +112,12 @@ class Persona():
         for key in self.facts:
             if key not in ['Name', 'Age', 'Occupation', 'Likes', 'Dislikes', 'Home city']:
                 summary += f"{self.facts['Name'].title()}'s {key.lower()} is/are: {self.facts[key]}."
-        summary += f" In the game, {self.facts['Name']}'s strategy is {self.game_theory_strategy},"
-        summary += f" reflecting their {' and '.join(self.get_trait_summary())}."
-        #if self.get_goal_summary(): # Include goals if available
-        #    summary += f" They are driven by goals such as {self.get_goal_summary()}."
+        if self.game_theory_strategy:
+            summary += f" In the game, {self.facts['Name']}'s strategy is {self.game_theory_strategy},"
+            summary += f" reflecting their {' and '.join(self.get_trait_summary())}."
+        else: #Just list their traits
+            summary += f" Their traits are: {', '.join(self.get_trait_summary())}."
         return summary
+
+    def __str__(self):
+        return self.get_personal_summary()
