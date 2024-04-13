@@ -43,7 +43,7 @@ class Talk(base.Action):
             description = "The character starting the dialogue couldn't be found."
             self.parser.fail(self.command, description, self.starter)
             return False
-        if not self.talked_to:
+        if self.talked_to is None:
             description = f"The character {self.starter.name} tried talking to couldn't be found."
             self.parser.fail(self.command, description, self.starter)
             return False
