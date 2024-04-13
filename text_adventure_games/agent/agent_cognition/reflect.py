@@ -34,7 +34,7 @@ import json
 # local imports
 from text_adventure_games.agent.memory_stream import MemoryType
 from text_adventure_games.assets.prompts import reflection_prompts as rp
-from text_adventure_games.gpt.gpt_helpers import limit_context_length, gpt_get_action_importance
+from text_adventure_games.gpt.gpt_helpers import limit_context_length, gpt_get_action_importance, get_prompt_token_count
 from text_adventure_games.utils.general import set_up_openai_client
 
 if TYPE_CHECKING:
@@ -93,13 +93,20 @@ def gpt_generalize(game, reflections, new_observations):
     # load system prompt
     system_prompt = rp.gpt_generalize_prompt
 
+    # get the number of tokens in the system prompt
+    system_prompt_token_count = get_prompt_token_count(content=system_prompt, role='system', pad_reply=False)
+    
+    # get the number of tokens in the resulting system role (just the word 'user'),
+    # including a padding for GPT's reply containing <|start|>assistant<|message|>
+    gpt_prompt_tokens = system_prompt_token_count + get_prompt_token_count(content=None, role='user', pad_reply=True)
+
     # TODO: Potential problem here is what to do if new_observations list exeeds context limit on its own
     # limit_context_length looks through this list backwards, so those could fill up the limit
     # I guess this just means that round max ticks needs to stay small since new_observations is limited to the last round
     user_prompt_items = ["Prior reflections:\n"] + reflections + ["\nNew observations:\n"] + new_observations
 
     user_prompt_items = limit_context_length(user_prompt_items,
-                                             max_tokens=GPT4_MAX_TOKENS-REFLECTION_MAX_OUTPUT,
+                                             max_tokens=GPT4_MAX_TOKENS-REFLECTION_MAX_OUTPUT-gpt_prompt_tokens,
                                              tokenizer=game.parser.tokenizer)
     user_prompt_str = "".join(user_prompt_items)
 

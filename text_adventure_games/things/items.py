@@ -25,7 +25,7 @@ class Item(Thing):
 
     def to_primitive(self):
         """
-        Converts this object into a dictionary of values the can be safely
+        Converts this object into a dictionary of values that can be safely
         serialized to JSON.
 
         Notice that object instances are replaced with their name. This

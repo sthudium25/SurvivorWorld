@@ -43,6 +43,10 @@ class Talk(base.Action):
             description = "The character starting the dialogue couldn't be found."
             self.parser.fail(self.command, description, self.starter)
             return False
+        if self.talked_to is None:
+            description = f"The character {self.starter.name} tried talking to couldn't be found."
+            self.parser.fail(self.command, description, self.starter)
+            return False
         if not self.was_matched(self.starter, self.talked_to):
             description = f"{self.talked_to.name} could not be found."
             self.parser.fail(self.command, description, self.starter)
@@ -59,6 +63,6 @@ class Talk(base.Action):
         ** Starts a dialogue
         """
         #character.chars_in_view
-        dialogue = Dialogue(self.game, self.participants)
+        dialogue = Dialogue(self.game, self.participants, self.command)
         dialogue_history = dialogue.dialogue_loop()
         self.parser.ok(self.command, dialogue_history, self.starter)
