@@ -88,7 +88,8 @@ class VotingSession:
                                 location=None,
                                 success_status=True,
                                 memory_importance=10,
-                                memory_type=MemoryType.ACTION.value)
+                                memory_type=MemoryType.ACTION.value,
+                                actor_id=voter.id)
 
     def read_votes(self):
         """

@@ -22,7 +22,7 @@ class MemoryType(Enum):
     ACTION = 1
     DIALOGUE = 2
     REFLECTION = 3
-    # TODO: add a fourth type that specifies an agent observed an event (did not participate in it)?
+    PERCEPT = 4
 
 @dataclass
 class ObservationNode:
@@ -35,9 +35,9 @@ class ObservationNode:
     node_success: bool
     embedding_key: int  # Immediately get and store the embedding for faster retrieval later?
     node_importance: int  # or could be float
+    node_is_self: int  # ID of the agent making the observation, if relevant
     node_type: str = None  # the type of Observation
     node_keywords: set = field(default_factory=set)  # Keywords that were discovered in this node
-    # agent_id: Optional[int] = field(default=None)  # ID of the agent making the observation, if relevant
     # associated_nodes: Optional[list[int]] = field(default_factory=list) 
 
 
@@ -105,7 +105,8 @@ class MemoryStream:
                    location,
                    success_status,
                    memory_importance,
-                   memory_type):
+                   memory_type,
+                   actor_id):
         
         if not self.is_valid_memory_type(memory_type):
             valid_types = [type.name for type in MemoryType]
@@ -127,6 +128,9 @@ class MemoryStream:
         memory_embedding = self.get_observation_embedding(description)
         self.memory_embeddings[node_id] = memory_embedding
 
+        # Check if this action was done by this agent
+        self_is_actor = int(actor_id == self.agent_id)
+
         if memory_type == MemoryType.ACTION.value:
             new_memory = self.add_action(node_id,
                                          round,
@@ -136,7 +140,8 @@ class MemoryStream:
                                          success_status,
                                          memory_importance,
                                          type=MemoryType.ACTION,
-                                         node_keywords=set(node_kwds))
+                                         node_keywords=set(node_kwds),
+                                         node_is_self=self_is_actor)
             
         if memory_type == MemoryType.DIALOGUE.value:
             pass
@@ -149,14 +154,25 @@ class MemoryStream:
                                              success_status,
                                              memory_importance,
                                              type=MemoryType.REFLECTION,
-                                             node_keywords=set(node_kwds))
+                                             node_keywords=set(node_kwds),
+                                             node_is_self=self_is_actor)
         
+        if memory_type == MemoryType.PERCEPT.value:
+            new_memory = self.add_perception(node_id,
+                                             round,
+                                             tick,
+                                             description,
+                                             location,
+                                             success_status,
+                                             memory_importance,
+                                             type=MemoryType.PERCEPT,
+                                             node_keywords=set(node_kwds),
+                                             node_is_self=self_is_actor)
         # Add node to sequential memory
         self.observations.append(new_memory)
         
         # NODE CACHEING
         # Cache the node under its keywords
-        # TODO: weigh the pros/cons of adding these at start vs. end of the kwd list
         for category, kws_list in keywords.items():
             for word in kws_list:
                 if word in self.keyword_nodes[category]:
@@ -180,7 +196,8 @@ class MemoryStream:
                    success_status: bool,
                    memory_importance: int,
                    type: MemoryType,
-                   node_keywords: set) -> None:
+                   node_keywords: set,
+                   node_is_self: int) -> None:
         
         new_action = ObservationNode(node_id,
                                      node_round=round,
@@ -192,8 +209,8 @@ class MemoryStream:
                                      embedding_key=node_id,
                                      node_importance=memory_importance,
                                      node_type=type,
-                                     node_keywords=node_keywords)
-        # print(f"Added {new_action.node_description} to {self.agent_id}'s memory")
+                                     node_keywords=node_keywords,
+                                     node_is_self=node_is_self)
         return new_action
     
     def add_reflection(self,
@@ -205,7 +222,8 @@ class MemoryStream:
                        success_status: bool,
                        memory_importance: int,
                        type: MemoryType,
-                       node_keywords: set) -> None:
+                       node_keywords: set,
+                       node_is_self: int) -> None:
         
         new_reflection = ObservationNode(node_id,
                                          node_round=round,
@@ -217,8 +235,35 @@ class MemoryStream:
                                          embedding_key=node_id,
                                          node_importance=memory_importance,
                                          node_type=type,
-                                         node_keywords=node_keywords)  
+                                         node_keywords=node_keywords,
+                                         node_is_self=node_is_self)  
         return new_reflection
+    
+    def add_perception(self,
+                       node_id,
+                       round,
+                       tick,
+                       description,
+                       location: str,
+                       success_status: bool,
+                       memory_importance: int,
+                       type: MemoryType,
+                       node_keywords: set,
+                       node_is_self: int) -> None:
+
+        new_perception = ObservationNode(node_id,
+                                         node_round=round,
+                                         node_tick=tick,
+                                         node_level=1,
+                                         node_loc=location,
+                                         node_description=description,
+                                         node_success=success_status,
+                                         embedding_key=node_id,
+                                         node_importance=memory_importance,
+                                         node_type=type,
+                                         node_keywords=node_keywords,
+                                         node_is_self=node_is_self)
+        return new_perception
 
     # ----------- GETTER METHODS -----------
     def get_observation(self, node_id):
@@ -328,25 +373,33 @@ class MemoryStream:
             self.memory_embeddings.update({node_id: new_embedding})
             return True
         
-    def set_query_embeddings(self, character):
+    def set_query_embeddings(self, character, round: int = 0):
+        """
+        Default "queries" for determining relevance when no explicit query has been passed to retrieve()
+
+        Args:
+            character (Character): agent of this memory
+            round (int, optional): the round in the game. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
         cached_queries = {}
-        goal_summary = character.goals  # .get_goal_summary()???
-        # relationship_summary = self.get_relationships_summary()
+        current_goal_embed = character.goals.get_goal_embedding(round=round)
         persona_embed = get_text_embedding(character.persona.summary)
         if persona_embed is not None:
             cached_queries["persona"] = persona_embed
-        goals_embed = get_text_embedding(goal_summary)
-        if goals_embed is not None:
-            cached_queries["goals"] = goals_embed
-        # relationships_embed = get_text_embedding(relationship_summary)
-        # if relationships_embed is not None:
-        #     cached_queries["relationships"] = get_text_embedding(relationship_summary)
+        if current_goal_embed is not None:
+            cached_queries["goals"] = current_goal_embed
         return cached_queries
     
-    # ----------- UPDATE METHODS -----------
-    def update_query_embeddings(self, character):
-        raise NotImplementedError
+    def set_goal_query(self, goal_embedding):
+        try:
+            self.query_embeddings.update({"goals": goal_embedding})
+        except KeyError as e:
+            print("Goal query embedding update failed. Skipping. Caught:\n", e)
     
+    # ----------- UPDATE METHODS -----------
     def update_node_description(self, node_id, new_description) -> bool:
         try:
             node = self.get_observation(node_id)

@@ -161,6 +161,7 @@ cython_debug/
 
 # Mac logs
 .RHistory
+.DS_Store
 
 # VSCode settings
 .vscode/*
