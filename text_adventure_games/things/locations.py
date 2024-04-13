@@ -14,7 +14,7 @@ from .items import Item
 class Location(Thing):
     """
     Locations are the places in the game that a player can visit. Internally
-    they are represented nodes in a graph.  Each location stores a description
+    they are represented as nodes in a graph.  Each location stores a description
     of the location, any items in the location, its connections to adjacent
     locations, and any blocks that prevent movement to an adjacent location.
     The connections is a dictionary whose keys are directions and whose values
@@ -49,7 +49,7 @@ class Location(Thing):
 
     def to_primitive(self):
         """
-        Converts this object into a dictionary of values the can be safely
+        Converts this object into a dictionary of values that can be safely
         serialized to JSON.
 
         Notice that object instances are replaced with their name. This
@@ -171,7 +171,7 @@ class Location(Thing):
 
     def get_item(self, name: str):
         """
-        Checks if the thing is at the location.
+        Get an item in this location.
         """
         # The character must be at the location
         return self.items.get(name, None)

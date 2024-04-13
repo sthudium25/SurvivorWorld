@@ -472,7 +472,7 @@ class GptParser(Parser):
                                type):
         """
         Add a summarized command and outcome to the command history
-        Thenn add memories to character memory
+        Then add memories to character memory
 
         Args:
             summary (str): a summary of an action and its outcome
@@ -543,7 +543,7 @@ class GptParser(Parser):
                 "You are the narrator for a text adventure game. You create short, ",
                 "evocative descriptions of the game. The player can be described in ",
                 f"the {self.perspective} person, and you should use present tense. ",
-                "If the command is 'look' the describe the game location and its characters and items. ",
+                "If the command is 'look' then describe the game location and its characters and items. ",
                 "Focus on describing the most recent events."
             ]
         )
@@ -733,7 +733,7 @@ If no command is given, return \"{curr_idx}: {character.name}\""
         self, command: str, item_dict: dict[str, Item], hint: str = None
     ) -> Item:
         """
-        Check whether the name any of the items in this dictionary match the
+        Check whether the names of any of the items in this dictionary match the
         command. If so, return Item, else return None.
 
         Args:

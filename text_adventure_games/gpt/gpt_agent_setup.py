@@ -44,7 +44,8 @@ Create a JSON structure from the output.
         ],
         temperature=1.25,
         max_tokens=200,
-        top_p=1
+        top_p=1,
+        # response_format={"type": "json_object"},
     )
 
     facts_json, error_in_json = general.extract_json_from_string(response.choices[0].message.content)
@@ -154,15 +155,15 @@ def summarize_agent_facts(facts: str, model='gpt-4') -> str:
         "Home city": "Philadelphia, Pennsylvania"
     }
     system_prompt = "".join(
-        ["You will get a dictionary of traits that tell you about a person.",
-         "You should write a concise, two-sentence summary of the person and describe their core",
-         "characteristics without just listing the person's likes and dislikes.",
+        ["You will get a dictionary of traits that tell you about a person. ",
+         "You should write a concise, two-sentence summary of the person and describe their core ",
+         "characteristics without just listing the person's likes and dislikes.\n\n",
          "The facts:\n",
          f"{str(dummy_facts)}\n",
          "are summarized as:\n",
-         "Jacob Harrison is a 25-year-old barista from Philadelphia who has a passion for",
-         "creating delicious coffee blends and treats. He finds solace in indie music and", 
-         "enjoys spending his free time baking and getting lost in the pages of a good book.",
+         "Jacob Harrison is a 25-year-old barista from Philadelphia who has a passion for ",
+         "creating delicious coffee blends and treats. He finds solace in indie music and ", 
+         "enjoys spending his free time baking and getting lost in the pages of a good book. ",
          "Jacob is a compassionate individual who values positivity and dislikes rude behavior or early mornings. ",
          "His love for dogs adds a playful and nurturing aspect to his personality, ",
          "creating a warm and inviting presence in both his professional and personal life."])

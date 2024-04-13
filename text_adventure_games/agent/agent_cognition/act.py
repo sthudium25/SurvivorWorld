@@ -6,7 +6,7 @@ Description: defines how agents select an action given their perceptions and mem
 """
 
 # Steps to choosing an action:
-# 1. perceive environment (percieve) -- already put into memory
+# 1. perceive environment (perceive) -- already put into memory
 # 2. collect goals, world info, character relationships (retreive)
 # 3. get a list of the currently available actions (game.actions)
 # 4. Ask GPT to pick an option 
@@ -79,8 +79,8 @@ def build_system_message(game, character, game_actions) -> str:
         "Notes to keep in mind:\n",
         "You can only use items that are in your possesion, ",
         "if you want to go somewhere, state the direction or the location in which you want to travel. ",
-        "Actions should be atomic, not general and should interact with your immediate environment.",
-        "Aim to keep action statements to 10 words or less",
+        "Actions should be atomic, not general and should interact with your immediate environment. ",
+        "Aim to keep action statements to 10 words or less. ",
         "Here is list of valid action verbs to use:\n",
         choices_str
     ])

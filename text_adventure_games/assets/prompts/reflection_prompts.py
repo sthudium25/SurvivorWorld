@@ -17,7 +17,7 @@ From the new actions, try to:
 
 For each reflective statement you make, mimic one of the following structures that capture the logic of necessity or entailment:
 
-x MAY BE NECESSARY  y
+x MAY BE NECESSARY FOR y
 x IS NECESSARY AND SUFFICIENT FOR y
 x IS NOT NECESSARY FOR y
 x COULD AFFECT y
