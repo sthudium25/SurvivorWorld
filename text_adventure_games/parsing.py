@@ -724,7 +724,7 @@ If no command is given, return \"{curr_idx}: {character.name}\""
         print(f"GPTParse selected character: {char_idx}")
         if char_idx not in chars:
             print(f"no player with id {char_idx} in {str(chars)}")
-            return self.game.player
+            return None
         else:
             name = chars[char_idx]
             return self.game.characters[name]
