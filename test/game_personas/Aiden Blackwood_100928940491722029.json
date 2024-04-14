@@ -1,0 +1,59 @@
+{
+    "traits": {
+        "judgement": {
+            "score": 10.115983585437036,
+            "adjective": "Prejudiced"
+        },
+        "cooperation": {
+            "score": 9.56567185075669,
+            "adjective": "Defiant"
+        },
+        "outlook": {
+            "score": 28.90717332582521,
+            "adjective": "Pessimistic"
+        },
+        "initiative": {
+            "score": 94.3445662409355,
+            "adjective": "Assertive"
+        },
+        "generosity": {
+            "score": 4.808042718527352,
+            "adjective": "Greedy"
+        },
+        "social": {
+            "score": 91.10673317177132,
+            "adjective": "Influential"
+        },
+        "mind": {
+            "score": 72.74764212759152,
+            "adjective": "Innovative"
+        },
+        "openness": {
+            "score": 20.39705836637569,
+            "adjective": "Narrow-minded"
+        },
+        "stress": {
+            "score": 29.01356864551055,
+            "adjective": "Anxious"
+        }
+    },
+    "facts": {
+        "Name": "Aiden Blackwood",
+        "Age": "25",
+        "Likes": [
+            "perfecting skills",
+            "mysterious puzzles"
+        ],
+        "Dislikes": [
+            "being underestimated",
+            "blind conformity"
+        ],
+        "Occupation": "Entrepreneur and Tech Genius",
+        "Home city": "Chicago, Illinois"
+    },
+    "fact_summary": "aiden blackwood is a determined and innovative 25-year-old tech genius and entrepreneur based in chicago who thrives in challenging environments, crafting solutions, and staunchly advocates for individuality",
+    "persona_summary": "Meet Aiden Blackwood, a 25-year-old Entrepreneur and Tech Genius. They hail from Chicago, Illinois. Aiden Blackwood is passionate about perfecting skills, mysterious puzzles but has aversions to being underestimated, blind conformity. In the game, Aiden Blackwood's strategy is Backstabbing, reflecting their judgement which *tends* to be Prejudiced, cooperation which *tends* to be Defiant, outlook which *tends* to be Pessimistic, initiative which *tends* to be Assertive, generosity which *tends* to be Greedy, social which *tends* to be Influential, mind which *tends* to be Innovative, openness which *tends* to be Narrow-minded and stress which *tends* to be Anxious.",
+    "description": "A 25 year old Entrepreneur and Tech Genius named Aiden Blackwood",
+    "strategy_in_effect": true,
+    "game_theory_strategy": "Backstabbing"
+}

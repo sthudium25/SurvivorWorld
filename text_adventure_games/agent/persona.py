@@ -9,6 +9,7 @@ Description: Defines the Persona of an agent
 from text_adventure_games.gpt.gpt_agent_setup import summarize_agent_facts
 from text_adventure_games.managers.scales import TraitScale
 import json
+import os
 
 class Persona():
     """
@@ -49,7 +50,7 @@ class Persona():
             return self.traits[name].score
         
     def get_trait_summary(self):
-        return [f"{tname} *tends* to be {self.traits[tname].get_adjective()}" for tname in self.traits]
+        return [f"{tname} which *tends* to be {self.traits[tname].get_adjective()}" for tname in self.traits]
     
     def start_strategy(self):
         self.strategy_in_effect = True
@@ -58,32 +59,40 @@ class Persona():
         self.strategy_in_effect = False
 
     def set_game_theory_strategy(self, strategy):
+        self.strategy_in_effect = True
         self.game_theory_strategy = strategy
 
     # Export a persona into a json file ({person's name}.json)
     def export_persona(self):
         # Uniquely ID's persona by concatenated trait scores
-        unique_id = ''.join(str(trait.score) for trait in self.traits.values())
+        unique_id = ''.join("{:02d}".format(int(trait.score)) for trait in self.traits.values())
 
-        filedir = 'SurvivorWorld/text_adventure_games/assets/personas/'
+        #filedir = '../../SurvivorWorld/text_adventure_games/assets/personas/'
+        filedir = './game_personas/'
+        if not os.path.isdir(filedir):
+            os.makedirs(filedir, exist_ok=True)
+
         filename = self.facts['Name'] + "_" + unique_id + ".json"
         filepath = filedir + filename
 
         persona_dict = { # Convert the persona to a dictionary
-            'traits': {tname: trait.__dict__ for tname, trait in self.traits.items()},
+            'traits': {tname: {'score': trait.score, 'adjective': trait.adjective} for tname, trait in self.traits.items()},
             'facts': self.facts,
-            'summary': self.summary,
+            'fact_summary': self.summary,
+            'persona_summary': self.get_personal_summary(),
             'description': self.description,
             'strategy_in_effect': self.strategy_in_effect,
             'game_theory_strategy': self.game_theory_strategy,
         }
 
         with open(filepath, 'w') as f:
-            json.dump(persona_dict, f)
+            json.dump(persona_dict, f, indent=4)
 
         print(f"Successfully exported persona to {filepath}")
 
     # Import a persona from a file.
+    # NOTE: This does *not* allow you to cross-import personas from different people, since
+    # it copies their facts as well. 
     @classmethod
     def import_persona(cls, filename):
         # Load the persona data from the JSON file
@@ -92,31 +101,39 @@ class Persona():
 
         # Create a new Persona instance with the loaded data
         persona = cls(persona_dict['facts'])
-        persona.traits = {tname: TraitScale(**trait) for tname, trait in persona_dict['traits'].items()}
-        persona.summary = persona_dict['summary']
+        #persona.traits = {tname: {'score': trait['score'], 'adjective': trait['adjective']} for tname, trait in persona_dict['traits'].items()}
+        #persona.traits = {tname: TraitScale(**trait) for tname, trait in persona_dict['traits'].items()}
+        persona.summary = persona_dict['fact_summary']
         persona.description = persona_dict['description']
         persona.strategy_in_effect = persona_dict['strategy_in_effect']
         persona.game_theory_strategy = persona_dict['game_theory_strategy']
+
+        monitored_traits = TraitScale.get_monitored_traits()
+        for tname, trait in persona_dict['traits'].items():
+            trait_dichotomy = monitored_traits[tname]
+            persona.traits[tname] = TraitScale(tname, trait_dichotomy, score=trait['score'], adjective=trait['adjective'])
 
         return persona
         
     # Made more natural-language friendly, not just a list of facts/traits, etc.
     def get_personal_summary(self):
         summary = f"Meet {self.facts['Name']}, a {self.facts['Age']}-year-old {self.facts['Occupation']}."
-        if self.facts['Home city']:
+        if 'Home city' in self.facts and self.facts['Home city']:
             summary += f" They hail from {self.facts['Home city']}."
-        if self.facts['Likes']:
+        if 'Likes' in self.facts and self.facts['Likes']:
             summary += f" {self.facts['Name']} is passionate about {', '.join(self.facts['Likes'][:3])}"
-        if self.facts['Dislikes']:
+        if 'Dislikes' in self.facts and self.facts['Dislikes']:
             summary += f" but has aversions to {', '.join(self.facts['Dislikes'][:3])}."
         for key in self.facts:
             if key not in ['Name', 'Age', 'Occupation', 'Likes', 'Dislikes', 'Home city']:
                 summary += f"{self.facts['Name'].title()}'s {key.lower()} is/are: {self.facts[key]}."
         if self.game_theory_strategy:
             summary += f" In the game, {self.facts['Name']}'s strategy is {self.game_theory_strategy},"
-            summary += f" reflecting their {' and '.join(self.get_trait_summary())}."
+            traits = self.get_trait_summary()
+            summary += f" reflecting their {', '.join(traits[:-1])} and {traits[-1]}."
         else: #Just list their traits
-            summary += f" Their traits are: {', '.join(self.get_trait_summary())}."
+            traits = self.get_trait_summary()
+            summary += f" Their traits are {', '.join(traits[:-1])} and {traits[-1]}."
         return summary
 
     def __str__(self):
