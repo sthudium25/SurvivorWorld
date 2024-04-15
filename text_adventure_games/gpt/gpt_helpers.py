@@ -1,16 +1,18 @@
+from dataclasses import dataclass, field
 import logging
 import re
 import time
-from typing import Callable, Dict
+from typing import Callable, Dict, Any, ClassVar
 import openai
 import tiktoken
-from types import SimpleNamespace
 
 # local imports
 from ..utils.general import set_up_openai_client, enumerate_dict_options
 
 logger = logging.getLogger(__name__)
 
+
+@dataclass
 class GptCallHandler:
     """
     A class to make calls to GPT more uniform.
@@ -21,33 +23,22 @@ class GptCallHandler:
         _type_: _description_
     """
     
-    DEFAULT_API_ORG = "Helicone"
+    model_limits: ClassVar
+    api_key_org: str = "Helicone",
+    model: str = "gpt-4"
+    max_tokens: int = 256
+    temperature: float = 1.0
+    top_p: float = 0.75
+    frequency_penalty: float = 0
+    presence_penalty: float = 0
+    max_retries: int = 5
+    client: openai.types.Client = field(init=False)
+    # Include if context limit checks done within this class
+    # tokenizer: Any = field(default_factory=lambda: tiktoken.get_encoding("cl100k_base"))
+    
 
-    def __init__(self, kwargs: Dict, max_retries: int = 5):
-        self.args = SimpleNamespace(**kwargs)
-        self._set_default_args()
-        self.max_retries = max_retries
-
-    def _set_default_args(self):
-        # set up a client
-        if not hasattr(self.args, "client"):
-            if not hasattr(self.args, "org"):
-                self.args.client = set_up_openai_client(self.DEFAULT_API_ORG)
-            else:
-                self.args.client = set_up_openai_client(self.args.org)
-        # set the model params
-        if not hasattr(self.args, "model"):
-            self.args.model = "gpt-4"
-        if not hasattr(self.args, "temperature"):
-            self.args.temperature = 1
-        if not hasattr(self.args, "max_tokens"):
-            self.args.max_tokens = 256
-        if not hasattr(self.args, "top_p"):
-            self.args.top_p = 0.75
-        if not hasattr(self.args, "frequency_penalty"):
-            self.args.freqency_penalty = 0
-        if not hasattr(self.args, "presence_penalty"):
-            self.args.presence_penalty = 0
+    def __post_init__(self):
+        self.client = set_up_openai_client(self.api_key_org)
 
     def generate(self, func: Callable) -> str:
         """
@@ -66,15 +57,16 @@ class GptCallHandler:
         i = 0
         while i < self.max_retries:
             try:
-                response = self.args.client.chat.completions.create(
-                    model=self.args.model,
+                response = self.client.chat.completions.create(
+                    model=self.model,
                     messages=messages,
-                    temperature=self.args.temperature,
-                    max_tokens=self.args.max_tokens,
-                    top_p=self.args.top_p,
-                    frequency_penalty=self.args.frequency_penalty,
-                    presency_penalty=self.args.presence_penalty
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    top_p=self.top_p,
+                    frequency_penalty=self.frequency_penalty,
+                    presence_penalty=self.presence_penalty
                 )
+                return response.choices[0].message.content
             except (RuntimeError,
                     openai.error.RateLimitError,
                     openai.error.ServiceUnavailableError, 
