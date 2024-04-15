@@ -36,6 +36,7 @@ from text_adventure_games.agent.memory_stream import MemoryType
 from text_adventure_games.assets.prompts import reflection_prompts as rp
 from text_adventure_games.gpt.gpt_helpers import limit_context_length, gpt_get_action_importance, get_prompt_token_count
 from text_adventure_games.utils.general import set_up_openai_client
+from ordered_set import OrderedSet
 
 if TYPE_CHECKING:
     from text_adventure_games.games import Game
@@ -43,7 +44,7 @@ if TYPE_CHECKING:
 
 GPT4_MAX_TOKENS = 8192
 REFLECTION_MAX_OUTPUT = 512
-REEFLECTION_RETRIES = 5
+REFLECTION_RETRIES = 5
 
 def reflect(game: "Game", character: "Character"):
     """
@@ -60,33 +61,40 @@ def reflect(game: "Game", character: "Character"):
     # reflect_on_goals(game, character)
     # reflect_on_relationships(game, character)
 
+
+# def generalize(game, character):
+#     """
+#     Reflection upon understanding of the world
+
+#     Args:
+#         game (_type_): _description_
+#         character (_type_): _description_
+#     """
+#     # 1. Get MemoryType.REFLECTION nodes
+#     # 2. Get nodes from the current round
+#     # 3. Generalize new observations with old reflections to update/add
+
+#     # Get an enumerated list of the action nodes for this character in this round
+#     this_round_mem_ids = character.memory.get_observations_by_round(game.round)
+#     this_round_mem_desc = character.memory.get_enumerated_description_list(this_round_mem_ids, as_type="str")
+
+#     gpt_generalize(game, character, this_round_mem_desc)
+
+
 def generalize(game, character):
     """
-    Reflection upon understanding of the world
+    This function adds/updates reflections to/in the character's memory, based on their previous reflections
+     as well as observations from the current round:
+     
+    1. Get MemoryType.REFLECTION nodes
+    2. Get nodes from the current round
+    3. Generalize new observations with old reflections to update/add
 
     Args:
         game (_type_): _description_
         character (_type_): _description_
     """
-    # 1. Get MemoryType.REFLECTION nodes
-    # 2. Get nodes from the current round
-    # 3. Generalize new observations with old reflections to update/add
 
-    # Get an enumerated list of the REFLECTION nodes for this character
-    # MemoryType.REFLECTION == 3
-    reflection_ids = character.memory.get_observations_by_type(MemoryType.REFLECTION.value)
-    reflection_desc = character.memory.get_enumerated_description_list(reflection_ids, as_type="str")
-
-    # Get an enumerated list of the action nodes for this character in this round
-    this_round_mem_ids = character.memory.get_observations_by_round(game.round)
-    this_round_mem_desc = character.memory.get_enumerated_description_list(this_round_mem_ids, as_type="str")
-
-    generalizations = gpt_generalize(game, reflection_desc, this_round_mem_desc)
-    # print(f"{character.name} generalized: {generalizations}")
-    if generalizations:
-        add_generalizations_to_memory(game, character, generalizations)
-
-def gpt_generalize(game, reflections, new_observations):
     # initialize a client
     client = set_up_openai_client("Helicone")
 
@@ -96,42 +104,85 @@ def gpt_generalize(game, reflections, new_observations):
     # get the number of tokens in the system prompt
     system_prompt_token_count = get_prompt_token_count(content=system_prompt, role='system', pad_reply=False)
     
-    # get the number of tokens in the resulting system role (just the word 'user'),
+    # add the number of tokens in the resulting role (just the word 'user') to the above count,
     # including a padding for GPT's reply containing <|start|>assistant<|message|>
-    gpt_prompt_tokens = system_prompt_token_count + get_prompt_token_count(content=None, role='user', pad_reply=True)
+    gpt_prompt_token_count = system_prompt_token_count + get_prompt_token_count(content=None, role='user', pad_reply=True)
 
-    # TODO: Potential problem here is what to do if new_observations list exeeds context limit on its own
-    # limit_context_length looks through this list backwards, so those could fill up the limit
-    # I guess this just means that round max ticks needs to stay small since new_observations is limited to the last round
-    user_prompt_items = ["Prior reflections:\n"] + reflections + ["\nNew observations:\n"] + new_observations
+    # Get an enumerated list of the action nodes for this character in the current round
+    this_round_mem_ids = character.memory.get_observations_by_round(game.round)
+    new_observations = character.memory.get_enumerated_description_list(this_round_mem_ids, as_type="str")
 
-    user_prompt_items = limit_context_length(user_prompt_items,
-                                             max_tokens=GPT4_MAX_TOKENS-REFLECTION_MAX_OUTPUT-gpt_prompt_tokens,
-                                             tokenizer=game.parser.tokenizer)
-    user_prompt_str = "".join(user_prompt_items)
+    # get the new observations token count
+    new_observations_token_count = get_prompt_token_count(content=new_observations, role=None, pad_reply=False)
 
-    for i in range(REEFLECTION_RETRIES):
-        # print(f"retry {i}/{REEFLECTION_RETRIES} for this character")
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt_str},
-                ],
-                temperature=1,
-                top_p=1,
-                max_tokens=REFLECTION_MAX_OUTPUT,
-                frequency_penalty=0,
-                presence_penalty=0
-            )
-            
-            out = json.loads(response.choices[0].message.content)
-        except json.JSONDecodeError:
-            continue
-        else:
-            return out
-    return None
+    # while there are still new observations (note that we remove them from new_observations after reflecting on them)
+    while new_observations_token_count > 0:
+
+        # include a new observations primer string
+        new_observations = ["\nNew observations:\n"] + new_observations
+        
+        # Get an enumerated list of the REFLECTION nodes for this character
+        reflection_ids = character.memory.get_observations_by_type(MemoryType.REFLECTION.value)
+        reflections = character.memory.get_enumerated_description_list(reflection_ids, as_type="str")
+        # include a primer string
+        prev_reflections = ["Prior reflections:\n"] + reflections
+
+        # combine the previous reflections and new observations into a single prompt list
+        user_prompt_items = prev_reflections + new_observations
+
+        # limit the user prompt items to fit in GPT's context size
+        # (keep_most_recent=False allows us to keep ealier/older observations)
+        user_prompt_items = limit_context_length(user_prompt_items,
+                                                 max_tokens=GPT4_MAX_TOKENS-REFLECTION_MAX_OUTPUT-gpt_prompt_token_count,
+                                                 tokenizer=game.parser.tokenizer,
+                                                 keep_most_recent=False)
+        
+        # join the list items (prior reflections and new memories) into a string
+        # note that the list values end with newline characters, so join using
+        # an empty string
+        user_prompt_str = "".join(user_prompt_items)
+
+        print('-'*50)
+        print(f"{character.name} reflects on the following memories:", user_prompt_str)
+        print('-'*50)
+
+        # try to get reflections with some retries
+        for _ in range(REFLECTION_RETRIES):
+
+            # print(f"retry {i}/{REFLECTION_RETRIES} for this character")
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt_str},
+                    ],
+                    temperature=1,
+                    top_p=1,
+                    max_tokens=REFLECTION_MAX_OUTPUT,
+                    frequency_penalty=0,
+                    presence_penalty=0
+                )
+                
+                # convert string response to dictionary
+                new_generalizations = json.loads(response.choices[0].message.content)
+
+            except json.JSONDecodeError:
+                continue
+
+            else:
+                print(f"{character.name} generalized: {new_generalizations}")
+
+                # add the new generalizations to the character's memory
+                add_generalizations_to_memory(game, character, new_generalizations)
+                break
+
+        # reset new observations to exclude all from theprevious reflection
+        # (this also removes the new observations primer string)
+        new_observations = list(OrderedSet(new_observations) - OrderedSet(user_prompt_items))
+        # get the updated new observations token count
+        new_observations_token_count = get_prompt_token_count(content=new_observations, role=None, pad_reply=False)
+
 
 def add_generalizations_to_memory(game: "Game", character: "Character", generalizations: Dict, ):
     """
@@ -147,6 +198,7 @@ def add_generalizations_to_memory(game: "Game", character: "Character", generali
     # print(f"Adding {character.name}'s generalizations to memory")
     add_new_generalizations(game, character, generalizations)
     update_existing_generalizations(character, generalizations)
+
 
 def add_new_generalizations(game: "Game", character: "Character", generalizations: Dict):
     """
@@ -184,6 +236,7 @@ def add_new_generalizations(game: "Game", character: "Character", generalization
                                             memory_type=MemoryType.REFLECTION.value,
                                             actor_id=character.id)
                 
+
 def update_existing_generalizations(character: "Character", generalizations: Dict):
     """
     Find the appropriate reflection nodes that GPT updated and replace the description
@@ -211,7 +264,3 @@ def update_existing_generalizations(character: "Character", generalizations: Dic
                                                              new_description=desc)
                 _ = character.memory.update_node_embedding(node_id=prev_idx,
                                                            new_description=desc)
-                
-                
-                
-                
