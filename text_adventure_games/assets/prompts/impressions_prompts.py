@@ -15,10 +15,7 @@ Your job is to develop a theory of mind (ToM) for other another character. In do
 - What do you think are the key strategies to win this game?
 - Given how they have acted so far, what are their probable next moves?
 - What are their impressions of you based on your interactions or second-hand knowledge of this person?
-- Based on specific interactions or second-hand knowledge, do you consider this person trustworthy or not?
-- What emotions does this person evoke for you?
-- What are this person's motivations?
-- Does this person have a close relationship with anyone else you know?
+- What information that you know should be kept secret from this person?
 
 Generate a cohesive theory of mind when a presented with another person and the memories that you have of them. 
 
@@ -28,11 +25,8 @@ This could include reflecting on your previous impressions and revising them if 
 Structure the theory of mind such that keys provide the aspect of ToM you are addressing and values elaborate on your understanding of that aspect with respect to this person. 
 
 Here is a guide; keep each description concise:
-Key Strategies: descriptions
-Probable Next Moves: descriptions
-{target_name}'s impressions of you: descriptions
-Trustworthiness: descriptions
-Personal Feelings/Emotions: descriptions
-Motivations: descriptions
-Relationships: descriptions
+Key Strategies: description
+Probable Next Moves: description
+{target_name}'s impressions of you: description
+Information to keep from {target_name}: description
 """

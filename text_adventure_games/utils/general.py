@@ -35,6 +35,15 @@ def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):
     engine = OpenAIEngine(key, model=model, **kwargs)
     return engine
 
+def get_logger_extras(game, character):
+    extras = {}
+    extras["character_name"] = character.name
+    extras["character_id"] = character.id
+    extras["round"] = game.round
+    extras["tick"] = game.tick
+
+    return extras
+
 def normalize_name(name):
     common_prefixes = ["mr", "ms", "mrs", "dr", "sir", "lady", "captain", "prof", "professor"]
     common_suffixes = ["jr", "sr", "ii", "iii", "iv", "phd", "md"]
