@@ -310,6 +310,8 @@ def get_prompt_token_count(content=None, role=None, pad_reply=False, tokenizer=N
         int: number of tokens
     """
 
+    if not content:
+        return 0
     if content is not None and not isinstance(content, str) and not isinstance(content, list):
         raise TypeError("content must be a string or list, not ", type(content))
     if content is not None and isinstance(content, list) and (len(content) != 0 and not isinstance(content[0], str)):
