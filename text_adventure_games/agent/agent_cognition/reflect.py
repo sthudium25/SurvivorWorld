@@ -142,9 +142,9 @@ def generalize(game, character):
         # an empty string
         user_prompt_str = "".join(user_prompt_items)
 
-        print('-'*50)
-        print(f"{character.name} reflects on the following memories:", user_prompt_str)
-        print('-'*50)
+        # print('-'*50)
+        # print(f"{character.name} reflects on the following memories:\n", user_prompt_str)
+        # print('-'*50)
 
         # try to get reflections with some retries
         for _ in range(REFLECTION_RETRIES):
@@ -177,7 +177,7 @@ def generalize(game, character):
                 add_generalizations_to_memory(game, character, new_generalizations)
                 break
 
-        # reset new observations to exclude all from theprevious reflection
+        # reset new observations to exclude all from the previous reflection
         # (this also removes the new observations primer string)
         new_observations = list(OrderedSet(new_observations) - OrderedSet(user_prompt_items))
         # get the updated new observations token count

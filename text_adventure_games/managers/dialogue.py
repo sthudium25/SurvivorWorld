@@ -1,5 +1,5 @@
 import tiktoken
-from text_adventure_games.gpt.gpt_helpers import limit_context_length
+from text_adventure_games.gpt.gpt_helpers import limit_context_length, get_prompt_token_count
 from ..utils.general import set_up_openai_client
 from ..agent.agent_cognition.retrieve import retrieve
 
@@ -21,50 +21,180 @@ class Dialogue:
         self.verbose = False
         self.gpt_model = "gpt-4"
         self.max_output_tokens = 256  # You get to pick this
-        self.max_tokens = 8192-self.max_output_tokens  # GPT-4's max total tokens
+        self.max_tokens = GPT4_MAX_TOKENS-self.max_output_tokens  # GPT-4's max total tokens
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
 
         self.game = game
         self.participants = participants
         self.characters_system = {}
         self.participants_number = len(participants)
-        self.dialogue_history = f'{command}. The dialogue just started.'
+        self.dialogue_history = f'{command}. The dialogue just started.\n'
+
+        # for every participant
         for participant in self.participants:
-            self.characters_system[participant.name] = self.get_system_instructions(participant)
+            # add them to the characters system dict using their name as the key
+            self.characters_system[participant.name] = dict()
+
+            # update this character's value – dictionary of each system instruction components
+            # (intro, impressions, memories), where each is a key and the values are lists
+            # containing the token count in the first index and the string representation in
+            # the second.
+            self.get_system_instruction_components(participant)
+
+        # get a list of all characters in the conversation
         self.characters_mentioned = [character.name for character in self.participants]  # Characters mentioned so far in the dialogue
 
-    def get_system_instructions(self, character):
-        system_instructions = f"WORLD INFO: {self.game.world_info}" + "\n"
-        system_instructions += f"You are {character.persona.summary}" + "\n"
-        system_instructions += (f"""You are in dialogue with:
-                                {', '.join([x.name for x in self.participants if x.name != character.name])}.\n""")
-        system_instructions += (f"""When it's your turn to speak,
-                                you can say something or walk away form the conversation.
-                                If you say something, start with: '{character.name} says: '.
-                                If you walk away, say only: '{character.name} leaves the conversation.'.
-                                If you feel like the last two lines have not added new information
-                                or people are speaking in circles, end the conversation.""")
-        system_instructions += f"Your goals are: {character.goals}. " + "/n"
-        reflections = character.impressions.get_multiple_impressions(self.game.characters.values())
-        reflections = reflections[:2000]  # temporary fix to limit reflections
-        system_instructions += f"REFLECTIONS ON OTHERS: {reflections}\n\n"
-        system_instructions += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: "
-        query = f"""You are in dialogue with:
-                                {', '.join([x.name for x in self.participants if x.name != character.name])}.\n
-                    Your goals are: {character.goals}. """
-        query += "\n" + self.dialogue_history.split("\n")[-1]
-        context_list = retrieve(self.game, character, query, n=10)
-        try:
-            num_memories = len(context_list)  
-        except Exception:
-            num_memories = 0
-        print(
-            f"passing {num_memories} relevant memories to {character.name}")
-        try:
-            system_instructions += "".join([f"{m}\n" for m in context_list])
-        except TypeError:
-            system_instructions += "No memories. \n"
-        return system_instructions
+
+    def get_system_instruction(self, character, intro=False, impressions=False, memories=False):
+        """
+        This method gets the given character's system instruction token count and
+        string representation.
+
+        Args:
+            character (Character): the character whose system instructions are
+                                   being retrieved
+            intro (bool): if True, this recalculates the intro part of the
+                          prompt - both its token count and string
+            impressions (bool): if True, this recalculates the impressions part
+                                of the prompt - both its token count and string
+            memories (bool): if True, this recalculates the memories part of
+                             the prompt - both its token count and string
+
+        Returns:
+            tuple (int, str): the integer refers to the system instruction
+                              token count and the string refers to the
+                              actual instructions
+        """
+
+        # update the system instructions components for any set to True
+        self.get_system_instruction_components(character=character,
+                                               intro=intro,
+                                               impressions=impressions,
+                                               memories=memories)
+
+        # get this character's dictionary of system prompt components
+        char_inst_comp = self.characters_system[character.name]
+
+        # return a tuple containing the system instructions token count and string representation
+        return (char_inst_comp['intro'][0] + char_inst_comp['impressions'][0] + char_inst_comp['memories'][0],
+                char_inst_comp['intro'][1] + char_inst_comp['impressions'][1] + char_inst_comp['memories'][1])
+
+
+    def get_system_instruction_components(self, character, intro=True, impressions=True, memories=True):
+        """
+        This method constructs and updates the system instructions which are broken down into
+        intro, impressions, and memories components. The intro must be included without trimming.
+        Currently, the impressions are also passed in without being shortened. The memories are
+        reduced if necessary to fit into GPT's context. Note that these aren't returned, but
+        rather are stored in the characters system dictionary as a dictionary of lists.
+        Each component serves as a dictionary key, and its value is a list where the first
+        index is the component's token count and the second is its string representation.
+
+        Args:
+            character (Character): the character whose system instructions are
+                                   being retrieved
+            intro (bool): if True, this recalculates the intro part of the
+                          prompt - both its token count and string
+            impressions (bool): if True, this recalculates the impressions part
+                                of the prompt - both its token count and string
+            memories (bool): if True, this recalculates the memories part of
+                             the prompt - both its token count and string
+
+        Raises:
+            TypeError: _description_
+        """
+
+        ### REQUIRED START TO SYSTEM PROMPT (CAN'T TRIM) ###
+
+        # if updating the intro
+        if not intro:
+            
+            # make the system instructions intro including world info, persona summary,
+            # dialog instructions, and goals
+            intro = ''.join([f"WORLD INFO: {self.game.world_info}\n",
+                             f"You are {character.persona.summary}\n"
+                             "You are in dialogue with: ",
+                             ', '.join([x.name for x in self.participants if x.name != character.name])+'.\n'])
+            intro += ''.join(["When it's your turn to speak, ",
+                              "you can say something or walk away form the conversation. ",
+                              "If you say something, start with: '{character.name} says: '. ",
+                              "If you feel like the last two lines have not added new information ",
+                              "or people are speaking in circles, end the conversation.\n"])
+            intro += f"Your goals are: {character.goals}\n" # I removed a period here after goals
+
+            # get the system prompt intro token count
+            intro_token_count = get_prompt_token_count(content=intro, role='system', pad_reply=False)
+
+            # account for the number of tokens in the resulting role (just the word 'user'),
+            # including a padding for GPT's reply containing <|start|>assistant<|message|>
+            intro_token_count += get_prompt_token_count(content=None, role='user', pad_reply=True)
+
+            # update the character's intro in the characters system dictionary
+            self.characters_system[character.name]['intro'] = (intro_token_count, intro)
+
+
+        ### IMPRESSIONS OF OTHER CHARACTERS (REMOVE TRIBAL COUNCIL MEMBERS?) ###
+
+        # if updating the impressions
+        if not impressions:
+
+            # get impressions of the other game characters
+            impressions = character.impressions.get_multiple_impressions(self.game.characters.values())
+            impressions = "IMPRESSIONS OF OTHERS:\n" + impressions + "\n\n"
+
+            # get the impressions token count
+            impressions_token_count = get_prompt_token_count(content=impressions, role=None, pad_reply=False)
+
+            # update the character's impressions in the characters system dictionary
+            self.characters_system[character.name]['impressions'] = (impressions_token_count, impressions)
+
+
+        ### MEMORIES OF CHARACTERS IN DIALOGUE/MENTIONED ###
+
+        # if updating the memories
+        if not memories:
+
+            # make a memory retrieval query based on characters partaking/mentioned in this conversation
+            query = ''.join["You are in dialogue with: ",
+                            {', '.join([x.name for x in self.participants if x.name != character.name])}+'.\n',
+                            "Your goals are: {character.goals}.\n",
+                            self.dialogue_history.split("\n")[-1]]
+
+            # get the 10 most recent/relevant/important memories
+            context_list = retrieve(self.game, character, query, n=10)
+
+            # if there are memories to include in the system prompt
+            if len(context_list) > 0:
+
+                # include primer message at 0th index in list
+                context_list = ["These are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n"] + context_list
+
+                # limit memories to fit in GPT's context by trimming less recent/relevant/important memories
+                memories_limited = limit_context_length(history=context_list,
+                                                        max_tokens=self.max_tokens - intro_token_count - impressions_token_count,
+                                                        keep_most_recent=True)
+
+                ## I don't think we need to utilize a try-except block here
+                # try:
+                #     print(f"passing {len(memories_limited)} relevant memories to {character.name}")
+                # except Exception:
+                #     pass
+
+                print(f"passing {len(memories_limited)} relevant memories to {character.name}")
+
+                # I'm also not sure we need a try-exept here
+                # convert the list of limited memories into a single string
+                try:
+                    memories_limited_str = "".join([f"{m}\n" for m in memories_limited])
+                except TypeError:
+                    pass
+
+                # get the limited memories token count
+                memories_limited_token_count = get_prompt_token_count(content=memories_limited_str, role=None, pad_reply=False)
+
+                # update the character's memories in the characters system dictionary
+                self.characters_system[character.name]['memories'] = (memories_limited_token_count, memories_limited_str)
+    
 
     def get_dialogue_history(self):
         return self.dialogue_history
@@ -73,14 +203,34 @@ class Dialogue:
         self.dialogue_history += '\n' + message
 
     def get_gpt_response(self, character):
+        """
+        This method makes the call to GPT to get a character's dialog response
+        based on their stored system prompt in characters system as well as
+        the dialogue history, which is included as a user message. 
+
+        Args:
+            character (Character): the character whose system instructions are
+                                   being retrieved
+
+        Raises:
+            Exception: _description_
+        """
+
+        # Get the system instruction token count and string representation.
+        # Currently, we are not updating any of the system prompt when no new characters are mentioned.
+        # To change this, pass in True to any system prompt components that we want to update
+        system_instruction_token_count, system_instruction_str = self.get_system_instruction(character=character)
+        
+        # try getting GPT's response
         try:
             messages = [{
                 "role": "system",
-                "content": self.characters_system[character.name]
+                "content": system_instruction_str
             },
                 {
                 "role": "user",
-                "content": self.get_dialogue_history()
+                "content": ''.join(limit_context_length(history=self.get_dialogue_history().split('\n')),
+                                   max_tokens=self.max_tokens-system_instruction_token_count)
             }
             ]
             response = self.client.chat.completions.create(

@@ -226,7 +226,8 @@ class Impressions:
         else:
             ordering = "in order from least to most relevant"
 
-        message += "Current theory of mind for {t} {o}:\n{i}\n\n".format(t=target_name, o=ordering, i=current_impression)
+        if current_impression:
+            message += "Current theory of mind for {t} {o}:\n{i}\n\n".format(t=target_name, o=ordering, i=current_impression)
         if memories_list:
             memory_str = "".join([f"{i}. {m}\n" for i, m in enumerate(memories_list)])
             message += "Memories to consider in developing a theory of mind for {t}:\n{m}".format(t=target_name, 
