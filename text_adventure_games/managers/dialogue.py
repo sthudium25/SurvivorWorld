@@ -118,8 +118,8 @@ class Dialogue:
                              ', '.join([x.name for x in self.participants if x.name != character.name])+'.\n'])
             intro += ''.join(["When it's your turn to speak, ",
                               "you can say something or walk away form the conversation. ",
-                              "If you say something, start with: '{character.name} says: '. ",
-                              "If you walk away, say only: '{character['name']} leaves the conversation.'"
+                              f"If you say something, start with: '{character.name} says: '. ",
+                              f"If you walk away, say only: '{character['name']} leaves the conversation.'"
                               "If you feel like the last two lines have not added new information ",
                               "or people are speaking in circles, end the conversation.\n"])
             intro += f"Your goals are: {character.goals}\n" # I removed a period here after goals
@@ -157,9 +157,9 @@ class Dialogue:
         if memories:
 
             # make a memory retrieval query based on characters partaking/mentioned in this conversation
-            query = ''.join["You are in dialogue with: ",
-                            {', '.join([x.name for x in self.participants if x.name != character.name])}+'.\n',
-                            "Your goals are: {character.goals}\n"]
+            query = ''.join(["You are in dialogue with: ",
+                            ', '.join([x.name for x in self.participants if x.name != character.name])+'.\n',
+                            "Your goals are: {character.goals}\n"])
             query += self.dialogue_history[-1]
 
             # get the 25 most recent/relevant/important memories
@@ -169,7 +169,10 @@ class Dialogue:
             if len(context_list) > 0:
 
                 # include primer message at 0th index in list
-                context_list = ["These are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n"] + list(reversed(context_list))
+                context_list = ["These are select MEMORIES in ORDER from MOST to LEAST RELEVANT:\n"] + list(reversed(context_list))
+
+                intro_token_count = self.characters_system[character.name]['intro'][0]
+                impressions_token_count = self.characters_system[character.name]['impressions'][0]
 
                 # limit memories to fit in GPT's context by trimming less recent/relevant/important memories
                 memories_limited = limit_context_length(history=context_list,
