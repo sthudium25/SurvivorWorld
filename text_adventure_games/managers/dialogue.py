@@ -28,7 +28,8 @@ class Dialogue:
         self.participants = participants
         self.characters_system = {}
         self.participants_number = len(participants)
-        self.dialogue_history = f'{command}. The dialogue just started.\n'
+        self.dialogue_history = [f'{command}. The dialogue just started.']
+        self.dialogue_history_token_count = get_prompt_token_count(content=self.dialogue_history, role=None, pad_reply=False)
 
         # for every participant
         for participant in self.participants:
@@ -39,7 +40,7 @@ class Dialogue:
             # (intro, impressions, memories), where each is a key and the values are lists
             # containing the token count in the first index and the string representation in
             # the second.
-            self.get_system_instruction_components(participant)
+            self.get_system_instruction_components(participant, intro=True, impressions=True, memories=True)
 
         # get a list of all characters in the conversation
         self.characters_mentioned = [character.name for character in self.participants]  # Characters mentioned so far in the dialogue
@@ -107,7 +108,7 @@ class Dialogue:
         ### REQUIRED START TO SYSTEM PROMPT (CAN'T TRIM) ###
 
         # if updating the intro
-        if not intro:
+        if intro:
             
             # make the system instructions intro including world info, persona summary,
             # dialog instructions, and goals
@@ -118,6 +119,7 @@ class Dialogue:
             intro += ''.join(["When it's your turn to speak, ",
                               "you can say something or walk away form the conversation. ",
                               "If you say something, start with: '{character.name} says: '. ",
+                              "If you walk away, say only: '{character['name']} leaves the conversation.'"
                               "If you feel like the last two lines have not added new information ",
                               "or people are speaking in circles, end the conversation.\n"])
             intro += f"Your goals are: {character.goals}\n" # I removed a period here after goals
@@ -136,7 +138,7 @@ class Dialogue:
         ### IMPRESSIONS OF OTHER CHARACTERS (REMOVE TRIBAL COUNCIL MEMBERS?) ###
 
         # if updating the impressions
-        if not impressions:
+        if impressions:
 
             # get impressions of the other game characters
             impressions = character.impressions.get_multiple_impressions(self.game.characters.values())
@@ -152,27 +154,27 @@ class Dialogue:
         ### MEMORIES OF CHARACTERS IN DIALOGUE/MENTIONED ###
 
         # if updating the memories
-        if not memories:
+        if memories:
 
             # make a memory retrieval query based on characters partaking/mentioned in this conversation
             query = ''.join["You are in dialogue with: ",
                             {', '.join([x.name for x in self.participants if x.name != character.name])}+'.\n',
-                            "Your goals are: {character.goals}.\n",
-                            self.dialogue_history.split("\n")[-1]]
+                            "Your goals are: {character.goals}\n"]
+            query += self.dialogue_history[-1]
 
-            # get the 10 most recent/relevant/important memories
-            context_list = retrieve(self.game, character, query, n=10)
+            # get the 25 most recent/relevant/important memories
+            context_list = retrieve(self.game, character, query, n=25)
 
             # if there are memories to include in the system prompt
             if len(context_list) > 0:
 
                 # include primer message at 0th index in list
-                context_list = ["These are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n"] + context_list
+                context_list = ["These are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n"] + list(reversed(context_list))
 
                 # limit memories to fit in GPT's context by trimming less recent/relevant/important memories
                 memories_limited = limit_context_length(history=context_list,
                                                         max_tokens=self.max_tokens - intro_token_count - impressions_token_count,
-                                                        keep_most_recent=True)
+                                                        keep_most_recent=False)
 
                 ## I don't think we need to utilize a try-except block here
                 # try:
@@ -180,9 +182,9 @@ class Dialogue:
                 # except Exception:
                 #     pass
 
-                print(f"passing {len(memories_limited)} relevant memories to {character.name}")
+                # print(f"passing {max(0, len(memories_limited)-1)} relevant memories to {character.name}")
 
-                # I'm also not sure we need a try-exept here
+                # I'm also not sure we need a try-exept here, but I'm leaving it for now
                 # convert the list of limited memories into a single string
                 try:
                     memories_limited_str = "".join([f"{m}\n" for m in memories_limited])
@@ -196,11 +198,17 @@ class Dialogue:
                 self.characters_system[character.name]['memories'] = (memories_limited_token_count, memories_limited_str)
     
 
-    def get_dialogue_history(self):
+    def get_dialogue_history_list(self):
         return self.dialogue_history
+    
+
+    def get_dialogue_history(self):
+        return '\n'.join(self.dialogue_history)
+
 
     def add_to_dialogue_history(self, message):
-        self.dialogue_history += '\n' + message
+        self.dialogue_history.append(message)
+
 
     def get_gpt_response(self, character):
         """
@@ -221,12 +229,22 @@ class Dialogue:
         # To change this, pass in True to any system prompt components that we want to update
         system_instruction_token_count, system_instruction_str = self.get_system_instruction(character=character)
 
-        # convert the dialog history into a list and limit the number of messages (if necessary, trimming
-        # from the start) to fit into GPT's context
-        dialogue_history_lst = [message.strip() for message in self.get_dialogue_history().split('\n')]
-        limited_dialog = limit_context_length(history=dialogue_history_lst, max_tokens=self.max_tokens-system_instruction_token_count)
-        # convert the history back into a string
+        # if the sum of the system prompt and dialogue history token counts exceeds the max tokens
+        if system_instruction_token_count + self.dialogue_history_token_count >= self.max_tokens:
+
+            # reduce the max token count by the dialogue count, and reduce the number of memories included in the prompt
+            self.max_tokens = GPT4_MAX_TOKENS - self.max_output_tokens - self.dialogue_history_token_count
+            system_instruction_token_count, system_instruction_str = self.get_system_instruction(character=character, memories=True)
+
+        # limit the number of dialogue messages (if necessary, trimming from the start) to fit into GPT's context
+        limited_dialog = limit_context_length(history=self.get_dialogue_history_list(),
+                                              max_tokens=GPT4_MAX_TOKENS-system_instruction_token_count-self.max_output_tokens)
+
+        # get the limited dialogue as a string
         dialog_str = '\n'.join(limited_dialog)
+
+        # update the dialog history with the current token count being passed to GPT
+        self.dialogue_history_token_count = get_prompt_token_count(content=dialog_str, role=None, pad_reply=False)
 
         # try getting GPT's response
         try:
@@ -253,17 +271,19 @@ class Dialogue:
         except Exception as e:
             return f"Something went wrong with GPT: {e}"
 
+
     def is_dialogue_over(self):
         if len(self.participants) <= 1:
             return True
         return False
+
 
     def dialogue_loop(self):
         i = 5  # Counter to avoid dialogue dragging on for too long
         while i > 0:
             for character in self.participants:
                 # Get last line of dialogue and if any new characters are mentioned update system prompts
-                last_line = self.dialogue_history.split("\n")[-1]
+                last_line = self.dialogue_history[-1]
                 keywords = self.game.parser.extract_keywords(last_line).get("characters", None)
                 refresh_system_prompt = False
                 if keywords:
@@ -278,6 +298,10 @@ class Dialogue:
                 response = self.get_gpt_response(character)
                 print(response)
                 self.add_to_dialogue_history(response)
+
+                # update the dialog history token count with the latest reply
+                response_token_count = get_prompt_token_count(content=response, role=None, pad_reply=False)
+                self.dialogue_history_token_count += response_token_count
 
                 # End conversation if a character leaves
                 if response == f"{character.name} leaves the conversation.":

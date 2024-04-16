@@ -248,11 +248,14 @@ def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, ke
         else:
             raise TypeError("Elements in history must be either dict or str")
         
-    # reverse the list if we are keeping only the most recent items
+    # reverse a copy of the list if we are only keeping the most recent items
     if keep_most_recent:
-        history.reverse()
+        copy_history = reversed(history)
+    # otherwise make a normal copy of the list
+    else:
+        copy_history = history.copy()
 
-    for message in history:
+    for message in copy_history:
         msg_tokens = extract(message)
         
         if total_tokens + msg_tokens > max_tokens:
