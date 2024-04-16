@@ -84,6 +84,7 @@ class Persona():
             'description': self.description,
             'strategy_in_effect': self.strategy_in_effect,
             'game_theory_strategy': self.game_theory_strategy,
+            'speaking_style': self.get_speaking_style(),
         }
 
         with open(filepath, 'w') as f:
@@ -108,6 +109,7 @@ class Persona():
         persona.description = persona_dict['description']
         persona.strategy_in_effect = persona_dict['strategy_in_effect']
         persona.game_theory_strategy = persona_dict['game_theory_strategy']
+        persona.speaking_style = persona_dict['speaking_style']
 
         monitored_traits = TraitScale.get_monitored_traits()
         for tname, trait in persona_dict['traits'].items():
