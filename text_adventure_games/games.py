@@ -1,6 +1,7 @@
 import json
 import inspect
-from collections import namedtuple
+from collections import defaultdict, namedtuple
+from typing import TYPE_CHECKING
 from numpy.random import permutation
 
 from .agent.memory_stream import MemoryType
@@ -9,7 +10,6 @@ from . import parsing, actions, blocks
 from .utils.custom_logging import logger
 from .agent.agent_cognition.vote import VotingSession, JuryVotingSession
 from .assets.prompts import vote_prompt, world_info_prompt
-
 
 class Game:
     """
@@ -477,6 +477,7 @@ class SurvivorGame(Game):
         # Store end state variables: 
         # Exiled players in jury cast the final vote
         self.jury = {}
+        self.voting_history = defaultdict(lambda: defaultdict(list))
         self.num_finalists = num_finalists
         self.winner_declared = False
 
@@ -568,10 +569,16 @@ class SurvivorGame(Game):
         elif self.tick == (self.max_ticks_per_round - 1):
             self.run_voting_session()
 
+    def update_voting_history(self, session: "VotingSession"):
+        for char in self.characters.values():
+            record = session.record_vote(char)
+            self.voting_history[self.round].update({char.name: record})
+
     def run_voting_session(self):
         self.vote_session = VotingSession(self.characters.values())
         self.vote_session.run(self)
         exiled = self.vote_session.read_votes()
+        self.update_voting_history(session=self.vote_session)
         self.update_exile_state(exiled)
         self.add_exiled_to_jury(exiled)
         print(f"{exiled.name} was exiled from the group and now sits on the jury.")
@@ -632,6 +639,7 @@ class SurvivorGame(Game):
                                             finalists=list(self.characters.values()))
         self.final_vote.run(self)
         winner = self.final_vote.determine_winner()
+        self.update_voting_history(session=self.final_vote)
         self.winner = winner
         self.winner_declared = True
         self._add_winner_memory()
@@ -657,5 +665,3 @@ class SurvivorGame(Game):
                                 memory_importance=10, 
                                 memory_type=MemoryType.ACTION.value,
                                 actor_id=c.id)
-        
-        

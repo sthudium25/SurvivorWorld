@@ -46,7 +46,7 @@ class Dialogue:
                                 or people are speaking in circles, end the conversation.""")
         system_instructions += f"Your goals are: {character.goals}. " + "/n"
         reflections = character.impressions.get_multiple_impressions(self.game.characters.values())
-        reflections = reflections[:2000] #temporary fix to limit reflections
+        reflections = reflections[:2000]  # temporary fix to limit reflections
         system_instructions += f"REFLECTIONS ON OTHERS: {reflections}\n\n"
         system_instructions += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: "
         query = f"""You are in dialogue with:
@@ -103,7 +103,7 @@ class Dialogue:
         return False
 
     def dialogue_loop(self):
-        i = 5 #Counter to avoid dialogue dragging on for too long
+        i = 5  # Counter to avoid dialogue dragging on for too long
         while i > 0:
             for character in self.participants:
                 # Get last line of dialogue and if any new characters are mentioned update system prompts

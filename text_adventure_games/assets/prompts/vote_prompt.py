@@ -5,7 +5,13 @@ Use the provided information about your position in the game, goals, relationshi
 and memories to cast a vote that you believe will improve your position in the game. 
 Weight or interpret the memories based on their influence of the voting decision you need to make.
 This could be sticking with an alliance or being deceitful, the choice is up to you. 
-Simply respond with the name of the contestant you are voting for.
+Respond with the name of the contestant you are voting for and give an explanation why you've chosen them as the target of your vote.
+
+Example response in JSON format.
+
+{"target": "Elias Whitaker",
+ "reason": "Elias is a strong player with numerouus allicances. If he makes it to the finale, he is very likely to win over the jury"
+ }
 """
 
 vote_user_prompt = """
@@ -17,7 +23,31 @@ Given your knowledge of the game, yourself, and the other players, select one of
 players to vote for:
 {vote_options}
 
-Who will you vote for? Return their name. My vote is: 
+Who will you vote for and why did you choose to vote for them? Remember to use JSON format with your "target" and "reason" as keys. 
+"""
+
+jury_system_ending = """
+You are currently at the final tribal council so you must vote for one of the finalists to win the game. 
+Use your knowledge of the finalists gameplay, your interactions with them, and your personal feelings about them 
+to cast a vote for the most deserving winner. 
+Respond with the name of the contestant you are voting for and give an explanation why you've chosen them as the winner of the game.
+
+Example response in JSON format.
+
+{"target": "Elias Whitaker",
+ "reason": "Elias is a strong player who has played with strong strategy throughout the game. I like his style and respect him."
+ }
+"""
+
+jury_user_prompt = """
+You are in the final round of the game, so you must select a finalist as the winner. 
+This person will be win the game overall!
+
+Given your knowledge of the game, yourself, and the finalists, select one of the following
+players to name as winner:
+{vote_options}
+
+Who will you vote for and why did you choose to vote for them? Remember to use JSON format with your "target" and "reason" as keys. 
 """
 
 winner_memory_description = """
