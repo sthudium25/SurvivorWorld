@@ -1,0 +1,59 @@
+{
+    "traits": {
+        "judgement": {
+            "score": 83.55433192224211,
+            "adjective": "Impartial"
+        },
+        "cooperation": {
+            "score": 85.12578029396393,
+            "adjective": "Compliant"
+        },
+        "outlook": {
+            "score": 68.76661034792714,
+            "adjective": "Hopeful"
+        },
+        "initiative": {
+            "score": 35.366481653481216,
+            "adjective": "Submissive"
+        },
+        "generosity": {
+            "score": 92.75980970727309,
+            "adjective": "Extremely"
+        },
+        "social": {
+            "score": 77.34113283697376,
+            "adjective": "Influential"
+        },
+        "mind": {
+            "score": 63.73982782747343,
+            "adjective": "Balanced"
+        },
+        "openness": {
+            "score": 78.65597863468867,
+            "adjective": "Progressive"
+        },
+        "stress": {
+            "score": 83.90553583933004,
+            "adjective": "Tranquil"
+        }
+    },
+    "facts": {
+        "Name": "Esperanza Navarro",
+        "Age": "46",
+        "Likes": [
+            "gardening",
+            "cooking for her family"
+        ],
+        "Dislikes": [
+            "negativity",
+            "injustice"
+        ],
+        "Occupation": "Stay-at-home mother",
+        "Home city": "San Antonio, Texas"
+    },
+    "fact_summary": "esperanza navarro is a nurturing 46-year-old stay-at-home mother from san antonio, texas who finds joy in gardening and cooking for her family",
+    "persona_summary": "Meet Esperanza Navarro, a 46-year-old Stay-at-home mother. They hail from San Antonio, Texas. Esperanza Navarro is passionate about gardening, cooking for her family but has aversions to negativity, injustice. In the game, Esperanza Navarro's strategy is Cooperation, reflecting their judgement which *tends* to be Impartial, cooperation which *tends* to be Compliant, outlook which *tends* to be Hopeful, initiative which *tends* to be Submissive, generosity which *tends* to be Extremely, social which *tends* to be Influential, mind which *tends* to be Balanced, openness which *tends* to be Progressive and stress which *tends* to be Tranquil.",
+    "description": "A 46 year old Stay-at-home mother named Esperanza Navarro",
+    "strategy_in_effect": true,
+    "game_theory_strategy": "Cooperation"
+}

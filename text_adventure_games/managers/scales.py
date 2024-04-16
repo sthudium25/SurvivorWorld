@@ -104,10 +104,11 @@ class TraitScale(BaseScale):
                  trait_dichotomy: BaseScale.Dichotomy,
                  score: int = 50,
                  min: int = 0,
-                 max: int = 100):
+                 max: int = 100,
+                 adjective: str = None):
         super().__init__(trait_dichotomy, score, min, max)
         self.name = trait_name
-        self.adjective = None
+        self.adjective = adjective
 
     @classmethod
     def get_monitored_traits(cls) -> List:

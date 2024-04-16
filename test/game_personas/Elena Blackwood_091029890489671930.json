@@ -1,0 +1,59 @@
+{
+    "traits": {
+        "judgement": {
+            "score": 9.665309937065565,
+            "adjective": "Slightly"
+        },
+        "cooperation": {
+            "score": 10.054997230504743,
+            "adjective": "Defiant"
+        },
+        "outlook": {
+            "score": 29.410737810752103,
+            "adjective": "Pessimistic"
+        },
+        "initiative": {
+            "score": 89.002090302751,
+            "adjective": "Assertive"
+        },
+        "generosity": {
+            "score": 4.9971759076780575,
+            "adjective": "Selfish"
+        },
+        "social": {
+            "score": 89.1225348973566,
+            "adjective": "Influential"
+        },
+        "mind": {
+            "score": 67.4836304781992,
+            "adjective": "Balanced"
+        },
+        "openness": {
+            "score": 19.022137002177498,
+            "adjective": "Narrow-minded"
+        },
+        "stress": {
+            "score": 30.388661046962902,
+            "adjective": "Nervous"
+        }
+    },
+    "facts": {
+        "Name": "Elena Blackwood",
+        "Age": "23",
+        "Likes": [
+            "reading",
+            "strategic games"
+        ],
+        "Dislikes": [
+            "ignorance",
+            "injustice"
+        ],
+        "Occupation": "Emerging Entrepreneur",
+        "Home city": "London, England"
+    },
+    "fact_summary": "elena blackwood, a 23-year-old emerging entrepreneur hailing from london, appreciates having her mind challenged through reading and strategic games",
+    "persona_summary": "Meet Elena Blackwood, a 23-year-old Emerging Entrepreneur. They hail from London, England. Elena Blackwood is passionate about reading, strategic games but has aversions to ignorance, injustice. In the game, Elena Blackwood's strategy is Backstabbing, reflecting their judgement which *tends* to be Slightly, cooperation which *tends* to be Defiant, outlook which *tends* to be Pessimistic, initiative which *tends* to be Assertive, generosity which *tends* to be Selfish, social which *tends* to be Influential, mind which *tends* to be Balanced, openness which *tends* to be Narrow-minded and stress which *tends* to be Nervous.",
+    "description": "A 23 year old Emerging Entrepreneur named Elena Blackwood",
+    "strategy_in_effect": true,
+    "game_theory_strategy": "Backstabbing"
+}
