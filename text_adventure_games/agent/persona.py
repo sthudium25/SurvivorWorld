@@ -31,6 +31,7 @@ class Persona():
         self.description = f'A {self.facts["Age"]} year old {self.facts["Occupation"]} named {self.facts["Name"]}'
         self.game_theory_strategy = "nothing specific yet"
         self.strategy_in_effect = False
+        self.speaking_style = ""
 
     def add_trait(self, trait):
         if trait.name not in self.traits:
@@ -114,6 +115,40 @@ class Persona():
             persona.traits[tname] = TraitScale(tname, trait_dichotomy, score=trait['score'], adjective=trait['adjective'])
 
         return persona
+    
+    # Make a string describing the persona's speaking style, instructing chatGPT how to speak.
+    def get_speaking_style(self):
+        # If we've already generated the speaking style, return it
+        if self.speaking_style:
+            return self.speaking_style
+        
+        style = f"Speaks in the style of a {self.facts['Age']} year old {self.facts['Occupation']} from {self.facts.get('Home city', 'no place in particular')}. "
+        
+        # Get 'outlook' and 'stress' traits to include in their speaking style.
+        outlook = self.get_trait_score('outlook')
+        stress = self.get_trait_score('stress')
+
+        # Determine the speaking style based on the traits
+        if outlook > 66:
+            style += "They're generally optimistic and have a positive outlook on life. "
+        elif outlook < 33:
+            style += "They're generally pessimistic and have a negative outlook on life. "
+        else:
+            style += "They have a balanced outlook on life. "
+
+        if stress > 66:
+            style += "They're often stressed and anxious. "
+        elif stress < 33:
+            style += "They're often calm and relaxed. "
+        else:
+            style += "They're generally balanced in their stress levels. "
+
+        style += "Use this information to guide how they speak, in terms of tone, word choice, sentence structure, \
+            phrasing, terseness, verbosity, and overall demeanor."
+
+        self.speaking_style = style
+
+        return style
         
     # Made more natural-language friendly, not just a list of facts/traits, etc.
     def get_personal_summary(self):
