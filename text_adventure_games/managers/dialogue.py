@@ -220,7 +220,14 @@ class Dialogue:
         # Currently, we are not updating any of the system prompt when no new characters are mentioned.
         # To change this, pass in True to any system prompt components that we want to update
         system_instruction_token_count, system_instruction_str = self.get_system_instruction(character=character)
-        
+
+        # convert the dialog history into a list and limit the number of messages (if necessary, trimming
+        # from the start) to fit into GPT's context
+        dialogue_history_lst = [message.strip() for message in self.get_dialogue_history().split('\n')]
+        limited_dialog = limit_context_length(history=dialogue_history_lst, max_tokens=self.max_tokens-system_instruction_token_count)
+        # convert the history back into a string
+        dialog_str = '\n'.join(limited_dialog)
+
         # try getting GPT's response
         try:
             messages = [{
@@ -229,8 +236,7 @@ class Dialogue:
             },
                 {
                 "role": "user",
-                "content": ''.join(limit_context_length(history=self.get_dialogue_history().split('\n')),
-                                   max_tokens=self.max_tokens-system_instruction_token_count)
+                "content": dialog_str
             }
             ]
             response = self.client.chat.completions.create(
