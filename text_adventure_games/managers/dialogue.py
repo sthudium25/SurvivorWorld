@@ -295,7 +295,10 @@ class Dialogue:
                             refresh_system_prompt = True
                 if refresh_system_prompt:
                     for participant in self.participants:
-                        self.characters_system[participant.name] = self.get_system_instructions(participant)
+                        self.characters_system[participant.name] = self.get_system_instruction(participant,
+                                                                                                intro=True,
+                                                                                                impressions=True,
+                                                                                                memories=True)
                 
                 # Get GPT response
                 response = self.get_gpt_response(character)
