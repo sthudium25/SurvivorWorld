@@ -8,9 +8,18 @@ import tiktoken
 
 # local imports
 from ..utils.general import set_up_openai_client, enumerate_dict_options
+from ..utils.consts import get_config_file
 
 logger = logging.getLogger(__name__)
 
+
+class ClientInitializer:
+
+    def __init__(self):
+        self.api_info = self._load_api_keys()
+
+    def _load_api_keys(self):
+        return get_config_file()
 
 @dataclass
 class GptCallHandler:
@@ -32,7 +41,7 @@ class GptCallHandler:
     frequency_penalty: float = 0
     presence_penalty: float = 0
     max_retries: int = 5
-    client: openai.types.Client = field(init=False)
+    # client: openai.types.Client = field(init=False)
     # Include if context limit checks done within this class
     # tokenizer: Any = field(default_factory=lambda: tiktoken.get_encoding("cl100k_base"))
     
@@ -76,8 +85,6 @@ class GptCallHandler:
                 logger.error("GPT Error: {}".format(e)) 
                 time.sleep(1)
                 continue
-            else:
-                return response.choices[0].message.content
         
 
 # Alternatively, heres a basic wrapper method to catch OpenAI related errors
