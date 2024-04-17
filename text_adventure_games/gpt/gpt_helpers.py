@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
+import json
 import logging
+import os
 import re
 import time
 from typing import Callable, Dict, Any, ClassVar
@@ -8,7 +10,7 @@ import tiktoken
 
 # local imports
 from ..utils.general import set_up_openai_client, enumerate_dict_options
-from ..utils.consts import get_config_file
+from ..utils.consts import get_config_file, get_assets_path
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +21,14 @@ class ClientInitializer:
                                "default_headers", "default_query", "http_client"])
 
     def __init__(self):
+        self.load_count = 0
         self.api_info = self._load_api_keys()
         self.clients = {}
 
     def _load_api_keys(self):
-        if not self.api_info:
-            return get_config_file()
+        self.load_count += 1
+        configs = get_config_file()
+        return configs.get("organizations", None)
     
     def get_client(self, org):
         try:
@@ -69,11 +73,11 @@ class GptCallHandler:
         _type_: _description_
     """
     # Class variables
-    # model_limits: ClassVar = field(init=False)
+    model_limits: ClassVar = field(init=False)
     client_handler: ClassVar = ClientInitializer()
 
     # Instance variables
-    api_key_org: str = "Helicone",
+    api_key_org: str = "Helicone"
     model: str = "gpt-4"
     max_tokens: int = 256
     temperature: float = 1.0
@@ -87,6 +91,33 @@ class GptCallHandler:
     
     def __post_init__(self):
         self.client = self.client_handler.get_client(self.api_key_org)
+        self.model_limits = self._load_model_limits()
+        self._set_requested_model_limits()
+
+    def _load_model_limits(self):
+        assets = get_assets_path()
+        full_path = os.path.join(assets, "openai_model_limits.json")
+        try:
+            with open(full_path, "r") as f:
+                limits = json.load(f)
+        except IOError:
+            print(f"Bad path. Couldn't find assest at {full_path}")
+            # TODO: what to do in this case?
+        else:
+            return limits
+        
+    def _set_requested_model_limits(self):
+        """
+        Get the input/output limits for the requested model.
+        Default to GPT-4 limits if not found.
+        """
+        if self.model_limits:
+            limits = self.model_limits.get(self.model, None)
+            self.model_context_limit = limits.get("context", 8192)
+            self.max_tokens = min(self.max_tokens, limits.get("context", 8192))
+        else:
+            self.model_context_limit = 8192
+            self.model_output_limit = min(self.max_tokens, 8192)
         
     def generate(self, system, user) -> str:
         """
@@ -121,7 +152,9 @@ class GptCallHandler:
             except openai.RateLimitError as e:
                 # use exponential backoff
                 # openai requests 0.6ms delay so a max of 2s should be plenty
-                time.sleep(min(0.1**i, 2))
+                duration = min(0.1**i, 2)
+                print(f"rate limit reached, sleeping {duration} seconds")
+                time.sleep(duration)
                 self._log_gpt_error(e)
                 continue
             except openai.BadRequestError as e:
@@ -284,7 +317,12 @@ def gpt_pick_an_option(instructions, options, input_str):
         return None
 
 
-def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, keep_most_recent=True):
+def limit_context_length(history, 
+                         max_tokens, 
+                         max_turns=1000, 
+                         tokenizer=None, 
+                         keep_most_recent=True, 
+                         return_count=False):
     """
     This method limits the length of the command_history 
     to be less than the max_tokens and less than max_turns. 
@@ -297,7 +335,8 @@ def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, ke
         max_tokens (_type_): _description_
         max_turns (int, optional): _description_. Defaults to 1000.
         tokenizer (_type_, optional): _description_. Defaults to None.
-        keep_most_recent (bool, optional): If True, trim from the beginning values. 
+        keep_most_recent (bool, optional): If True, trim from the beginning values.
+        return_count (bool, optional): Also return the total token count that was consumed. Defaults to False.
 
     Raises:
         TypeError: _description_
@@ -344,7 +383,11 @@ def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, ke
     # reverse the new list (back to normal) if we are keeping only the most recent items
     if keep_most_recent:
         limited_history.reverse()
-
+    
+    # return the total number of tokens consumed by this context list.
+    if return_count:
+        return list(limited_history), total_tokens
+    
     return list(limited_history)
 
 
@@ -416,3 +459,24 @@ def get_prompt_token_count(content=None, role=None, pad_reply=False, tokenizer=N
         token_count += len(tokenizer.encode(role))
 
     return token_count
+
+def get_token_remainder(max_tokens: int, *consumed_counts):
+    """
+    get the number of remaining available tokens given a max
+    and any chunks used so far.
+
+    Args:
+        max_tokens (int): the maximum value for a model
+
+    Returns:
+        int: the number of remaining available tokens
+    """
+    return max_tokens - sum(*consumed_counts)
+
+def context_list_to_string(context, 
+                           sep: str = "", 
+                           convert_to_string: bool = False):
+    if convert_to_string:
+        return sep.join([f"{str(msg)}" for msg in context])
+    else:
+        return sep.join([msg for msg in context])
