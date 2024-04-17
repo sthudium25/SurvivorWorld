@@ -15,11 +15,48 @@ logger = logging.getLogger(__name__)
 
 class ClientInitializer:
 
+    VALID_CLIENT_PARAMS = set(["api_key", "organization", "base_url", "timeout", "max_retries", 
+                               "default_headers", "default_query", "http_client"])
+
     def __init__(self):
         self.api_info = self._load_api_keys()
+        self.clients = {}
 
     def _load_api_keys(self):
-        return get_config_file()
+        if not self.api_info:
+            return get_config_file()
+    
+    def get_client(self, org):
+        try:
+            org_client = self.clients[org]
+            return org_client
+        except KeyError:
+            self.set_client(org)
+            return self.get_client(org)
+    
+    def set_client(self, org):
+        if not self.api_info:
+            raise AttributeError("api_info may not have been initialized correctly")
+        try:
+            org_api_params = self.api_info[org]
+        except KeyError:
+            raise ValueError(f"You have not set up an api key for {org}. Valid orgs are: {list(self.api_info.keys())}")
+        else:
+            valid_api_params = self._validate_client_params(org_api_params)
+            self.clients[org] = openai.OpenAI(**valid_api_params)
+    
+    def _validate_client_params(self, params):
+        # remove any invalid parameters they tried to add
+        validated_params = {}
+        if "api_key" not in params:
+            raise ValueError("'api_key' must be included in your config.")
+        for k, v in params.items():
+            if k not in self.VALID_CLIENT_PARAMS:
+                print(f"{k} is not a valid argument to openai.OpenAI(). Removing {k}.")
+            else:
+                validated_params[k] = v
+        return validated_params
+
 
 @dataclass
 class GptCallHandler:
@@ -31,8 +68,11 @@ class GptCallHandler:
     Returns:
         _type_: _description_
     """
-    
-    model_limits: ClassVar
+    # Class variables
+    # model_limits: ClassVar = field(init=False)
+    client_handler: ClassVar = ClientInitializer()
+
+    # Instance variables
     api_key_org: str = "Helicone",
     model: str = "gpt-4"
     max_tokens: int = 256
@@ -45,11 +85,10 @@ class GptCallHandler:
     # Include if context limit checks done within this class
     # tokenizer: Any = field(default_factory=lambda: tiktoken.get_encoding("cl100k_base"))
     
-
     def __post_init__(self):
-        self.client = set_up_openai_client(self.api_key_org)
-
-    def generate(self, func: Callable) -> str:
+        self.client = self.client_handler.get_client(self.api_key_org)
+        
+    def generate(self, system, user) -> str:
         """
         A wrapper for making a call to OpenAI API.
         It expects a function as an argument that should produce the messages argument.        
@@ -61,7 +100,10 @@ class GptCallHandler:
             str: _description_
         """
         # Generate messages
-        messages = func()
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user}
+        ]
 
         i = 0
         while i < self.max_retries:
@@ -76,34 +118,64 @@ class GptCallHandler:
                     presence_penalty=self.presence_penalty
                 )
                 return response.choices[0].message.content
-            except (RuntimeError,
-                    openai.error.RateLimitError,
-                    openai.error.ServiceUnavailableError, 
-                    openai.error.APIError, 
-                    openai.error.APIConnectionError) as e:
-                # log the error; should go to an error/warning specific log
-                logger.error("GPT Error: {}".format(e)) 
-                time.sleep(1)
+            except openai.RateLimitError as e:
+                # use exponential backoff
+                # openai requests 0.6ms delay so a max of 2s should be plenty
+                time.sleep(min(0.1**i, 2))
+                self._log_gpt_error(e)
                 continue
-        
+            except openai.BadRequestError as e:
+                success, info = self._handle_BadRequestError(e)
+                self._log_gpt_error(e)
+                return success, info  # return to the module for redoing the message creation?
+            except openai.ServiceUnavailableError as e:
+                # This model or the servers may be down...so wait a while?
+                self._handle_ServiceUnavailableError(e)
+                self._log_gpt_error(e)
+                continue
+            except openai.APIConnectionError as e:
+                # Adding some helpful prints but will still raise the error
+                self._handle_APIConnectionError(e)
+                self._log_gpt_error(e)
 
-# Alternatively, heres a basic wrapper method to catch OpenAI related errors
-def gpt_call_wrapper(gpt_call: Callable, retries=5):
-    i = 0
-    while i < retries:
-        try:
-            response = gpt_call()
-        except (RuntimeError,
-                openai.error.RateLimitError,
-                openai.error.ServiceUnavailableError, 
-                openai.error.APIError, 
-                openai.error.APIConnectionError) as e:
-            # log the error; should go to an error/warning specific log
-            logger.error("GPT Error: {}".format(e)) 
-            time.sleep(1)
-            continue
-        else:
-            return response.choices[0].message.content
+    def _log_gpt_error(self, e):
+        logger.error("GPT Error: {}".format(e))                 
+        
+    def _handle_BadRequestError(self, e):
+        if hasattr(e, 'response'):
+            error_response = e.response.json()
+            if "error" in error_response:
+                error = error_response.get("error")
+                if error.get("code") == "context_length_exceeded":
+                    msg = error.get("message")
+                    matches = re.findall(r"\d+", msg)
+                    if matches and len(matches) > 1:
+                        model_max = int(matches[0])
+                        input_token_count = int(matches[1])
+                        diff = input_token_count - model_max
+                        return False, diff
+        return False, None
+    
+    def _handle_APIConnectionError(self, e):
+        print("APIConnectionError encountered:\n")
+        print(e)
+        print("Did you set your API key or organization base URL incorrectly?")
+        print("This could also be raised by a poor internet connection.")
+        raise e
+    
+    def _handle_ServiceUnavailableError(self, e):
+        print("OpenAI Service Error encountered:\n")
+        print(e)
+        print("\nYou may want to stop the run and try later. Otherwise, waiting 2 minutes...")
+
+        total_wait_time = 120
+        interval = 1
+
+        while total_wait_time > 0:
+            # Clear the last printed line
+            print(f"Resuming in {total_wait_time} seconds...", end='\r')
+            time.sleep(interval)
+            total_wait_time -= interval
 
 
 def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
