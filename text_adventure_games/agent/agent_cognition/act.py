@@ -12,128 +12,150 @@ Description: defines how agents select an action given their perceptions and mem
 # 4. Ask GPT to pick an option 
 # 5. Parse and return
 
+from typing import TYPE_CHECKING
 
 # local imports
-from text_adventure_games.gpt.gpt_helpers import limit_context_length
-from text_adventure_games.utils.general import set_up_openai_client, enumerate_dict_options
+from text_adventure_games.gpt.gpt_helpers import (limit_context_length,
+                                                  get_prompt_token_count,
+                                                  get_token_remainder,
+                                                  context_list_to_string,
+                                                  GptCallHandler)
+from text_adventure_games.utils.general import enumerate_dict_options
 from .retrieve import retrieve
+from text_adventure_games.assets.prompts import act_prompts as ap
 
-GPT4_MAX_TOKENS = 8192
-ACTION_MAX_OUTPUT = 100
-ACTION_RETRIES = 5
+if TYPE_CHECKING:
+    from text_adventure_games.games import Game
+    from text_adventure_games.things import Character
 
 
-def act(game, character):
-    available_actions = game.parser.actions
+class Act:
+    def __init__(self, game, character):
+        self.game = game
+        self.character = character
+        self.gpt_handler = self._set_up_gpt()
+        self.token_offset = 0
+        self.offset_pad = 5
+        return self
+ 
+    def _set_up_gpt(self):
+        model_params = {
+            "api_key_org": "Helicone",
+            "model": "gpt-4",
+            "max_tokens": 100,
+            "temperature": 1,
+            "top_p": 1,
+            "max_retries": 5
+        }
 
-    system_prompt = build_system_message(game, character, available_actions)
+        return GptCallHandler(**model_params) 
 
-    user_prompt = build_user_message(game, character)
-
-    action_to_take = generate_action(system_prompt, user_prompt)
-    game.logger.debug(f"{character.name} chose to take action: {action_to_take}")
-    print(f"{character.name} chose to take action: {action_to_take}")
-    return action_to_take
-
-def generate_action(system_prompt, user_prompt):
-    client = set_up_openai_client("Helicone")
-
-    for i in range(ACTION_RETRIES):
-        # print(f"retry {i}/{ACTION_RETRIES} for this character")
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=1,
-                top_p=1,
-                max_tokens=ACTION_MAX_OUTPUT,
-                frequency_penalty=0,
-                presence_penalty=0
-            )
-            
-            out = response.choices[0].message.content
-        except Exception as e:
-            continue
-        else:
-            return out
-    return None
-
-def build_system_message(game, character, game_actions) -> str:
-    system = collect_system_info(game, character)
-    choices_str, _ = enumerate_dict_options(game_actions, names_only=True)
-    
-    system += "".join([
-        "Using the information provided, generate a short action statement in the present tense from your perspective. ",
-        "Be sure to mention any characters you wish to interact with by name. ",
-        # "If you want to take a series of actions, separate each atomic action with a comma. ",
-        # "Otherwise, do not include commas in your action statement. ",
-        "Examples could be:\n",
-        "Go outside to the garden.\n",
-        "Talk to Tom about strategy\n",
-        "Pick up the stone from the ground\n",
-        "Give your food to the guard\n",
-        "Climb up the tree\n\n",
-        "Notes to keep in mind:\n",
-        "You can only use items that are in your possesion, ",
-        "if you want to go somewhere, state the direction or the location in which you want to travel. ",
-        "Actions should be atomic, not general and should interact with your immediate environment. ",
-        "Aim to keep action statements to 10 words or less. ",
-        "Here is list of valid action verbs to use:\n",
-        choices_str
-    ])
-
-    return system
-
-def collect_system_info(game, character):
-    previous_round = game.round - 1
-    world_info = game.world_info
-    agent_summary = character.persona.summary  # TODO: update this to match Louis' methodology
-    if character.use_goals:
-        agent_goals = str(character.goals.get_goals(round=previous_round))  # convert the dict to a string
-    else:
-        agent_goals = None
-
-    system = ""
-
-    if world_info:
-        system += f"WORLD INFO: {game.world_info}\n"
-    if agent_summary:
-        system += f"You are {character.persona.summary}.\n"
-    if agent_goals:
-        system += f"Your current GOALS: {character.goals}.\n"
-         
-    system += "".join([
-        "Given the context of your environment, past memories, ",
-        "and interpretation of relationships with other characters,",
-        "select a next action that advances your goals or strategy. "])
-    
-    return system
-
-def build_user_message(game, character):
-    # Add the theory of mind of agents that this agent has met
-    impression_targets = character.get_characters_in_view(game)
-    user_messages = character.impressions.get_multiple_impressions(impression_targets)
-
-    # Retrieve the relevant memories to the situation
-    user_messages += "These are select MEMORIES in ORDER from LEAST to MOST RELEVANT: " 
-    context_list = retrieve(game, character, query=None, n=-1)
-
-    if context_list:
-        # Add a copy of the existing user message at the end of the memory context list 
-        context_list.append(user_messages[:])
-
-        # limit the context length here on the retrieved memories + the relationships
-        context_list = limit_context_length(context_list, 
-                                            max_tokens=GPT4_MAX_TOKENS-ACTION_MAX_OUTPUT, 
-                                            tokenizer=game.parser.tokenizer)
+    def act(self):
         
-        # Then add these to the user message after popping the user messsage off 
-        context_list.pop()
+        system_prompt, user_prompt = self.build_messages()
 
-        # print(f"passing {len(context_list)} relevant memories to {character.name}")
-        user_messages += "".join([f"{m}\n" for m in context_list])
+        action_to_take = self.generate_action(system_prompt, user_prompt)
+        self.game.logger.debug(f"{self.character.name} chose to take action: {action_to_take}")
+        print(f"{self.character.name} chose to take action: {action_to_take}")
+        return action_to_take
+
+    def generate_action(self, system_prompt, user_prompt):
+        # client = set_up_openai_client("Helicone")
+
+        response = self.gpt_handler.generate(
+            system=system_prompt,
+            user=user_prompt
+        )
+        
+        action = response.choices[0].message.content 
+        if isinstance(action, tuple):
+            # This occurs when there was a Bad Request Error cause for exceeding token limit
+            success, token_difference = action
+            # Add this offset to the calculations of token limits and pad it 
+            self.token_offset = token_difference * self.offset_pad
+            self.offset_pad += self.offset_pad 
+            return self.act(self.game, self.character)
+        
+        return action
+
+    def build_messages(self):
+        system_msg, sys_token_count = self.build_system_message(self.game, self.character)
+
+        consumed_tokens = sys_token_count + self.token_offset
+        user_msg = self.build_user_message(self.game, self.character, consumed_tokens=consumed_tokens)
+        return system_msg, user_msg
+
+    def build_system_message(self) -> str:
+        """
+        Build the system prompt for agent actions
+        This is considered an "always included" portion of the message
+
+        Args:
+            game (_type_): _description_
+            character (_type_): _description_
+            game_actions (_type_): _description_
+
+        Returns:
+            str: the system prompt
+            int: token count of the system prompt
+        """
+        system = ""
+
+        system += self.character.get_standard_info(self.game)
+        system += ap.action_system_mid
+        system += ap.action_system_end
+        
+        game_actions = self.game.parser.actions
+        choices_str, _ = enumerate_dict_options(game_actions, names_only=True)
+        system += choices_str
+
+        sys_token_count = get_prompt_token_count(content=system, role='system', pad_reply=False)
+
+        return system, sys_token_count
+
+    def build_user_message(self, consumed_tokens: int):
+        always_included = [
+            "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT: ", 
+            "Given the above impressions and observations, what would you like to do?"]
+        always_included_tokens = get_prompt_token_count(content=always_included,
+                                                        role="user",
+                                                        pad_reply=True, 
+                                                        tokenizer=self.game.parser.tokenizer)
+        user_available_tokens = get_token_remainder(self.gpt_handler.model_context_limit, 
+                                                    self.gpt_handler.max_tokens,
+                                                    consumed_tokens,
+                                                    always_included_tokens)
+        imp_limit, mem_limit = self.get_user_token_limits(user_available_tokens, props=(0.33, 0.66))
+
+        # Add the theory of mind of agents that this agent has met
+        impression_targets = self.character.get_characters_in_view(self.game)
+        impressions = self.character.impressions.get_multiple_impressions(impression_targets)
+
+        impressions, tok_count = limit_context_length(history=impressions,
+                                                      max_tokens=imp_limit,
+                                                      tokenizer=self.game.parser.tokenizer,
+                                                      return_count=True)
     
-    return user_messages
+        # Add the impressions to the user prompt
+        user_messages = context_list_to_string(impressions)
+
+        # Retrieve ALL relevant memories to the situation
+        memories_list = retrieve(self.game, self.character, query=None, n=-1)  # Should we limit this too or just let it fill up?
+
+        # This is the token count still available to fill with memories
+        memory_available_tokens = get_token_remainder(user_available_tokens, tok_count)
+        memories_list = limit_context_length(memories_list,
+                                             max_tokens=memory_available_tokens, 
+                                             tokenizer=self.game.parser.tokenizer)
+        
+        user_messages += always_included[0]
+        user_messages += context_list_to_string(context=memories_list, sep="\n")
+        user_messages += always_included[1]
+        return user_messages
+
+    def get_user_token_limits(self, remainder, props):
+        ratio_impressions, ratio_memories = props
+        remaining_tokens_impressions = int(remainder * ratio_impressions)
+        remaining_tokens_memories = int(remainder * ratio_memories)
+
+        return remaining_tokens_impressions, remaining_tokens_memories
