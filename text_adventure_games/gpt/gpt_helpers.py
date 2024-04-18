@@ -471,7 +471,7 @@ def get_token_remainder(max_tokens: int, *consumed_counts):
     Returns:
         int: the number of remaining available tokens
     """
-    return max_tokens - sum(*consumed_counts)
+    return max_tokens - sum(consumed_counts)
 
 def context_list_to_string(context, 
                            sep: str = "", 
