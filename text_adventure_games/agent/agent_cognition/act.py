@@ -36,7 +36,6 @@ class Act:
         self.gpt_handler = self._set_up_gpt()
         self.token_offset = 0
         self.offset_pad = 5
-        return self
  
     def _set_up_gpt(self):
         model_params = {
@@ -67,22 +66,21 @@ class Act:
             user=user_prompt
         )
         
-        action = response.choices[0].message.content 
-        if isinstance(action, tuple):
+        if isinstance(response, tuple):
             # This occurs when there was a Bad Request Error cause for exceeding token limit
-            success, token_difference = action
+            success, token_difference = response
             # Add this offset to the calculations of token limits and pad it 
-            self.token_offset = token_difference * self.offset_pad
-            self.offset_pad += self.offset_pad 
+            self.token_offset = token_difference + self.offset_pad
+            self.offset_pad += 2 * self.offset_pad 
             return self.act(self.game, self.character)
         
-        return action
+        return response
 
     def build_messages(self):
-        system_msg, sys_token_count = self.build_system_message(self.game, self.character)
+        system_msg, sys_token_count = self.build_system_message()
 
         consumed_tokens = sys_token_count + self.token_offset
-        user_msg = self.build_user_message(self.game, self.character, consumed_tokens=consumed_tokens)
+        user_msg = self.build_user_message(consumed_tokens=consumed_tokens)
         return system_msg, user_msg
 
     def build_system_message(self) -> str:
@@ -121,6 +119,9 @@ class Act:
                                                         role="user",
                                                         pad_reply=True, 
                                                         tokenizer=self.game.parser.tokenizer)
+        
+        # Get available tokens using the requested model's limit as the reference point
+        # All other arguments to this method are subtracted from the limit
         user_available_tokens = get_token_remainder(self.gpt_handler.model_context_limit, 
                                                     self.gpt_handler.max_tokens,
                                                     consumed_tokens,
@@ -128,6 +129,7 @@ class Act:
         imp_limit, mem_limit = self.get_user_token_limits(user_available_tokens, props=(0.33, 0.66))
 
         # Add the theory of mind of agents that this agent has met
+        # and limit the inclusion to the token count defined in "imp_limit"
         impression_targets = self.character.get_characters_in_view(self.game)
         impressions = self.character.impressions.get_multiple_impressions(impression_targets)
 
