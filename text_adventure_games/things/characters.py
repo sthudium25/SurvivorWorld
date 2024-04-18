@@ -167,7 +167,7 @@ class GenerativeAgent(Character):
         """
         # If this is the end of a round, force reflection
         if game.tick == game.max_ticks_per_round - 1:
-            reflect.reflect(game, self) 
+            reflect(game, self) 
             if self.use_goals:
                 self.goals.gpt_generate_goals(game)
             return -999
@@ -187,8 +187,6 @@ class GenerativeAgent(Character):
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):
-        # NOTE: it would be nicer to have characters listed in the location object
-        # however this is more state to maintain.
         """
         Given a character, identifies the other characters in the game that are in the same location
 
