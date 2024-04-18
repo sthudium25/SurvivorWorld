@@ -60,8 +60,8 @@ def get_openai_api_key(organization):
     """
     
     config_vars = get_config_file()
+    org_config = config_vars.get("organizations", None).get(organization, None)
     
-    org_config = config_vars.get("organizations", None)
     if org_config:
         api_key = org_config.get("api_key", None)
         # print(f"{api_key[:5]}...")
@@ -84,7 +84,7 @@ def get_helicone_base_path(organization="Helicone"):
     
     config_vars = get_config_file()
     
-    org_config = config_vars.get("organizations", None)
+    org_config = config_vars.get("organizations", None).get(organization, None)
     if org_config:
         base_url = org_config.get("base_url", None)
         return base_url
