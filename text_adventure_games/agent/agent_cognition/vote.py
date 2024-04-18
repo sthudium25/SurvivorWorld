@@ -127,7 +127,7 @@ class VotingSession:
     def record_vote(self, voter):
         record = [{"votes_received": self.tally.get(voter.name, 0)}, 
                   {"target": self.voter_record.get(voter.name, "None")},
-                  {"is_safe": self.exiled not in voter.name}]
+                  {"is_safe": voter.name not in self.exiled}]
         return record
 
     def _gather_voter_context(self, game: "Game", voter: "Character"):
