@@ -41,7 +41,7 @@ class Dialogue:
             # (intro, impressions, memories), where each is a key and the values are lists
             # containing the token count in the first index and the string representation in
             # the second.
-            self.get_system_instruction_components(participant, intro=True, impressions=True, memories=True)
+            self.update_system_instruction_components(participant, intro=True, impressions=True, memories=True)
 
         # get a list of all characters in the conversation
         self.characters_mentioned = [character.name for character in self.participants]  # Characters mentioned so far in the dialogue
@@ -69,7 +69,7 @@ class Dialogue:
         """
 
         # update the system instructions components for any set to True
-        self.get_system_instruction_components(character=character,
+        self.update_system_instruction_components(character=character,
                                                intro=intro,
                                                impressions=impressions,
                                                memories=memories)
@@ -86,7 +86,7 @@ class Dialogue:
                 char_inst_comp['intro'][1] + char_inst_comp['impressions'][1] + char_inst_comp['memories'][1])
 
 
-    def get_system_instruction_components(self, character, intro=True, impressions=True, memories=True):
+    def update_system_instruction_components(self, character, intro=True, impressions=True, memories=True):
         """
         This method constructs and updates the system instructions which are broken down into
         intro, impressions, and memories components. The intro must be included without trimming.
@@ -301,7 +301,7 @@ class Dialogue:
                             refresh_system_prompt = True
                 if refresh_system_prompt:
                     for participant in self.participants:
-                        self.get_system_instruction_components(participant,
+                        self.update_system_instruction_components(participant,
                                                                 intro=True,
                                                                 impressions=True,
                                                                 memories=True)
