@@ -65,15 +65,15 @@ Save this file as `config.json` or `.config.json` at the package root.
 
 ```json
 {
-    "organizations": [
-        {"Penn":
-            {"OPENAI_API_KEY": "sk-..."}
+    "organizations": {
+        "Penn": {
+            "api_key": "sk-..."
         },
-        {"Helicone":
-            {"OPENAI_API_KEY": "sk-...",
-             "HELICONE_BASE_URL": "https://..."}
+        "Helicone": {
+            "api_key": "sk-...",
+            "base_url": "https://..."
         }
-    ]
+    }
 }
 ```
 
