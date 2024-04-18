@@ -77,6 +77,10 @@ class Dialogue:
         # get this character's dictionary of system prompt components
         char_inst_comp = self.characters_system[character.name]
 
+        char_intro = char_inst_comp['intro'][1]
+        char_impressions = char_inst_comp['impressions'][1] 
+        char_memories = char_inst_comp['memories'][1]
+
         # return a tuple containing the system instructions token count and string representation
         return (char_inst_comp['intro'][0] + char_inst_comp['impressions'][0] + char_inst_comp['memories'][0],
                 char_inst_comp['intro'][1] + char_inst_comp['impressions'][1] + char_inst_comp['memories'][1])
@@ -115,10 +119,12 @@ class Dialogue:
             intro = ''.join([f"WORLD INFO: {self.game.world_info}\n",
                              f"You are {character.persona.summary}\n"])
             
-            intro += f"Your goals are: {character.goals}\n"
+            intro += f"Your goals are: {character.goals.get_goals(as_str=True)}\n"
             
             # add dialogue instructions
-            intro += ''.join([dp.gpt_dialogue_prompt])
+            other_character = ', '.join([x.name for x in self.participants if x.name != character.name])
+            intro += dp.gpt_dialogue_prompt.format(character=character.name,
+                                                   other_character=other_character)
 
             # get the system prompt intro token count
             intro_token_count = get_prompt_token_count(content=intro, role='system', pad_reply=False)
@@ -126,8 +132,6 @@ class Dialogue:
             # account for the number of tokens in the resulting role (just the word 'user'),
             # including a padding for GPT's reply containing <|start|>assistant<|message|>
             intro_token_count += get_prompt_token_count(content=None, role='user', pad_reply=True)
-
-            print("Intro token count: ", intro_token_count)
 
             # update the character's intro in the characters system dictionary
             self.characters_system[character.name]['intro'] = (intro_token_count, intro)
@@ -144,8 +148,6 @@ class Dialogue:
 
             # get the impressions token count
             impressions_token_count = get_prompt_token_count(content=impressions, role=None, pad_reply=False)
-
-            print("Impressions token count: ", impressions_token_count)
 
             # update the character's impressions in the characters system dictionary
             self.characters_system[character.name]['impressions'] = (impressions_token_count, impressions)
@@ -197,13 +199,11 @@ class Dialogue:
                 # get the limited memories token count
                 memories_limited_token_count = get_prompt_token_count(content=memories_limited_str, role=None, pad_reply=False)
 
-                print("Memories token count: ", memories_limited_token_count)
-
                 # update the character's memories in the characters system dictionary
                 self.characters_system[character.name]['memories'] = (memories_limited_token_count, memories_limited_str)
             
             else:
-                #if no memories, add a "no memories" string 
+                # if no memories, add a "no memories" string 
                 self.characters_system[character.name]['memories'] = (2, "No memories")
     
 
@@ -255,8 +255,6 @@ class Dialogue:
         # update the dialog history with the current token count being passed to GPT
         self.dialogue_history_token_count = get_prompt_token_count(content=dialog_str, role=None, pad_reply=False)
 
-        print("Dialogue history token count: ", self.dialogue_history_token_count)
-
         # try getting GPT's response
         try:
             messages = [{
@@ -303,10 +301,10 @@ class Dialogue:
                             refresh_system_prompt = True
                 if refresh_system_prompt:
                     for participant in self.participants:
-                        self.characters_system[participant.name] = self.get_system_instruction(participant,
-                                                                                                intro=True,
-                                                                                                impressions=True,
-                                                                                                memories=True)
+                        self.get_system_instruction_components(participant,
+                                                                intro=True,
+                                                                impressions=True,
+                                                                memories=True)
                 
                 # Get GPT response
                 response = self.get_gpt_response(character)
