@@ -68,7 +68,7 @@ class Persona():
         # Uniquely ID's persona by concatenated trait scores
         unique_id = ''.join("{:02d}".format(int(trait.score)) for trait in self.traits.values())
 
-        #filedir = '../../SurvivorWorld/text_adventure_games/assets/personas/'
+        # filedir = '../../SurvivorWorld/text_adventure_games/assets/personas/'
         filedir = './game_personas/'
         if not os.path.isdir(filedir):
             os.makedirs(filedir, exist_ok=True)
@@ -76,7 +76,7 @@ class Persona():
         filename = self.facts['Name'] + "_" + unique_id + ".json"
         filepath = filedir + filename
 
-        persona_dict = { # Convert the persona to a dictionary
+        persona_dict = {  # Convert the persona to a dictionary
             'traits': {tname: {'score': trait.score, 'adjective': trait.adjective} for tname, trait in self.traits.items()},
             'facts': self.facts,
             'fact_summary': self.summary,
@@ -103,8 +103,8 @@ class Persona():
 
         # Create a new Persona instance with the loaded data
         persona = cls(persona_dict['facts'])
-        #persona.traits = {tname: {'score': trait['score'], 'adjective': trait['adjective']} for tname, trait in persona_dict['traits'].items()}
-        #persona.traits = {tname: TraitScale(**trait) for tname, trait in persona_dict['traits'].items()}
+        # persona.traits = {tname: {'score': trait['score'], 'adjective': trait['adjective']} for tname, trait in persona_dict['traits'].items()}
+        # persona.traits = {tname: TraitScale(**trait) for tname, trait in persona_dict['traits'].items()}
         persona.summary = persona_dict['fact_summary']
         persona.description = persona_dict['description']
         persona.strategy_in_effect = persona_dict['strategy_in_effect']
@@ -168,7 +168,7 @@ class Persona():
             summary += f" In the game, {self.facts['Name']}'s strategy is {self.game_theory_strategy},"
             traits = self.get_trait_summary()
             summary += f" reflecting their {', '.join(traits[:-1])} and {traits[-1]}."
-        else: #Just list their traits
+        else:  # Just list their traits
             traits = self.get_trait_summary()
             summary += f" Their traits are {', '.join(traits[:-1])} and {traits[-1]}."
         return summary

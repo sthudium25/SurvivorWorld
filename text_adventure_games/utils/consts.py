@@ -60,12 +60,12 @@ def get_openai_api_key(organization):
     """
     
     config_vars = get_config_file()
+    org_config = config_vars.get("organizations", None).get(organization, None)
     
-    for org in config_vars["organizations"]:
-        if organization in org:
-            api_key = org[organization].get("OPENAI_API_KEY", None)
-            # print(f"{api_key[:5]}...")
-            return api_key
+    if org_config:
+        api_key = org_config.get("api_key", None)
+        # print(f"{api_key[:5]}...")
+        return api_key
     
     # If no matches found for org
     print(f"{organization} not found in list of valid orgs. You may not have a key set up for {organization}.")
@@ -84,10 +84,10 @@ def get_helicone_base_path(organization="Helicone"):
     
     config_vars = get_config_file()
     
-    for org in config_vars["organizations"]:
-        if organization in org:
-            base_url = org[organization].get("HELICONE_BASE_URL", None)
-            return base_url
+    org_config = config_vars.get("organizations", None).get(organization, None)
+    if org_config:
+        base_url = org_config.get("base_url", None)
+        return base_url
     
     # If no matches found for org
     print(f"{organization} not found in list of valid orgs. You may not have a base url set up for {organization}.")

@@ -2,7 +2,11 @@ from typing import Union
 from .base import Thing
 from .items import Item
 from ..agent.memory_stream import MemoryStream, MemoryType
-from ..agent.agent_cognition import act, reflect, impressions, goals, perceive
+from ..agent.agent_cognition.act import Act
+from ..agent.agent_cognition.reflect import reflect 
+from ..agent.agent_cognition.impressions import Impressions
+from ..agent.agent_cognition.goals import Goals
+from ..agent.agent_cognition.perceive import percieve_location
 
 
 class Character(Thing):
@@ -124,11 +128,11 @@ class GenerativeAgent(Character):
         # Set the Agent's persona, empty impressions, and initialize empty goals:
         self.persona = persona
         if use_impressions:
-            self.impressions = impressions.Impressions(self.name, self.id)
+            self.impressions = Impressions(self.name, self.id)
         else:
             self.impressions = None
         if use_goals:
-            self.goals = goals.Goals(self)
+            self.goals = Goals(self)
         else:
             self.goals = None
 
@@ -137,15 +141,18 @@ class GenerativeAgent(Character):
         self.last_location_observations = None
 
     # TODO: this is probably a redundant method than we can delete
-    def get_character_summary(self):
+    def get_standard_info(self, game):
         """
-        Get a summary of the traits for this agent
+        Get standard context for this agent
+        Includes: world info, persona summary, and (if invoked) goals
 
         Returns:
-            str: a standard summary paragraph for this agent
+            str: a standard summary paragraph for this agent and the world.
         """
-        summary = self.persona.get_personal_summary()
-        summary += self.get_alliance_summary()
+        summary = f"WORLD INFO: {game.world_info}\n"
+        summary += f"You are {self.persona.get_personal_summary()}.\n"
+        if self.use_goals:
+            summary += f"Your current GOALS:\n{self.goals.get_goals(round=(game.round-1), as_str=True)}.\n"
         return summary
 
     def engage(self, game) -> Union[str, int]:
@@ -160,7 +167,7 @@ class GenerativeAgent(Character):
         """
         # If this is the end of a round, force reflection
         if game.tick == game.max_ticks_per_round - 1:
-            reflect.reflect(game, self) 
+            reflect(game, self) 
             if self.use_goals:
                 self.goals.gpt_generate_goals(game)
             return -999
@@ -173,15 +180,13 @@ class GenerativeAgent(Character):
             self.update_character_impressions(game)
 
         # act accordingly
-        return act.act(game, self)
+        return Act(game, self).act()
     
     def perceive(self, game):
-        perceive.percieve_location(game, self)
+        percieve_location(game, self)
         self.chars_in_view = self.get_characters_in_view(game)
                 
     def get_characters_in_view(self, game):
-        # NOTE: it would be nicer to have characters listed in the location object
-        # however this is more state to maintain.
         """
         Given a character, identifies the other characters in the game that are in the same location
 
