@@ -121,13 +121,13 @@ class VotingSession:
             exiled_key = choice(choices)[0]
          
         exiled_participant = next((p for p in self.participants if p.name == exiled_key), None)
-        self.exiled = exiled_participant
+        self.exiled = [exiled_participant.name]
         return exiled_participant
     
     def record_vote(self, voter):
         record = [{"votes_received": self.tally.get(voter.name, 0)}, 
                   {"target": self.voter_record.get(voter.name, "None")},
-                  {"is_safe": self.exiled != voter.name}]
+                  {"is_safe": self.exiled not in voter.name}]
         return record
 
     def _gather_voter_context(self, game: "Game", voter: "Character"):
@@ -255,4 +255,9 @@ class JuryVotingSession(VotingSession):
     def determine_winner(self):
         winner_key, _ = self.tally.most_common(1)[0]
         winner = next((f for f in self.finalists if f.name == winner_key), None)
+        exiled = []
+        for f in self.finalists:
+            if f.name != winner.name:
+                exiled.append(f.name)
+        self.exiled = exiled
         return winner
