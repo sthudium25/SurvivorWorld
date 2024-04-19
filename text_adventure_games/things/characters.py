@@ -165,8 +165,7 @@ class GenerativeAgent(Character):
 
         return context_list_to_string(perception_descriptions, sep="\n")
 
-    # TODO: this is probably a redundant method than we can delete
-    def get_standard_info(self, game):
+    def get_standard_info(self, game, include_goals=True):
         """
         Get standard context for this agent
         Includes: world info, persona summary, and (if invoked) goals
@@ -176,7 +175,7 @@ class GenerativeAgent(Character):
         """
         summary = f"WORLD INFO: {game.world_info}\n"
         summary += f"You are {self.persona.get_personal_summary()}.\n"
-        if self.use_goals:
+        if self.use_goals and include_goals:
             summary += f"Your current GOALS:\n{self.goals.get_goals(round=(game.round-1), as_str=True)}.\n"
         if self.last_location_observations:
             summary += f"Your current perceptions are:\n{self._parse_perceptions()}\n"
