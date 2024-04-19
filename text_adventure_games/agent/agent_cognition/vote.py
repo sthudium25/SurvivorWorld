@@ -15,6 +15,11 @@ import openai
 from . import retrieve
 from text_adventure_games.assets.prompts import vote_prompt as vp
 from text_adventure_games.utils.general import set_up_openai_client, get_logger_extras
+from text_adventure_games.gpt.gpt_helpers import (limit_context_length,
+                                                  get_prompt_token_count,
+                                                  get_token_remainder,
+                                                  context_list_to_string,
+                                                  GptCallHandler)
 from ..memory_stream import MemoryType
 
 if TYPE_CHECKING:
@@ -28,6 +33,23 @@ class VotingSession:
         self.participants = list(set(participants))
         self.tally = Counter()
         self.voter_record = defaultdict(str)
+
+        # gpt call attrs
+        self.gpt_handler = self._set_up_gpt()
+        self.token_offset = 0
+        self.offset_pad = 5
+ 
+    def _set_up_gpt(self):
+        model_params = {
+            "api_key_org": "Helicone",
+            "model": "gpt-4",
+            "max_tokens": 100,
+            "temperature": 1,
+            "top_p": 1,
+            "max_retries": 5
+        }
+
+        return GptCallHandler(**model_params) 
 
     def get_vote_options(self, current_voter: "Character", names_only=False):
         """
@@ -50,25 +72,18 @@ class VotingSession:
             # 1. Gather context for voter
             # 2. have them cast vote:
             system_prompt, user_prompt = self._gather_voter_context(game, voter)
-            try:
-                success = False
-                while not success:
-                    vote = self.gpt_cast_vote(system_prompt, user_prompt)
-                    vote_name, vote_confessional, success = self._validate_vote(game, vote, voter)
-                    success = success
-                    if success:
-                        self.tally[vote_name] += 1
-                        self._add_vote_to_memory(game, voter, vote_name)
-                        self.voter_record[voter.name] = vote_name
-                        self._log_confessional(game, voter, vote_confessional)
-            except (openai.RateLimitError,
-                    openai.APIConnectionError,
-                    openai.APITimeoutError,
-                    openai.APIStatusError) as e:
-                # TODO add logging
-                # logger.error("GPT raised: ", e)
-                # TODO: better handling of this so that this character still votes
-                continue
+
+            success = False
+            while not success:
+                vote = self.gpt_cast_vote(game, system_prompt, user_prompt)
+                vote_name, vote_confessional, success = self._validate_vote(game, vote, voter)
+                success = success
+                if success:
+                    self.tally[vote_name] += 1
+                    self._add_vote_to_memory(game, voter, vote_name)
+                    self.voter_record[voter.name] = vote_name
+                    self._log_confessional(game, voter, vote_confessional)
+                    break
 
     def _validate_vote(self, game, vote_text, voter):
         try:
@@ -131,74 +146,91 @@ class VotingSession:
         return record
 
     def _gather_voter_context(self, game: "Game", voter: "Character"):
-        world_info, persona, goals = self._gather_base_context(game, voter)
+        voter_std_info = voter.get_standard_info(game)
         valid_options = self.get_vote_options(voter)
-        relationships = voter.impressions.get_multiple_impressions(valid_options)
+        impressions = voter.impressions.get_multiple_impressions(valid_options)
         query = "".join([
             f"Before the vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
             "have done to influence my position in the game."
         ])
-        hyperrelevant_memories = retrieve.retrieve(game, voter, n=20, query=query)
+        hyperrelevant_memories = retrieve.retrieve(game, voter, n=50, query=query)
 
-        system = self._build_system_prompt(world_info, 
-                                           persona, 
-                                           goals, 
-                                           relationships, 
-                                           hyperrelevant_memories,
-                                           prompt=vp.vote_system_ending)
+        system = self._build_system_prompt(voter_std_info,
+                                           prompt_ending=vp.vote_system_ending)
+        
+        system_token_count = get_prompt_token_count(content=system,
+                                                    role="system",
+                                                    tokenizer=game.parser.tokenizer)
+        tokens_consumed = system_token_count + self.token_offset
         
         user = self._build_user_prompt(voter=voter,
-                                       prompt=vp.vote_user_prompt)
+                                       impressions=impressions, 
+                                       memories=hyperrelevant_memories,
+                                       prompt_ending=vp.vote_user_prompt,
+                                       consumed_tokens=tokens_consumed)
         return system, user
-
-    def _gather_base_context(self, game: "Game", voter: "Character"):
-        world_info = game.world_info
-        persona = voter.persona.summary
-        goals = voter.goals.get_goals(round=game.round, as_str=True)
-        return world_info, persona, goals
     
-    def _build_system_prompt(self, world, persona, goals, relations, memories, prompt):
+    def _build_system_prompt(self, standard_info, prompt_ending):
         system_prompt = ""
-        if world:
-            system_prompt += f"WORLD INFO: {world}\n\n"
-        if persona:
-            system_prompt += f"PERSONAL INFO: {persona}\n\n"
-        if goals:
-            system_prompt += f"YOUR GOALS: {goals}\n\n"
-        if relations:
-            system_prompt += f"REFLECTIONS ON OTHERS: {relations}\n\n"
-        if memories:
-            system_prompt += f"SELECT RELEVANT MEMORIES:\n{memories}\n\n"
-        system_prompt += prompt
+        if standard_info:
+            system_prompt += standard_info
+        system_prompt += prompt_ending
         return system_prompt
     
-    def _build_user_prompt(self, voter, prompt):
-        user = ""
+    def _build_user_prompt(self, 
+                           voter, 
+                           impressions: list,
+                           memories: list,
+                           prompt_ending: str,
+                           consumed_tokens: int = 0):
+        
         choices = self.get_vote_options(voter, names_only=True)
-        user += prompt.format(vote_options=choices)
-        return user
+        user_prompt_end = prompt_ending.format(vote_options=choices)
+
+        always_included_count = get_prompt_token_count(content=user_prompt_end,
+                                                       role="user",
+                                                       pad_reply=True)
+        
+        user_available_tokens = get_token_remainder(self.gpt_handler.model_context_limit, 
+                                                    self.gpt_handler.max_tokens,
+                                                    consumed_tokens,
+                                                    always_included_count)
+        
+        # Initially allot half of the remaining tokens to the impressions
+        context_limit = user_available_tokens // 2
+
+        user_prompt = ""
+        if impressions:
+            impressions, imp_token_count = limit_context_length(impressions,
+                                                                context_limit,
+                                                                return_count=True)
+            
+            user_prompt += f"Your REFLECTIONS on other:\n{context_list_to_string(impressions)}\n\n"
+            context_limit = get_token_remainder(user_available_tokens,
+                                                imp_token_count)
+        if memories:
+            memories = limit_context_length(memories,
+                                            context_limit)
+                                                                
+            user_prompt += f"SELECT RELEVANT MEMORIES to the vote:\n{context_list_to_string(impressions)}\n\n"
+
+        user_prompt += user_prompt_end
+        return user_prompt
   
-    def gpt_cast_vote(self, system_prompt, user_prompt):
+    def gpt_cast_vote(self, game, system_prompt, user_prompt):
         # This method constructs a call to GPT, passing the context as part of a system prompt
         # The user prompt should contain info about recent memories, 
         # the fact that the model must reason about who to vote for,
         # and the list of the valid people to choose to vote for.
-        client = set_up_openai_client("Helicone")
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            max_tokens=VOTING_MAX_OUTPUT,
-            temperature=1,
-            top_p=1,
-        )
-
-        vote = response.choices[0].message.content
+        
+        vote = self.gpt_handler.generate(system_prompt, user_prompt)
+        if isinstance(vote, tuple):
+            # This occurs when there was a Bad Request Error cause for exceeding token limit
+            success, token_difference = vote
+            # Add this offset to the calculations of token limits and pad it 
+            self.token_offset = token_difference + self.offset_pad
+            self.offset_pad += 2 * self.offset_pad 
+            return self.run(game)
         return vote
 
     def _log_confessional(self, game: "Game", voter: "Character", message: str):
@@ -230,25 +262,28 @@ class JuryVotingSession(VotingSession):
 
     def _gather_voter_context(self, game, voter):
         # Adjust to focus on the finalists and the criteria for selecting the winner
-        world_info = game.world_info  
-        persona = voter.persona.summary  # TODO: adjust with the proper summary when that is finalized
-        goals = "Select the deserving winner from the finalists based on the quality of their strategy, gameplay, and contributions."
-        relationships = voter.impressions.get_multiple_impressions(self.finalists)
+        voter_std_info = voter.get_standard_info(game, include_goals=False)
+        impressions = voter.impressions.get_multiple_impressions(self.finalists)
         
         query = "".join([
-            f"Before the vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
+            f"Before the final vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
             "have done over the course of their game, focusing on their strategy, critical moves made, and strength as a player."
         ])
-        hyperrelevant_memories = retrieve.retrieve(game, voter, n=20, query=query)
+        hyperrelevant_memories = retrieve.retrieve(game, voter, n=50, query=query)
         
-        system = self._build_system_prompt(world_info, 
-                                           persona, 
-                                           goals, 
-                                           relationships, 
-                                           hyperrelevant_memories,
-                                           prompt=vp.jury_system_ending)  
-        user = self._build_user_prompt(voter,
-                                       prompt=vp.jury_user_prompt)
+        system = self._build_system_prompt(voter_std_info,
+                                           prompt_ending=vp.jury_system_ending)
+        
+        system_token_count = get_prompt_token_count(content=system,
+                                                    role="system",
+                                                    tokenizer=game.parser.tokenizer)
+        tokens_consumed = system_token_count + self.token_offset
+        
+        user = self._build_user_prompt(voter=voter,
+                                       impressions=impressions, 
+                                       memories=hyperrelevant_memories,
+                                       prompt_ending=vp.jury_user_prompt,
+                                       consumed_tokens=tokens_consumed)
         
         return system, user
     
