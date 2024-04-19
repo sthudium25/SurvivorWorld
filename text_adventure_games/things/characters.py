@@ -1,4 +1,7 @@
+import os
 from typing import Union
+
+# local imports
 from .base import Thing
 from .items import Item
 from ..agent.memory_stream import MemoryStream, MemoryType
@@ -7,6 +10,7 @@ from ..agent.agent_cognition.reflect import reflect
 from ..agent.agent_cognition.impressions import Impressions
 from ..agent.agent_cognition.goals import Goals
 from ..agent.agent_cognition.perceive import percieve_location
+from ..gpt.gpt_helpers import context_list_to_string
 
 
 class Character(Thing):
@@ -140,6 +144,27 @@ class GenerativeAgent(Character):
         self.memory = MemoryStream(self)
         self.last_location_observations = None
 
+    def _parse_perceptions(self):
+        perception_descriptions = []
+        for ptype, percept in self.last_location_observations.items():
+            if len(percept) == 1:
+                if percept[0].startswith("No "):
+                    perception_descriptions.append(f"{self.name} has no {ptype}.")
+                else:
+                    perception_descriptions.append(percept[0])
+            else:
+                # Find the common prefix and then append the varying parts
+                common_prefix = os.path.commonprefix(percept)
+                if common_prefix:
+                    # Strip common prefix from each entry and capitalize the first character
+                    unique_parts = [p[len(common_prefix):].capitalize() for p in percept]
+                    perception_descriptions.append(f"{common_prefix.strip()}: {', '.join(unique_parts)}")
+                else:
+                    # If no common prefix, join with 'or'
+                    perception_descriptions.append(', '.join(percept))
+
+        return context_list_to_string(perception_descriptions, sep="\n")
+
     # TODO: this is probably a redundant method than we can delete
     def get_standard_info(self, game):
         """
@@ -153,6 +178,8 @@ class GenerativeAgent(Character):
         summary += f"You are {self.persona.get_personal_summary()}.\n"
         if self.use_goals:
             summary += f"Your current GOALS:\n{self.goals.get_goals(round=(game.round-1), as_str=True)}.\n"
+        if self.last_location_observations:
+            summary += f"Your current perceptions are:\n{self._parse_perceptions()}\n"
         return summary
 
     def engage(self, game) -> Union[str, int]:
