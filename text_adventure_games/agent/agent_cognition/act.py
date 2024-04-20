@@ -53,6 +53,10 @@ class Act:
         
         system_prompt, user_prompt = self.build_messages()
 
+        print("act system: ", system_prompt)
+        print("-" * 50)
+        print("act user: ", user_prompt)
+
         action_to_take = self.generate_action(system_prompt, user_prompt)
         self.game.logger.debug(f"{self.character.name} chose to take action: {action_to_take}")
         print(f"{self.character.name} chose to take action: {action_to_take}")
@@ -112,9 +116,13 @@ class Act:
         return system, sys_token_count
 
     def build_user_message(self, consumed_tokens: int):
+        
+        # Reiterate which characters are currently in view
+        chars_in_view = self.character.get_characters_in_view(self.game)
         always_included = [
-            "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT: ", 
-            "Given the above impressions and observations, what would you like to do?"]
+            "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT: ",
+            f"In this location, you see: {', '.join([c.name for c in chars_in_view])}"
+            "Given the above impressions, observations, and others present here, what would you like to do?"]
         always_included_tokens = get_prompt_token_count(content=always_included,
                                                         role="user",
                                                         pad_reply=True, 
@@ -128,10 +136,9 @@ class Act:
                                                     always_included_tokens)
         imp_limit, mem_limit = self.get_user_token_limits(user_available_tokens, props=(0.33, 0.66))
 
-        # Add the theory of mind of agents that this agent has met
+        # Add the theory of mind of agents in the vicinity
         # and limit the inclusion to the token count defined in "imp_limit"
-        impression_targets = self.character.get_characters_in_view(self.game)
-        impressions = self.character.impressions.get_multiple_impressions(impression_targets)
+        impressions = self.character.impressions.get_multiple_impressions(chars_in_view)
 
         impressions, tok_count = limit_context_length(history=impressions,
                                                       max_tokens=imp_limit,
