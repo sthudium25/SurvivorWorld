@@ -14,6 +14,7 @@ from .rose import Pick_Rose, Smell_Rose
 from .locations import Go
 from .things import Get, Drop, Inventory, Examine, Give
 from .talk import Talk
+from .idol import Search_Idol
 
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     Catch_Fish,
     Pick_Rose,
     Smell_Rose,
-    Talk
+    Talk,
+    Search_Idol
 ]

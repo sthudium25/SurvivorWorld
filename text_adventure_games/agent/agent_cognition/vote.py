@@ -92,6 +92,7 @@ class VotingSession:
             
     def _add_vote_to_memory(self, game: "Game", voter: "Character", vote_target: str) -> None:
         vote_desc = f"During the end of round session, {voter.name} voted for {vote_target} in secret."
+        print(vote_desc)
         vote_kwds = game.parser.extract_keywords(vote_desc)
         voter.memory.add_memory(game.round,
                                 game.tick,
