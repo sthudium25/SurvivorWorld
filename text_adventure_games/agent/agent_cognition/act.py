@@ -53,9 +53,9 @@ class Act:
         
         system_prompt, user_prompt = self.build_messages()
 
-        print("act system: ", system_prompt)
-        print("-" * 50)
-        print("act user: ", user_prompt)
+        #print("act system: ", system_prompt)
+        #print("-" * 50)
+        #print("act user: ", user_prompt)
 
         action_to_take = self.generate_action(system_prompt, user_prompt)
         self.game.logger.debug(f"{self.character.name} chose to take action: {action_to_take}")
@@ -108,7 +108,8 @@ class Act:
         system += ap.action_system_end
         
         game_actions = self.game.parser.actions
-        choices_str, _ = enumerate_dict_options(game_actions, names_only=True)
+        # Added inverted argument because the game actions are inverted
+        choices_str, _ = enumerate_dict_options(game_actions, names_only=True, inverted=True)
         system += choices_str
 
         sys_token_count = get_prompt_token_count(content=system, role='system', pad_reply=False)
