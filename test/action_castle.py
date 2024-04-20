@@ -686,32 +686,32 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
     # Locations
     camp = things.Location(
         "Camp",
-        "You are standing in your tribe's base camp."
+        "the tribe's base camp."
     )
     cliffs = things.Location(
         "Cliffs",
-        """You stand in front of the steep cliffs.
+        """the front of some steep cliffs.
             Climb them carefully so you don't fall.""",
         )
     beach = things.Location(
         "Beach",
-        "You stand at the beach, toes in the sand. In front of you is the vast ocean."
+        "the beach, toes in the sand. In front of you is the vast ocean."
     )
     ocean = things.Location(
         "Ocean",
-        "You are at the edge of the ocean with waves washing up around your knees.",
+        "the edge of the ocean with waves washing up around your knees.",
     )
     jungle_path = things.Location(
         "Jungle Path",
-        "You are in a jungle path towards the well.",
+        "a jungle path towards the well.",
     )
     well = things.Location(
         "Well",
-        "You are next to the water well where you can get water for your tribe.",
+        "the water well where you can get water for your tribe.",
     )
     jungle = things.Location(
         "Jungle",
-        "You are deep in the jungle. There could be treasures lurking nearby.",
+        "the deep jungle. There could be treasures lurking nearby.",
     )
 
     camp.add_connection("out", beach)
