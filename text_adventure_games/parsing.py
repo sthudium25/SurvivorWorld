@@ -420,7 +420,7 @@ class GptParser(Parser):
     
     def create_action_statement(self, command: str, description: str, character: Character):
         outcome = f"ACTOR: {character.name}; LOCATION: {character.location.name}, ACTION: {command}; OUTCOME: {description}"
-        summary = gpt_helpers.gpt_get_summary_description_of_action(outcome, self.client, self.model, max_tokens=100)
+        summary = gpt_helpers.gpt_get_summary_description_of_action(outcome, self.client, self.model, max_tokens=250)
         return summary
 
     def extract_keywords(self, text):
@@ -482,6 +482,15 @@ class GptParser(Parser):
         """
         # This is a user or agent-supplied command so it should be logged as a ChatMessage.user
         super().add_command_to_history(command)
+        character.memory.add_memory(round=self.game.round,
+                                   tick=self.game.tick,
+                                   description=summary.lower(), 
+                                   keywords=keywords, 
+                                   location=character.location.name, 
+                                   success_status=success,
+                                   memory_importance=importance, 
+                                   memory_type=type,
+                                   actor_id=character.id)
         for char in character.chars_in_view:
             # print(f'passing {character.name}\'s action to {char.name}')
             char.memory.add_memory(round=self.game.round,
@@ -578,6 +587,7 @@ class GptParser(Parser):
 
         # FIRST: we add summarize the FAILED action and send it as a memory to the appropriate characters
         if isinstance(thing, Character):
+            print(f"{thing.name} action failed. Adding failure memory to history.")
             # summary_of_action = self.create_action_statement(command, description, thing)
             importance_of_action = gpt_helpers.gpt_get_action_importance(response,
                                                                          self.client, 
@@ -596,6 +606,7 @@ class GptParser(Parser):
                                         importance_of_action,
                                         success=False, 
                                         type=MemoryType.ACTION.value)
+            
         if self.verbose:
             print("GPT's Error Description:")
         self.add_description_to_history(response)

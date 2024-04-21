@@ -683,16 +683,49 @@ def build_game() -> games.Game:
     return game
 
 def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=3) -> games.Game:
-    cottage = things.Location("Cottage", "A small cottage.")
-    garden_path = things.Location(
-        "Garden Path",
-        "A lush garden path. There is a cottage here.",
+    # Locations
+    camp = things.Location(
+        "Camp",
+        "the tribe's base camp."
     )
-    fishing_pond = things.Location(
-        "Fishing Pond", "The edge of a small fishing pond."
+    cliffs = things.Location(
+        "Cliffs",
+        """the front of some steep cliffs.
+            Climb them carefully so you don't fall.""",
+        )
+    beach = things.Location(
+        "Beach",
+        "the beach, toes in the sand. In front of you is the vast ocean."
     )
-    cottage.add_connection("out", garden_path)
-    garden_path.add_connection("south", fishing_pond)
+    ocean = things.Location(
+        "Ocean",
+        "the edge of the ocean with waves washing up around your knees.",
+    )
+    jungle_path = things.Location(
+        "Jungle Path",
+        "a jungle path towards the well.",
+    )
+    well = things.Location(
+        "Well",
+        "the water well where you can get water for your tribe.",
+    )
+    jungle = things.Location(
+        "Jungle",
+        "the deep jungle. There could be treasures lurking nearby.",
+    )
+
+    camp.add_connection("out", beach)
+    beach.add_connection("north", jungle_path)
+    beach.add_connection("south", ocean)
+    beach.add_connection("west", cliffs)
+    beach.add_connection("in", camp)
+    jungle_path.add_connection("south", beach)
+    jungle_path.add_connection("east", well)
+    jungle_path.add_connection("north", jungle)
+    well.add_connection("west", jungle_path)
+    jungle.add_connection("south", jungle_path)
+    ocean.add_connection("north", beach)
+    cliffs.add_connection("east", beach)
 
     # Gettable Items
     fishing_pole = things.Item(
@@ -700,8 +733,16 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
         "a fishing pole",
         "A SIMPLE FISHING POLE.",
     )
-    fishing_pond.add_item(fishing_pole)
+    ocean.add_item(fishing_pole)
 
+    machete = things.Item(
+        "machete",
+        "a sharp machete",
+        "A SHARP MACHETE USED FOR CUTTING VINES.",
+    )
+    camp.add_item(machete)
+
+    # Characters
     # Troll
     troll_persona = build_agent(agent_description="A grumpy old man sitting on his porch in a rocking chair",
                                 facts_new=make_new_characters,
@@ -711,7 +752,7 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
     )
     troll.set_property("is_hungry", True)
     troll.set_property("character_type", "troll")
-    fishing_pond.add_character(troll)
+    ocean.add_character(troll)
 
     # Mother
     mother_persona = build_agent(agent_description="A homely mother who with a powerful spirit",
@@ -723,7 +764,7 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
     mother.set_property("emotional_state", "happy")
     mother.set_property("is_married", True)
     mother.set_property("character_type", "human")
-    cottage.add_character(mother)
+    camp.add_character(mother)
 
     # Player
     player_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
@@ -749,7 +790,7 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
         fourth_persona
     )
     fourth.set_property("character_type", "human")
-    garden_path.add_character(fourth)
+    jungle_path.add_character(fourth)
 
     #Fifth character
     fifth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
@@ -759,12 +800,12 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
         fifth_persona
     )
     fifth.set_property("character_type", "human")
-    fishing_pond.add_character(fifth)
+    beach.add_character(fifth)
 
     # The Game
     characters = [troll, mother, fourth, fifth]
     # custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
-    game = ActionCastleSurvivor(cottage, 
+    game = ActionCastleSurvivor(camp, 
                                 player, 
                                 characters, 
                                 custom_actions=None,
