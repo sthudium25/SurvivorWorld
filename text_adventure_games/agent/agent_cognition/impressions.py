@@ -83,7 +83,7 @@ class Impressions:
             if char.id == self.id:
                 continue
             char_impression = f"Your theory of mind of and relationship with {char.name}:\n"
-            char_impression += self._get_impression(char) or "None"
+            char_impression += self._get_impression(char) or "None\n"
             char_impressions.append(char_impression)
         return char_impressions
     

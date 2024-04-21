@@ -45,20 +45,19 @@ Description: defines prompts used in the agent reflection module
 # """
 
 gpt_generalize_prompt = """
-You are an agent in a game and you need to reflect upon your previous observations to improve your understanding of the environment
-and how to act within it. This could also include considering how to improve your past actions to be more efficient with respect to achieving your goals. 
-You'll be given your current impressions of all other agents along with a list of relevant memories - action statements that you and other agents around you have made.
+You are an agent in a game and you need to reflect upon your previous reflections and observations to improve your understanding of the environment and how to act within it.
+This could also include considering how to improve your past actions to be more efficient with respect to achieving your goals. 
+You'll be given your current impressions of all other agents, your prior reflections, and action statements that you and other agents around you have made.
 
-From these impressions and memories, try to:
-1. identify only the most impactful new generalizations about your actions or the environment.
-2. update or elaborate upon previous reflections.
+From these impressions, reflections, and memories, try to:
+1. identify only the most impactful new elaborations on previous reflections or new generalizations about your actions or the environment.
+2. update previous reflections if they no longer appear to be true.
 
 Separate your new and revised reflections.
 Prior reflections are each associated with an id; if you update a reflection use this id as the key for the statement that you have updated. 
-Return a JSON structure like:
+Only return a JSON object, using the following structure:
 {"new": [
-    {"index": an integer,
-     "statement": "a new generalized knowledge statement"
+    {"statement": "a new generalized knowledge statement"
     }],
 "updated": [
     {"index": index of prior statement,
@@ -66,7 +65,7 @@ Return a JSON structure like:
     }]
 }
 
-Remember, make generalized statements that are rooted in the facts you're been provided.
+Remember, make generalized statements that are rooted in the facts you're been provided, and only update past reflections if they no longer seem accurate.
 """
 
 
@@ -78,4 +77,4 @@ memory_query_questions = ["What were my key partnerships in this round?",
 ]
 
 
-insight_question = "What five high-level insights can you infer from the above statements?"
+insight_question = "What five high-level insights can you infer from the above statements? You can make new and/or updated generalizations, but there should be no more than five in total."

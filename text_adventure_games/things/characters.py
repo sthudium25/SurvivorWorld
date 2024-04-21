@@ -180,9 +180,13 @@ class GenerativeAgent(Character):
         summary = f"WORLD INFO: {game.world_info}\n"
         summary += f"You are {self.persona.get_personal_summary()}.\n"
         if self.use_goals and include_goals:
-            summary += f"Your current GOALS:\n{self.goals.get_goals(round=(game.round-1), as_str=True)}.\n"
+            goals = self.goals.get_goals(round=(game.round-1), as_str=True)
+            if goals:
+                summary += f"Your current GOALS:\n{goals}\n"
         if self.use_impressions and include_perceptions and self.last_location_observations:
-            summary += f"Your current perceptions are:\n{self._parse_perceptions()}\n"
+            perceptions = self._parse_perceptions()
+            if perceptions:
+                summary += f"Your current perceptions are:\n{perceptions}\n"
         return summary
 
     def engage(self, game) -> Union[str, int]:

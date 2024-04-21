@@ -199,7 +199,7 @@ def enumerate_dict_options(options, names_only=False):
     # Create a numbered list of options
     if names_only:
         for i, name in enumerate(options.values()):
-            choices_str += "{i}. {n}\n".format(i=i, n=name)
+            choices_str += "{i}. {n.ACTION_NAME}\n".format(i=i, n=name)
         return choices_str, None
     else:
         for i, (k, v) in enumerate(options.items()):

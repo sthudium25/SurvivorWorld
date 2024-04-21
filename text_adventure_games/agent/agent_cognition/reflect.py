@@ -117,35 +117,54 @@ def generalize(game, character):
     ### Get Static Components (System Prompt and Impressions don't update during Reflection) ###
 
     # load system prompt
-    system_prompt = character.get_standard_info(game, include_goals=False, include_perceptions=False) + '\n\n' + rp.gpt_generalize_prompt
+    # TODO: should we include goals here?
+    system_prompt = character.get_standard_info(game, include_goals=True, include_perceptions=False) + rp.gpt_generalize_prompt
     # get the number of tokens in the system prompt
     system_prompt_token_count = get_prompt_token_count(content=system_prompt, role='system', pad_reply=False)
+
+    # print('-'*100)
+    # print("SYSTEM PROMPT:\n", system_prompt, sep='')
+    # print('-'*100)
     
     # Get IMPRESSIONS of each character still in the game
-    impressions = [character.impressions.get_multiple_impressions(game.characters.values())]
+    impressions = character.impressions.get_multiple_impressions(game.characters.values())
 
     # count the number of tokens in the impressions, including a padding for GPT's reply
     # containing <|start|>assistant<|message|>
     impressions_token_count = get_prompt_token_count(content=impressions, role='user', pad_reply=True)
 
+    # print('-'*100)
+    # print("IMPRESSIONS:", impressions)
+    # print('-'*100)
+
+    # print('-'*100)
     # make a list of relevant memories that have been retrieved based on the query questions
     relevant_memories = []
     for question in rp.memory_query_questions:
+        # print("\nQ:", question)
         for memory in retrieve.retrieve(game=game, character=character, query=question, n=memories_per_retrieval, include_idx=True):
-            relevant_memories += memory
-    relevant_memories = set(relevant_memories)
-    # include a newline appended to the end of each memory string
-    relevant_memories = [memory+'\n' for memory in relevant_memories]
+            # print("M:", memory, end='')
+            relevant_memories.append(memory)
+    # print('-'*100)
+    relevant_memories = list(set(relevant_memories))
+    # relevant_memories = [memory+'\n' for memory in relevant_memories]
 
     # get the relevant memories token count (role=None and pad_reply=False because we've already accounted for these)
     relevant_memories_token_count = get_prompt_token_count(content=relevant_memories, role=None, pad_reply=False)
 
     # get the relevant memories primer messsage token count
-    relevant_memories_primer = ['Relevant Memories:\n']
+    # I'm inlcuding None here just for the token calculation, in case we need to supply this in the prompt
+    #  if there are no relevant reflections
+    relevant_memories_primer = ['\nRelevant Reflections:\n', '\nRelevant Memories:\n', 'None\n']
     rel_mem_primer_token_count = get_prompt_token_count(content=relevant_memories_primer, role=None, pad_reply=False)
 
     # the instructions telling GPT to generate high-level insights
     insight_q_prompt = ['\n'+rp.insight_question]
+
+    # print('-'*100)
+    # print("INSIGHT PROMPT:", insight_q_prompt)
+    # print('-'*100)
+
     # get the insight prompt token count
     insight_q_token_count = get_prompt_token_count(content=insight_q_prompt, role=None, pad_reply=False)
 
@@ -165,15 +184,37 @@ def generalize(game, character):
                                                  tokenizer=game.parser.tokenizer,
                                                  keep_most_recent=False)
         
+        # print('-'*100)
+        # print("TRIMMED MEMORIES:", relevant_memories_limited)
+        # print('-'*100)
+
+        reflections_lmtd = []
+        observations_lmtd = []
+        for full_memory in relevant_memories_limited:
+            idx, memory_desc = full_memory.split('.', 1)
+            idx = int(idx)
+            memory_desc = memory_desc[1:]
+            memory_type = character.memory.get_observation_type(idx)
+            if memory_type.value == MemoryType.REFLECTION.value:
+                reflections_lmtd.append(full_memory)
+            else:
+                observations_lmtd.append(memory_desc)
+
+        # if either is empty, replace it with a list containing the word None
+        if not reflections_lmtd:
+            reflections_lmtd = relevant_memories_primer[2]
+        if not observations_lmtd:
+            observations_lmtd = relevant_memories_primer[2]
+
         # get user input consisting of impressions, relevant memories (with primer), and the insight instructions
-        user_prompt_list = impressions + relevant_memories_primer + relevant_memories_limited + insight_q_prompt
+        user_prompt_list = impressions + [relevant_memories_primer[0]] + reflections_lmtd + \
+            [relevant_memories_primer[1]] + observations_lmtd + insight_q_prompt
         
         # join the list items into a string – note that the list values end with newline characters,
         # so join using an empty string
         user_prompt_str = "".join(user_prompt_list)
 
-        print('-'*50)
-        print(f"{character.name} reflects on the following memories:", user_prompt_str)
+        print(f"{character.name} reflects on the following impressions and memories:", user_prompt_str, sep='\n')
         print('-'*50)
 
         # get GPT's response
@@ -182,9 +223,11 @@ def generalize(game, character):
             user=user_prompt_str
         )
 
+        print("GPT RESPONSE:", response, sep='\n')
+
         # convert string response to dictionary
-        new_generalizations = json.loads(response.choices[0].message.content)
-        print(f"{character.name} generalized: {new_generalizations}")
+        new_generalizations = json.loads(response)
+        # print(f"{character.name} generalized: {new_generalizations}")
 
         # add the new generalizations to the character's memory
         add_generalizations_to_memory(game, character, new_generalizations)
@@ -209,7 +252,7 @@ def add_generalizations_to_memory(game: "Game", character: "Character", generali
     """
     # print(f"Adding {character.name}'s generalizations to memory")
     add_new_generalizations(game, character, generalizations)
-    update_existing_generalizations(character, generalizations)
+    update_existing_generalizations(game, character, generalizations)
 
 
 def add_new_generalization_helper(game: "Game", character: "Character", generalization: Dict):
@@ -270,10 +313,9 @@ def update_existing_generalizations(game: "Game", character: "Character", genera
         pass
     else:
         for ref in updated_gens:
-            memory_type = character.get_observation_type(ref['index'])
-            print(f"{character.name} tried to update the following memory type: {memory_type}.")
-
-            if memory_type != MemoryType.REFLECTION:
+            memory_type = character.memory.get_observation_type(ref['index'])
+            if memory_type.value != MemoryType.REFLECTION.value:
+                print(f"{character.name} tried to update the following memory type: {memory_type}. It is being stored as a new memory.")
                 add_new_generalization_helper(game=game, character=character, generalization=ref)
             
             else:
@@ -289,26 +331,3 @@ def update_existing_generalizations(game: "Game", character: "Character", genera
                                                                 new_description=desc)
                     _ = character.memory.update_node_embedding(node_id=prev_idx,
                                                             new_description=desc)
-                
-    
-                
-
-
-
-
-
-
-
-
-
-
-
-
-    # ### Get the New Observations ###
-
-    # # Get an enumerated list of the action nodes for this character in the current round
-    # this_round_mem_ids = character.memory.get_observations_by_round(game.round)
-    # new_observations = character.memory.get_enumerated_description_list(this_round_mem_ids, as_type="str")
-
-    # # get the new observations token count
-    # new_observations_token_count = get_prompt_token_count(content=new_observations, role=None, pad_reply=False)

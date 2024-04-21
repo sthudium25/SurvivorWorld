@@ -682,7 +682,7 @@ def build_game() -> games.Game:
     game = ActionCastle(cottage, player, characters, custom_actions, "You are playing ACTION CASTLE, an adventure game.")
     return game
 
-def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=3) -> games.Game:
+def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=2) -> games.Game:
     cottage = things.Location("Cottage", "A small cottage.")
     garden_path = things.Location(
         "Garden Path",
@@ -741,28 +741,29 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
     lamp.add_command_hint("light lamp")
     player.add_to_inventory(lamp)
 
-    #Fourth character
-    fourth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
-                                 facts_new=make_new_characters,
-                                 archetype="Villain")
-    fourth = GenerativeAgent(
-        fourth_persona
-    )
-    fourth.set_property("character_type", "human")
-    garden_path.add_character(fourth)
+    # #Fourth character
+    # fourth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
+    #                              facts_new=make_new_characters,
+    #                              archetype="Villain")
+    # fourth = GenerativeAgent(
+    #     fourth_persona
+    # )
+    # fourth.set_property("character_type", "human")
+    # garden_path.add_character(fourth)
 
-    #Fifth character
-    fifth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
-                                 facts_new=make_new_characters,
-                                 archetype="Villain")
-    fifth = GenerativeAgent(
-        fifth_persona
-    )
-    fifth.set_property("character_type", "human")
-    fishing_pond.add_character(fifth)
+    # #Fifth character
+    # fifth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
+    #                              facts_new=make_new_characters,
+    #                              archetype="Villain")
+    # fifth = GenerativeAgent(
+    #     fifth_persona
+    # )
+    # fifth.set_property("character_type", "human")
+    # fishing_pond.add_character(fifth)
 
     # The Game
-    characters = [troll, mother, fourth, fifth]
+    # characters = [troll, mother, fourth, fifth]
+    characters = [troll, mother]
     # custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
     game = ActionCastleSurvivor(cottage, 
                                 player, 
