@@ -20,6 +20,9 @@ class Character(Thing):
     * A name (can be general like "gravedigger")
     * A description ('You might want to talk to the gravedigger, especially if
       you're looking for a friend. He might be odd but you will find a friend in
+    * A name (can be general like "gravedigger")
+    * A description ('You might want to talk to the gravedigger, especially if
+      you're looking for a friend. He might be odd but you will find a friend in
       him.')
     * A persona written in the first person ("I am low paid labor in this town.
       I do a job that many people shun because of my contact with death. I am
