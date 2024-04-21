@@ -31,7 +31,7 @@ from text_adventure_games.utils.general import (combine_dicts_helper,
 # what is the query for dialogue?
 # initial is the dialogue command, subsequent is the last piece of dialogue
 
-def retrieve(game: "Game", character: "Character", query: str = None, n: int = -1):
+def retrieve(game: "Game", character: "Character", query: str = None, n: int = -1, include_idx=False):
     # TODO: refine the inputs used to assess keywords for memory retrieval
     # TODO: WHAT IS THE QUERY STRING FOR RELEVANCY (COS SIM)?
     """
@@ -45,6 +45,7 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
         query (str, optional): Keeping input query string optional for now but this would be
                                a non-memory input that we want to use as a retrieval seed. Defaults to None.
         n (int): the number of relevant memories to return. Defaults to -1.
+        include_idx (bool): if True returns memory index numbers along with the memory descriptions
     """
     seach_keys = gather_keywords_for_search(game, character, query)
     memory_node_ids = get_relevant_memory_ids(seach_keys, character)
@@ -62,7 +63,11 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
     # NOTE: currently a list of strings
     game.logger.debug(f"{character.name} found {len(ranked_memory_ids)} relevant memories.", 
                       extra={"round": game.round, "tick": game.tick})
-    return [character.memory.observations[t[0]].node_description for t in ranked_memory_ids]
+    if include_idx:
+        return [character.memory.observations[t[0]].node_description for t in ranked_memory_ids]
+    else:
+        # return [f"{mem_id}. {mem_desc}\n" for mem_id, mem_desc in enum_nodes]
+        return [f"{character.memory.observations[t[0]].node_id}. {character.memory.observations[t[0]].node_description}\n" for t in ranked_memory_ids]
 
 def rank_nodes(character, node_ids, query):
     """

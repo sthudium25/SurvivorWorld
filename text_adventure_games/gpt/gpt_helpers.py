@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
+import json
 import logging
+import os
 import re
 import time
 from typing import Callable, Dict, Any, ClassVar
@@ -8,8 +10,56 @@ import tiktoken
 
 # local imports
 from ..utils.general import set_up_openai_client, enumerate_dict_options
+from ..utils.consts import get_config_file, get_assets_path
 
 logger = logging.getLogger(__name__)
+
+
+class ClientInitializer:
+
+    VALID_CLIENT_PARAMS = set(["api_key", "organization", "base_url", "timeout", "max_retries", 
+                               "default_headers", "default_query", "http_client"])
+
+    def __init__(self):
+        self.load_count = 0
+        self.api_info = self._load_api_keys()
+        self.clients = {}
+
+    def _load_api_keys(self):
+        self.load_count += 1
+        configs = get_config_file()
+        return configs.get("organizations", None)
+    
+    def get_client(self, org):
+        try:
+            org_client = self.clients[org]
+            return org_client
+        except KeyError:
+            self.set_client(org)
+            return self.get_client(org)
+    
+    def set_client(self, org):
+        if not self.api_info:
+            raise AttributeError("api_info may not have been initialized correctly")
+        try:
+            org_api_params = self.api_info[org]
+        except KeyError:
+            raise ValueError(f"You have not set up an api key for {org}. Valid orgs are: {list(self.api_info.keys())}")
+        else:
+            valid_api_params = self._validate_client_params(org_api_params)
+            self.clients[org] = openai.OpenAI(**valid_api_params)
+    
+    def _validate_client_params(self, params):
+        # remove any invalid parameters they tried to add
+        validated_params = {}
+        if "api_key" not in params:
+            raise ValueError("'api_key' must be included in your config.")
+        for k, v in params.items():
+            if k not in self.VALID_CLIENT_PARAMS:
+                print(f"{k} is not a valid argument to openai.OpenAI(). Removing {k}.")
+            else:
+                validated_params[k] = v
+        return validated_params
 
 
 @dataclass
@@ -22,9 +72,12 @@ class GptCallHandler:
     Returns:
         _type_: _description_
     """
-    
-    model_limits: ClassVar
-    api_key_org: str = "Helicone",
+    # Class variables
+    model_limits: ClassVar = field(init=False)
+    client_handler: ClassVar = ClientInitializer()
+
+    # Instance variables
+    api_key_org: str = "Helicone"
     model: str = "gpt-4"
     max_tokens: int = 256
     temperature: float = 1.0
@@ -32,15 +85,44 @@ class GptCallHandler:
     frequency_penalty: float = 0
     presence_penalty: float = 0
     max_retries: int = 5
-    client: openai.types.Client = field(init=False)
+    # client: openai.types.Client = field(init=False)
     # Include if context limit checks done within this class
     # tokenizer: Any = field(default_factory=lambda: tiktoken.get_encoding("cl100k_base"))
     
-
     def __post_init__(self):
-        self.client = set_up_openai_client(self.api_key_org)
+        self.client = self.client_handler.get_client(self.api_key_org)
+        self.model_limits = self._load_model_limits()
+        self._set_requested_model_limits()
 
-    def generate(self, func: Callable) -> str:
+
+    def _load_model_limits(self):
+        assets = get_assets_path()
+        full_path = os.path.join(assets, "openai_model_limits.json")
+        try:
+            with open(full_path, "r") as f:
+                limits = json.load(f)
+        except IOError:
+            print(f"Bad path. Couldn't find assest at {full_path}")
+            # TODO: what to do in this case?
+        else:
+            return limits
+        
+
+    def _set_requested_model_limits(self):
+        """
+        Get the input/output limits for the requested model.
+        Default to GPT-4 limits if not found.
+        """
+        if self.model_limits:
+            limits = self.model_limits.get(self.model, None)
+            self.model_context_limit = limits.get("context", 8192)
+            self.max_tokens = min(self.max_tokens, limits.get("context", 8192))
+        else:
+            self.model_context_limit = 8192
+            self.model_output_limit = min(self.max_tokens, 8192)
+        
+
+    def generate(self, system, user) -> str:
         """
         A wrapper for making a call to OpenAI API.
         It expects a function as an argument that should produce the messages argument.        
@@ -52,7 +134,10 @@ class GptCallHandler:
             str: _description_
         """
         # Generate messages
-        messages = func()
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user}
+        ]
 
         i = 0
         while i < self.max_retries:
@@ -67,36 +152,70 @@ class GptCallHandler:
                     presence_penalty=self.presence_penalty
                 )
                 return response.choices[0].message.content
-            except (RuntimeError,
-                    openai.error.RateLimitError,
-                    openai.error.ServiceUnavailableError, 
-                    openai.error.APIError, 
-                    openai.error.APIConnectionError) as e:
-                # log the error; should go to an error/warning specific log
-                logger.error("GPT Error: {}".format(e)) 
-                time.sleep(1)
+            except openai.RateLimitError as e:
+                # use exponential backoff
+                # openai requests 0.6ms delay so a max of 2s should be plenty
+                duration = min(0.1**i, 2)
+                print(f"rate limit reached, sleeping {duration} seconds")
+                time.sleep(duration)
+                self._log_gpt_error(e)
                 continue
-            else:
-                return response.choices[0].message.content
+            except openai.BadRequestError as e:
+                success, info = self._handle_BadRequestError(e)
+                self._log_gpt_error(e)
+                return success, info  # return to the module for redoing the message creation?
+            except openai.ServiceUnavailableError as e:
+                # This model or the servers may be down...so wait a while?
+                self._handle_ServiceUnavailableError(e)
+                self._log_gpt_error(e)
+                continue
+            except openai.APIConnectionError as e:
+                # Adding some helpful prints but will still raise the error
+                self._handle_APIConnectionError(e)
+                self._log_gpt_error(e)
+
+
+    def _log_gpt_error(self, e):
+        logger.error("GPT Error: {}".format(e))                 
         
 
-# Alternatively, heres a basic wrapper method to catch OpenAI related errors
-def gpt_call_wrapper(gpt_call: Callable, retries=5):
-    i = 0
-    while i < retries:
-        try:
-            response = gpt_call()
-        except (RuntimeError,
-                openai.error.RateLimitError,
-                openai.error.ServiceUnavailableError, 
-                openai.error.APIError, 
-                openai.error.APIConnectionError) as e:
-            # log the error; should go to an error/warning specific log
-            logger.error("GPT Error: {}".format(e)) 
-            time.sleep(1)
-            continue
-        else:
-            return response.choices[0].message.content
+    def _handle_BadRequestError(self, e):
+        if hasattr(e, 'response'):
+            error_response = e.response.json()
+            if "error" in error_response:
+                error = error_response.get("error")
+                if error.get("code") == "context_length_exceeded":
+                    msg = error.get("message")
+                    matches = re.findall(r"\d+", msg)
+                    if matches and len(matches) > 1:
+                        model_max = int(matches[0])
+                        input_token_count = int(matches[1])
+                        diff = input_token_count - model_max
+                        return False, diff
+        return False, None
+    
+
+    def _handle_APIConnectionError(self, e):
+        print("APIConnectionError encountered:\n")
+        print(e)
+        print("Did you set your API key or organization base URL incorrectly?")
+        print("This could also be raised by a poor internet connection.")
+        raise e
+    
+
+    def _handle_ServiceUnavailableError(self, e):
+        print("OpenAI Service Error encountered:\n")
+        print(e)
+        print("\nYou may want to stop the run and try later. Otherwise, waiting 2 minutes...")
+
+        total_wait_time = 120
+        interval = 1
+
+        while total_wait_time > 0:
+            # Clear the last printed line
+            print(f"Resuming in {total_wait_time} seconds...", end='\r')
+            time.sleep(interval)
+            total_wait_time -= interval
 
 
 def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
@@ -205,7 +324,7 @@ def gpt_pick_an_option(instructions, options, input_str):
         return None
 
 
-def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, keep_most_recent=True):
+def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, return_count= False, keep_most_recent=True):
     """
     This method limits the length of the command_history 
     to be less than the max_tokens and less than max_turns. 
@@ -218,7 +337,8 @@ def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, ke
         max_tokens (_type_): _description_
         max_turns (int, optional): _description_. Defaults to 1000.
         tokenizer (_type_, optional): _description_. Defaults to None.
-        keep_most_recent (bool, optional): If True, trim from the beginning values. 
+        keep_most_recent (bool, optional): If True, trim from the beginning values.
+        return_count (bool, optional): Also return the total token count that was consumed. Defaults to False.
 
     Raises:
         TypeError: _description_
@@ -269,6 +389,10 @@ def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, ke
     if keep_most_recent:
         limited_history.reverse()
 
+    # return the total number of tokens consumed by this context list.
+    if return_count:
+        return list(limited_history), total_tokens
+    
     return list(limited_history)
 
 
@@ -340,3 +464,26 @@ def get_prompt_token_count(content=None, role=None, pad_reply=False, tokenizer=N
         token_count += len(tokenizer.encode(role))
 
     return token_count
+
+
+def get_token_remainder(max_tokens: int, *consumed_counts):
+    """
+    get the number of remaining available tokens given a max
+    and any chunks used so far.
+
+    Args:
+        max_tokens (int): the maximum value for a model
+
+    Returns:
+        int: the number of remaining available tokens
+    """
+    return max_tokens - sum(consumed_counts)
+
+
+def context_list_to_string(context, 
+                           sep: str = "", 
+                           convert_to_string: bool = False):
+    if convert_to_string:
+        return sep.join([f"{str(msg)}" for msg in context])
+    else:
+        return sep.join([msg for msg in context])

@@ -282,6 +282,10 @@ class MemoryStream:
         node = self.get_observation(node_id)
         return node.node_description
     
+    def get_observation_type(self, node_id):
+        node = self.get_observation(node_id)
+        return node.node_type
+    
     def get_enumerated_description_list(self, 
                                         node_id_list, 
                                         as_type: Literal["str", "tuple"] = True
