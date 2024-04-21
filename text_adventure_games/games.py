@@ -483,6 +483,7 @@ class SurvivorGame(Game):
 
     def update_world_info(self):
         params = {"contestant_count": len(self.characters),
+                  "contestant_names": ", ".join([c.name for c in self.characters.values() if c.id != self.player.id]),
                   "n_finalists": self.num_finalists,
                   "rounds_until_finals": len(self.characters) - self.num_finalists,
                   "turns_left_this_round": self.max_ticks_per_round - (self.tick - 1)}

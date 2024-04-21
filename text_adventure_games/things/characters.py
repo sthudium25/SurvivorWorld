@@ -168,6 +168,7 @@ class GenerativeAgent(Character):
 
         return context_list_to_string(perception_descriptions, sep="\n")
 
+      
     def get_standard_info(self, game, include_goals=True, include_perceptions=True):
         """
         Get standard context for this agent

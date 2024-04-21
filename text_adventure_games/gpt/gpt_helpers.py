@@ -94,7 +94,6 @@ class GptCallHandler:
         self.model_limits = self._load_model_limits()
         self._set_requested_model_limits()
 
-
     def _load_model_limits(self):
         assets = get_assets_path()
         full_path = os.path.join(assets, "openai_model_limits.json")
@@ -107,7 +106,6 @@ class GptCallHandler:
         else:
             return limits
         
-
     def _set_requested_model_limits(self):
         """
         Get the input/output limits for the requested model.
@@ -174,11 +172,36 @@ class GptCallHandler:
                 self._handle_APIConnectionError(e)
                 self._log_gpt_error(e)
 
-
     def _log_gpt_error(self, e):
         logger.error("GPT Error: {}".format(e))                 
         
-
+    def _handle_BadRequestError(self, e):
+        if hasattr(e, 'response'):
+            error_response = e.response.json()
+            if "error" in error_response:
+                error = error_response.get("error")
+                if error.get("code") == "context_length_exceeded":
+                    msg = error.get("message")
+                    matches = re.findall(r"\d+", msg)
+                    if matches and len(matches) > 1:
+                        model_max = int(matches[0])
+                        input_token_count = int(matches[1])
+                        diff = input_token_count - model_max
+                        return False, diff
+        return False, None
+    
+    def _handle_APIConnectionError(self, e):
+        print("APIConnectionError encountered:\n")
+        print(e)
+        print("Did you set your API key or organization base URL incorrectly?")
+        print("This could also be raised by a poor internet connection.")
+        raise e
+    
+    def _handle_ServiceUnavailableError(self, e):
+        print("OpenAI Service Error encountered:\n")
+        print(e)
+        print("\nYou may want to stop the run and try later. Otherwise, waiting 2 minutes...")
+        
     def _handle_BadRequestError(self, e):
         if hasattr(e, 'response'):
             error_response = e.response.json()
@@ -324,7 +347,13 @@ def gpt_pick_an_option(instructions, options, input_str):
         return None
 
 
-def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, return_count= False, keep_most_recent=True):
+def limit_context_length(history, 
+                         max_tokens, 
+                         max_turns=1000, 
+                         tokenizer=None, 
+                         keep_most_recent=True, 
+                         return_count=False):
+
     """
     This method limits the length of the command_history 
     to be less than the max_tokens and less than max_turns. 
@@ -388,7 +417,7 @@ def limit_context_length(history, max_tokens, max_turns=1000, tokenizer=None, re
     # reverse the new list (back to normal) if we are keeping only the most recent items
     if keep_most_recent:
         limited_history.reverse()
-
+        
     # return the total number of tokens consumed by this context list.
     if return_count:
         return list(limited_history), total_tokens
@@ -465,7 +494,7 @@ def get_prompt_token_count(content=None, role=None, pad_reply=False, tokenizer=N
 
     return token_count
 
-
+  
 def get_token_remainder(max_tokens: int, *consumed_counts):
     """
     get the number of remaining available tokens given a max

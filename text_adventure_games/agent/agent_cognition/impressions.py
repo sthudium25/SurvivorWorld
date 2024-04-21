@@ -68,24 +68,23 @@ class Impressions:
         else:
             return None
     
-    def get_multiple_impressions(self, character_list) -> str:
+    def get_multiple_impressions(self, character_list) -> list:
         """
-        Get impressions of several characters and concatenate these into a string.
+        Get impressions of several characters.
 
         Args:
             character_list (list[Character]): a list of character objects
 
         Returns:
-            str: concatenated impressions of the requested characters
+            list: concatenated impressions of the requested characters
         """
-        char_impressions = ""
+        char_impressions = []
         for char in character_list:
             if char.id == self.id:
                 continue
-            char_impressions += f"Your theory of mind of and relationship with {char.name}:\n"
-            char_impressions += str(self._get_impression(char))
-            char_impressions += "\n\n"
-
+            char_impression = f"Your theory of mind of and relationship with {char.name}:\n"
+            char_impression += self._get_impression(char) or "None"
+            char_impressions.append(char_impression)
         return char_impressions
     
     def update_impression(self, game: "Game", character: "Character", target: "Character") -> None:
