@@ -53,9 +53,9 @@ class Act:
         
         system_prompt, user_prompt = self.build_messages()
 
-        #print("act system: ", system_prompt)
-        #print("-" * 50)
-        #print("act user: ", user_prompt)
+        print("act system: ", system_prompt)
+        print("-" * 50)
+        print("act user: ", user_prompt)
 
         action_to_take = self.generate_action(system_prompt, user_prompt)
         self.game.logger.debug(f"{self.character.name} chose to take action: {action_to_take}")
