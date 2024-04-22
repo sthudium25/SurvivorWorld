@@ -1,16 +1,17 @@
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 import json
 import logging
 import os
 import re
 import time
-from typing import Callable, Dict, Any, ClassVar
+from typing import ClassVar
 import openai
 import tiktoken
 
 # local imports
 from ..utils.general import set_up_openai_client, enumerate_dict_options
 from ..utils.consts import get_config_file, get_assets_path
+from ..assets.prompts import gpt_helper_prompts as hp
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +91,13 @@ class GptCallHandler:
     # tokenizer: Any = field(default_factory=lambda: tiktoken.get_encoding("cl100k_base"))
     
     def __post_init__(self):
+        self.original_params = self._save_init_params()
         self.client = self.client_handler.get_client(self.api_key_org)
         self.model_limits = self._load_model_limits()
         self._set_requested_model_limits()
+
+    def _save_init_params(self):
+        return asdict(self)
 
     def _load_model_limits(self):
         assets = get_assets_path()
@@ -117,10 +122,22 @@ class GptCallHandler:
             self.max_tokens = min(self.max_tokens, limits.get("context", 8192))
         else:
             self.model_context_limit = 8192
-            self.model_output_limit = min(self.max_tokens, 8192)
-        
+            self.max_tokens = min(self.max_tokens, 8192)
 
-    def generate(self, system, user) -> str:
+    def update_params(self, **kwargs):
+        for param, new_val in kwargs.items():
+            if hasattr(self, param):
+                setattr(self, param, new_val)
+    
+    def reset_defaults(self):
+        # Reset the parameters to the original values
+        for param, value in self.original_params.items():
+            setattr(self, param, value)
+        
+    def generate(self, 
+                 system: str = None, 
+                 user: str = None, 
+                 messages: list = None) -> str:
         """
         A wrapper for making a call to OpenAI API.
         It expects a function as an argument that should produce the messages argument.        
@@ -131,11 +148,14 @@ class GptCallHandler:
         Returns:
             str: _description_
         """
-        # Generate messages
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user}
-        ]
+        if system and user:
+            # Generate messages
+            messages = [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user}
+            ]
+        elif not messages or not isinstance(messages, list):
+            raise ValueError("You must supply 'system' and 'user' strings or a list of ChatMessages in 'messages'.")
 
         i = 0
         while i < self.max_retries:
@@ -201,35 +221,6 @@ class GptCallHandler:
         print("OpenAI Service Error encountered:\n")
         print(e)
         print("\nYou may want to stop the run and try later. Otherwise, waiting 2 minutes...")
-        
-    def _handle_BadRequestError(self, e):
-        if hasattr(e, 'response'):
-            error_response = e.response.json()
-            if "error" in error_response:
-                error = error_response.get("error")
-                if error.get("code") == "context_length_exceeded":
-                    msg = error.get("message")
-                    matches = re.findall(r"\d+", msg)
-                    if matches and len(matches) > 1:
-                        model_max = int(matches[0])
-                        input_token_count = int(matches[1])
-                        diff = input_token_count - model_max
-                        return False, diff
-        return False, None
-    
-
-    def _handle_APIConnectionError(self, e):
-        print("APIConnectionError encountered:\n")
-        print(e)
-        print("Did you set your API key or organization base URL incorrectly?")
-        print("This could also be raised by a poor internet connection.")
-        raise e
-    
-
-    def _handle_ServiceUnavailableError(self, e):
-        print("OpenAI Service Error encountered:\n")
-        print(e)
-        print("\nYou may want to stop the run and try later. Otherwise, waiting 2 minutes...")
 
         total_wait_time = 120
         interval = 1
@@ -241,46 +232,41 @@ class GptCallHandler:
             total_wait_time -= interval
 
 
-def gpt_get_summary_description_of_action(statement, client, model, max_tokens):
+def gpt_get_summary_description_of_action(statement, 
+                                          call_handler: GptCallHandler, 
+                                          **handler_kwargs):
 
-    system = "Construct a sentence out of the following information."
+    if not isinstance(call_handler, GptCallHandler):
+        raise TypeError("'call_handler' must be a GptCallHandler.")
+    
+    call_handler.update_params(**handler_kwargs)
+
+    system = hp.action_summary_prompt
     messages = [{"role": "system", "content": system},
                 {"role": "user", "content": statement}]
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=1,
-        max_tokens=max_tokens,
-        top_p=0.5,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
+    summary_statement = call_handler.generate(messages=messages)
+    call_handler.reset_defaults()
 
-    summary_statement = response.choices[0].message.content
     return summary_statement
 
 
-def gpt_get_action_importance(statement: str, client=None, model: str = "gpt-4", max_tokens: int = 10):
+def gpt_get_action_importance(statement: str, 
+                              call_handler: GptCallHandler, 
+                              **handler_kwargs):
 
-    if not client:
-        client = set_up_openai_client("Helicone")
+    if not isinstance(call_handler, GptCallHandler):
+        raise TypeError("'call_handler' must be a GptCallHandler.")
+    
+    call_handler.update_params(**handler_kwargs)
 
-    system = "Gauge the importance of the provided sentence on a scale from 1 to 10, where 1 is mundane and 10 is critical."
+    system = hp.action_importance_prompt
     messages = [{"role": "system", "content": system},
                 {"role": "user", "content": statement}]
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=1,
-        max_tokens=max_tokens,
-        top_p=0.5,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
+    importance_str = call_handler.generate(messages=messages)
+    call_handler.reset_defaults()
 
-    importance_str = response.choices[0].message.content
     pattern = r"\d+"
     matches = re.findall(pattern, importance_str)
     if matches:
@@ -294,9 +280,13 @@ def gpt_get_action_importance(statement: str, client=None, model: str = "gpt-4",
     return None
 
 
-def gpt_pick_an_option(instructions, options, input_str):
+def gpt_pick_an_option(instructions, 
+                       options, 
+                       input_str, 
+                       call_handler: GptCallHandler, 
+                       **handler_kwargs):
     """
-    CREDIT: Dr. Chris Callison-Burch (UPenn)
+    CREDIT of generalized option picking method: Dr. Chris Callison-Burch (UPenn)
     This function calls GPT to choose one option from a set of options.
     Its arguments are:
     * instructions - the system instructions
@@ -308,35 +298,30 @@ def gpt_pick_an_option(instructions, options, input_str):
     regex, in case it generates more text than is necessary), and then
     returns the option name.
     """
-    # TODO: Need to improve client management throughout the package
-    # Set up client
-    client = set_up_openai_client("Helicone")
+    if not isinstance(call_handler, GptCallHandler):
+        raise TypeError("'call_handler' must be a GptCallHandler.")
+    
+    call_handler.update_params(**handler_kwargs)
 
     choices_str, options_list = enumerate_dict_options(options)
 
+    messages = [
+        {
+            "role": "system",
+            "content": "{instructions}\n\n{choices_str}\nReturn just the number of the best match.".format(
+                instructions=instructions, choices_str=choices_str
+            ),
+        },
+        {"role": "user", "content": input_str},
+    ]
+
     # Call the OpenAI API
-    response = client.chat.completions.create(
-        model='gpt-4',
-        messages=[
-            {
-                "role": "system",
-                "content": "{instructions}\n\n{choices_str}\nReturn just the number.".format(
-                    instructions=instructions, choices_str=choices_str
-                ),
-            },
-            {"role": "user", "content": input_str},
-        ],
-        temperature=1,
-        max_tokens=256,
-        top_p=0,
-        frequency_penalty=0,
-        presence_penalty=0,
-    )
-    content = response.choices[0].message.content
+    selection = call_handler.generate(messages=messages)
+    call_handler.reset_defaults()
 
     # Use regular expressions to match a number returned by OpenAI and select that option.
     pattern = r"\d+"
-    matches = re.findall(pattern, content)
+    matches = re.findall(pattern, selection)
     if matches:
         index = int(matches[0])
         if index >= len(options_list):
@@ -494,7 +479,6 @@ def get_prompt_token_count(content=None, role=None, pad_reply=False, tokenizer=N
 
     return token_count
 
-  
 def get_token_remainder(max_tokens: int, *consumed_counts):
     """
     get the number of remaining available tokens given a max
@@ -507,7 +491,6 @@ def get_token_remainder(max_tokens: int, *consumed_counts):
         int: the number of remaining available tokens
     """
     return max_tokens - sum(consumed_counts)
-
 
 def context_list_to_string(context, 
                            sep: str = "", 
