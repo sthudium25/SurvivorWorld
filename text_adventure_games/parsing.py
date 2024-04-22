@@ -21,12 +21,18 @@ from jellyfish import jaro_winkler_similarity, levenshtein_distance
 from text_adventure_games.things.base import Thing
 
 from .things import Character, Item, Location
-from . import actions, blocks
+from . import actions
 from .utils.general import (set_up_openai_client, 
                             normalize_name
                             )
 # from .gpt.parser_kani import DescriptorKani
-from .gpt import gpt_helpers 
+from .gpt.gpt_helpers import (GptCallHandler,
+                              limit_context_length,
+                              gpt_get_action_importance,
+                              gpt_get_summary_description_of_action,
+                              gpt_pick_an_option,
+                              get_prompt_token_count,
+                              get_token_remainder)
 from .agent.memory_stream import MemoryType
 
 
@@ -371,12 +377,22 @@ class GptParser(Parser):
     def __init__(self, game, echo_commands=True, verbose=False):
         super().__init__(game, echo_commands=echo_commands)
         self.verbose = verbose
-        self.client = set_up_openai_client(org="Helicone")
-        self.gpt_model = "gpt-4"  # REMEMBER TO SWITCH BACK TO GPT-4
-        self.max_output_tokens = 256  # You get to pick this
-        self.max_tokens = 8192 - self.max_output_tokens  # GPT-4's max total tokens
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
         self.nlp = spacy.load('en_core_web_sm')
+        self.gpt_handler = self._set_up_gpt()
+        self.max_input_tokens = self.gpt_handler.model_context_limit
+
+    def _set_up_gpt(self):
+        model_params = {
+            "api_key_org": "Helicone",
+            "model": "gpt-4",
+            "max_tokens": 400,
+            "temperature": 1,
+            "top_p": 1,
+            "max_retries": 5
+        }
+
+        return GptCallHandler(**model_params) 
 
     def gpt_describe(self, 
                      system_instructions, 
@@ -399,20 +415,21 @@ class GptParser(Parser):
                 "role": "system",
                 "content": system_instructions
             }]
+            system_count = get_prompt_token_count(content=system_instructions,
+                                                  role="system",
+                                                  pad_reply=False,
+                                                  tokenizer=self.tokenizer)
             # Here, the command history is being stored as a Chat Dict {"role": ..., "content":}
-            context = gpt_helpers.limit_context_length(command_history, self.max_tokens)
+            available_tokens = get_token_remainder(self.max_input_tokens,
+                                                   system_count,
+                                                   self.gpt_handler.max_tokens)
+            
+            # Limit the context for the narrator to the last few turns
+            context = limit_context_length(command_history, available_tokens, max_turns=20)
             messages.extend(context)
             if self.verbose:
                 print(json.dumps(messages, indent=2))
-            response = self.client.chat.completions.create(
-                model=self.gpt_model,
-                messages=messages,
-                temperature=1,
-                max_tokens=self.max_output_tokens,
-                top_p=0.5,
-                frequency_penalty=0,
-                presence_penalty=0
-            )
+            response = self.gpt_handler.generate(messages=messages)
             content = response.choices[0].message.content
             return content
         except Exception as e:
@@ -420,7 +437,7 @@ class GptParser(Parser):
     
     def create_action_statement(self, command: str, description: str, character: Character):
         outcome = f"ACTOR: {character.name}; LOCATION: {character.location.name}, ACTION: {command}; OUTCOME: {description}"
-        summary = gpt_helpers.gpt_get_summary_description_of_action(outcome, self.client, self.model, max_tokens=250)
+        summary = gpt_get_summary_description_of_action(outcome, call_handler=self.gpt_handler, max_tokens=256)
         return summary
 
     def extract_keywords(self, text):
@@ -483,16 +500,15 @@ class GptParser(Parser):
         # This is a user or agent-supplied command so it should be logged as a ChatMessage.user
         super().add_command_to_history(command)
         character.memory.add_memory(round=self.game.round,
-                                   tick=self.game.tick,
-                                   description=summary.lower(), 
-                                   keywords=keywords, 
-                                   location=character.location.name, 
-                                   success_status=success,
-                                   memory_importance=importance, 
-                                   memory_type=type,
-                                   actor_id=character.id)
+                                    tick=self.game.tick,
+                                    description=summary.lower(), 
+                                    keywords=keywords, 
+                                    location=character.location.name, 
+                                    success_status=success,
+                                    memory_importance=importance, 
+                                    memory_type=type,
+                                    actor_id=character.id)
         for char in character.chars_in_view:
-            # print(f'passing {character.name}\'s action to {char.name}')
             char.memory.add_memory(round=self.game.round,
                                    tick=self.game.tick,
                                    description=summary.lower(), 
@@ -520,16 +536,13 @@ class GptParser(Parser):
             description: "The troll got the pole"
             character: troll
         """
-        # ST - 3/14/24:
-        # TODO: May want to do some form of CLIN-style connection between COMMAND and DESCRIPTION
-
         # FIRST: we add summarize the action and send it as a memory to the appropriate characters
         if isinstance(thing, Character):
             summary_of_action = self.create_action_statement(command, description, thing)
-            importance_of_action = gpt_helpers.gpt_get_action_importance(summary_of_action,
-                                                                         client=self.client, 
-                                                                         model=self.model, 
-                                                                         max_tokens=10)
+            importance_of_action = gpt_get_action_importance(summary_of_action,
+                                                             call_handler=self.gpt_handler, 
+                                                             max_tokens=10,
+                                                             top_p=0.25)
             keywords = self.extract_keywords(summary_of_action)
             
             # Make sure that the Narrator GPT knows about the character names 
@@ -589,10 +602,10 @@ class GptParser(Parser):
         if isinstance(thing, Character):
             print(f"{thing.name} action failed. Adding failure memory to history.")
             # summary_of_action = self.create_action_statement(command, description, thing)
-            importance_of_action = gpt_helpers.gpt_get_action_importance(response,
-                                                                         self.client, 
-                                                                         self.model, 
-                                                                         max_tokens=10)
+            importance_of_action = gpt_get_action_importance(response,
+                                                             call_handler=self.gpt_handler, 
+                                                             max_tokens=10,
+                                                             top_p=0.25)
             keywords = self.extract_keywords(response)
             
             # Make sure that the Narrator GPT knows about the character names 
@@ -647,7 +660,7 @@ class GptParser2(GptParser):
             ]
         )
 
-        return gpt_helpers.gpt_pick_an_option(instructions, self.command_descriptions, command)
+        return gpt_pick_an_option(instructions, self.command_descriptions, command)
 
 
 class GptParser3(GptParser2):
