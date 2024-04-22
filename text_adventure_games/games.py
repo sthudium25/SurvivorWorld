@@ -495,9 +495,6 @@ class SurvivorGame(Game):
         while True:
             for tick in range(self.max_ticks_per_round):
                 self.tick = tick
-                
-                # Update the world info with new tick and contestant counts
-                self.update_world_info()
 
                 # Confirming Round increments
                 print(f"ROUND: {self.round}.{self.tick}")
@@ -519,6 +516,9 @@ class SurvivorGame(Game):
     def turn_handler(self, character):
         # set the current player to the game's "player" for description purposes
         self.player = character
+
+        # Update the world info with new tick, contestant counts, and non-player contestant names
+        self.update_world_info()
 
         success = False
         # Only move on to the next character when current takes a successful action

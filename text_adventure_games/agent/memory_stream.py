@@ -117,9 +117,9 @@ class MemoryStream:
         node_id = self.num_observations
         
         # Modify the description w.r.t this character's name
-        description = self.replace_character(description, 
-                                             self.agent_name.lower(), 
-                                             agent_descriptor=self.agent_description)
+        # description = self.replace_character(description, 
+        #                                      self.agent_name.lower(), 
+        #                                      agent_descriptor=self.agent_description)
         
         # Get a flattened list of keywords found in this memory
         node_kwds = [w for kw_type in keywords.values() for w in kw_type]
