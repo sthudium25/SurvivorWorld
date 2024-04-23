@@ -212,9 +212,9 @@ def generalize(game, character):
 
         # if either is empty, replace it with a list containing the word None
         if not reflections_lmtd:
-            reflections_lmtd = relevant_memories_primer[2]
+            reflections_lmtd = [relevant_memories_primer[2]]
         if not observations_lmtd:
-            observations_lmtd = relevant_memories_primer[2]
+            observations_lmtd = [relevant_memories_primer[2]]
 
         # get user input consisting of impressions, relevant memories (with primer), and the insight instructions
         user_prompt_list = impressions + [relevant_memories_primer[0]] + reflections_lmtd + \
@@ -278,8 +278,11 @@ def add_new_generalization_helper(game: "Game", character: "Character", generali
         # This is a mal-formed reflection, so skip it
         pass
     else:
-        ref_kwds = game.parser.extract_keywords(desc)
-        ref_importance = gpt_get_action_importance(desc)
+        # ref_kwds = game.parser.extract_keywords(desc)
+        # ref_importance = gpt_get_action_importance(desc)
+        _, ref_importance, ref_kwds = game.parser.summarise_and_score_action(description=desc, 
+                                                                             thing=character, 
+                                                                             needs_summary=False)
 
         character.memory.add_memory(game.round,
                                     game.tick,
