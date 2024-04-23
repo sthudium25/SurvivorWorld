@@ -116,11 +116,8 @@ def generalize(game, character):
     
     # how many memories to get during retrieval, which is called 4 times (once per passed question)
     memories_per_retrieval = 10
- 
-    # initialize a client
-    client = set_up_openai_client("Helicone")
 
-    ### Get Static Components (System Prompt and Impressions don't update during Reflection) ###
+    # Get Static Components (System Prompt and Impressions don't update during Reflection) #
 
     # load system prompt
     # TODO: should we include goals here?
