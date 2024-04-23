@@ -34,7 +34,11 @@ import json
 # local imports
 from text_adventure_games.agent.memory_stream import MemoryType
 from text_adventure_games.assets.prompts import reflection_prompts as rp
-from text_adventure_games.gpt.gpt_helpers import limit_context_length, gpt_get_action_importance, get_prompt_token_count, GptCallHandler
+from text_adventure_games.gpt.gpt_helpers import (limit_context_length, 
+                                                  gpt_get_action_importance, 
+                                                  get_prompt_token_count,
+                                                  get_token_remainder, 
+                                                  GptCallHandler)
 from text_adventure_games.utils.general import set_up_openai_client
 from ordered_set import OrderedSet
 from . import retrieve
@@ -98,15 +102,17 @@ def generalize(game, character):
 
     # make a dictionary with the desired GPT parameters
     model_params = {
-            "api_key_org": "Helicone",
-            "model": "gpt-4",
-            "max_tokens": REFLECTION_MAX_OUTPUT,
-            "temperature": 1,
-            "top_p": 1,
-            "frequency_penalty": 0,
-            "presence_penalty": 0,
-            "max_retries": 5
-            }
+        "api_key_org": "Helicone",
+        "model": "gpt-4",
+        "max_tokens": REFLECTION_MAX_OUTPUT,
+        "temperature": 1,
+        "top_p": 1,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "max_retries": 5
+    }
+
+    gpt_handler = GptCallHandler(**model_params)
     
     # how many memories to get during retrieval, which is called 4 times (once per passed question)
     memories_per_retrieval = 10
@@ -142,7 +148,11 @@ def generalize(game, character):
     relevant_memories = []
     for question in rp.memory_query_questions:
         # print("\nQ:", question)
-        for memory in retrieve.retrieve(game=game, character=character, query=question, n=memories_per_retrieval, include_idx=True):
+        for memory in retrieve.retrieve(game=game, 
+                                        character=character, 
+                                        query=question, 
+                                        n=memories_per_retrieval, 
+                                        include_idx=True):
             # print("M:", memory, end='')
             relevant_memories.append(memory)
     # print('-'*100)
@@ -168,6 +178,14 @@ def generalize(game, character):
     # get the insight prompt token count
     insight_q_token_count = get_prompt_token_count(content=insight_q_prompt, role=None, pad_reply=False)
 
+    # Calculate 
+    available_tokens = get_token_remainder(gpt_handler.model_context_limit,  # Max input for requested model
+                                           gpt_handler.max_tokens,  # GPT's response limit, set by user
+                                           system_prompt_token_count,  # system message tokens
+                                           impressions_token_count,  # impressions tokens
+                                           rel_mem_primer_token_count,  # relevant memories primer tokens
+                                           insight_q_token_count)  # question count
+
     # while there are still relevant memories that haven't been reflected on
     # (note that we remove them from new_observations after reflecting on them)
     while relevant_memories_token_count > 0:
@@ -175,14 +193,9 @@ def generalize(game, character):
         # limit the user prompt items to fit in GPT's context size
         # (keep_most_recent=False allows us to keep ealier/older observations)
         relevant_memories_limited = limit_context_length(relevant_memories,
-                                                 max_tokens=GPT4_MAX_TOKENS - # GPT's context limit
-                                                            REFLECTION_MAX_OUTPUT - # GPT's response limit
-                                                            system_prompt_token_count - # system message tokens
-                                                            impressions_token_count - # impressions tokens
-                                                            rel_mem_primer_token_count - # relevant memories primer tokens
-                                                            insight_q_token_count, # insight message tokens
-                                                 tokenizer=game.parser.tokenizer,
-                                                 keep_most_recent=False)
+                                                         max_tokens=available_tokens,  # insight message tokens
+                                                         tokenizer=game.parser.tokenizer,
+                                                         keep_most_recent=False)
         
         # print('-'*100)
         # print("TRIMMED MEMORIES:", relevant_memories_limited)
@@ -216,21 +229,28 @@ def generalize(game, character):
 
         print(f"{character.name} reflects on the following impressions and memories:", user_prompt_str, sep='\n')
         print('-'*50)
+        
+        success = False
+        while not success:
+            try:
+                # get GPT's response
+                response = gpt_handler.generate(
+                    system=system_prompt,
+                    user=user_prompt_str
+                )
 
-        # get GPT's response
-        response = GptCallHandler(**model_params).generate(
-            system=system_prompt,
-            user=user_prompt_str
-        )
+                print("GPT RESPONSE:", response, sep='\n')
 
-        print("GPT RESPONSE:", response, sep='\n')
-
-        # convert string response to dictionary
-        new_generalizations = json.loads(response)
-        # print(f"{character.name} generalized: {new_generalizations}")
-
-        # add the new generalizations to the character's memory
-        add_generalizations_to_memory(game, character, new_generalizations)
+                # convert string response to dictionary
+                new_generalizations = json.loads(response)
+                # print(f"{character.name} generalized: {new_generalizations}")
+            except json.JSONDecodeError:
+                continue
+            else:
+                success = True
+            finally:
+                # add the new generalizations to the character's memory
+                add_generalizations_to_memory(game, character, new_generalizations)
 
         # reset relevant memories to exclude all from the previous reflection
         # (this also removes the relevant memories primer string)
@@ -250,7 +270,6 @@ def add_generalizations_to_memory(game: "Game", character: "Character", generali
     Returns:
         None
     """
-    # print(f"Adding {character.name}'s generalizations to memory")
     add_new_generalizations(game, character, generalizations)
     update_existing_generalizations(game, character, generalizations)
 
@@ -262,7 +281,6 @@ def add_new_generalization_helper(game: "Game", character: "Character", generali
         # This is a mal-formed reflection, so skip it
         pass
     else:
-        # TODO: should keywords be extracted from reflections?
         ref_kwds = game.parser.extract_keywords(desc)
         ref_importance = gpt_get_action_importance(desc)
 
@@ -328,6 +346,6 @@ def update_existing_generalizations(game: "Game", character: "Character", genera
                     continue
                 else:
                     _ = character.memory.update_node_description(node_id=prev_idx, 
-                                                                new_description=desc)
+                                                                 new_description=desc)
                     _ = character.memory.update_node_embedding(node_id=prev_idx,
-                                                            new_description=desc)
+                                                               new_description=desc)
