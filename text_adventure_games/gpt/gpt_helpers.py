@@ -9,7 +9,7 @@ import openai
 import tiktoken
 
 # local imports
-from ..utils.general import set_up_openai_client, enumerate_dict_options
+from ..utils.general import enumerate_dict_options
 from ..utils.consts import get_config_file, get_assets_path
 from ..assets.prompts import gpt_helper_prompts as hp
 
