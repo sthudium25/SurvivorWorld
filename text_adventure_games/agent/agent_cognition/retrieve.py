@@ -67,7 +67,7 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
         return [f"{character.memory.observations[t[0]].node_description}\n" for t in ranked_memory_ids]
     else:
         # return [f"{mem_id}. {mem_desc}\n" for mem_id, mem_desc in enum_nodes]
-        return [f"{character.memory.observations[t[0]].node_id}. {character.memory.observations[t[0]].node_description}\n" for t in ranked_memory_ids]
+        return [f"{t[0]}. {character.memory.observations[t[0]].node_description}" for t in ranked_memory_ids]
 
 def rank_nodes(character, node_ids, query):
     """
