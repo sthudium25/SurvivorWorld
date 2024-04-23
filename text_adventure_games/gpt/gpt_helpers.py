@@ -1,11 +1,9 @@
 from dataclasses import asdict, dataclass, field
-from dataclasses import asdict, dataclass, field
 import json
 import logging
 import os
 import re
 import time
-from typing import ClassVar
 from typing import ClassVar
 import openai
 import tiktoken
@@ -13,7 +11,6 @@ import tiktoken
 # local imports
 from ..utils.general import enumerate_dict_options
 from ..utils.consts import get_config_file, get_assets_path
-from ..assets.prompts import gpt_helper_prompts as hp
 from ..assets.prompts import gpt_helper_prompts as hp
 
 logger = logging.getLogger(__name__)
@@ -103,9 +100,6 @@ class GptCallHandler:
     def _save_init_params(self):
         return asdict(self)
 
-    def _save_init_params(self):
-        return asdict(self)
-
     def _load_model_limits(self):
         assets = get_assets_path()
         full_path = os.path.join(assets, "openai_model_limits.json")
@@ -129,22 +123,6 @@ class GptCallHandler:
             self.max_tokens = min(self.max_tokens, limits.get("context", 8192))
         else:
             self.model_context_limit = 8192
-            self.max_tokens = min(self.max_tokens, 8192)
-
-    def update_params(self, **kwargs):
-        for param, new_val in kwargs.items():
-            if hasattr(self, param):
-                setattr(self, param, new_val)
-    
-    def reset_defaults(self):
-        # Reset the parameters to the original values
-        for param, value in self.original_params.items():
-            setattr(self, param, value)
-        
-    def generate(self, 
-                 system: str = None, 
-                 user: str = None, 
-                 messages: list = None) -> str:
             self.max_tokens = min(self.max_tokens, 8192)
 
     def update_params(self, **kwargs):
@@ -262,17 +240,6 @@ class GptCallHandler:
             time.sleep(interval)
             total_wait_time -= interval
 
-
-def gpt_get_summary_description_of_action(statement, 
-                                          call_handler: GptCallHandler, 
-                                          **handler_kwargs):
-
-    if not isinstance(call_handler, GptCallHandler):
-        raise TypeError("'call_handler' must be a GptCallHandler.")
-    
-    call_handler.update_params(**handler_kwargs)
-
-    system = hp.action_summary_prompt
 def gpt_get_summary_description_of_action(statement, 
                                           call_handler: GptCallHandler, 
                                           **handler_kwargs):
@@ -294,17 +261,6 @@ def gpt_get_summary_description_of_action(statement,
 
     return summary_statement
 
-
-def gpt_get_action_importance(statement: str, 
-                              call_handler: GptCallHandler, 
-                              **handler_kwargs):
-
-    if not isinstance(call_handler, GptCallHandler):
-        raise TypeError("'call_handler' must be a GptCallHandler.")
-    
-    call_handler.update_params(**handler_kwargs)
-
-    system = hp.action_importance_prompt
 def gpt_get_action_importance(statement: str, 
                               call_handler: GptCallHandler, 
                               **handler_kwargs):
@@ -342,13 +298,7 @@ def gpt_pick_an_option(instructions,
                        input_str, 
                        call_handler: GptCallHandler, 
                        **handler_kwargs):
-def gpt_pick_an_option(instructions, 
-                       options, 
-                       input_str, 
-                       call_handler: GptCallHandler, 
-                       **handler_kwargs):
     """
-    CREDIT of generalized option picking method: Dr. Chris Callison-Burch (UPenn)
     CREDIT of generalized option picking method: Dr. Chris Callison-Burch (UPenn)
     This function calls GPT to choose one option from a set of options.
     Its arguments are:
@@ -411,7 +361,6 @@ def gpt_pick_an_option(instructions,
         return options[option]
     else:
         return None
-
 
 def limit_context_length(history, 
                          max_tokens, 
