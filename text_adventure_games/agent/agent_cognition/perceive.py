@@ -48,9 +48,9 @@ def add_new_observations(game: "Game", character: "Character", new_percepts: Dic
         for statement in observations:
             # print(statement)
             command = "Look around at the surroundings"
-            action_statement, action_importance, action_keywords = game.parser.summarise_and_score_action(command,
-                                                                                                          statement, 
-                                                                                                          character)
+            action_statement, action_importance, action_keywords = game.parser.summarise_and_score_action(statement, 
+                                                                                                          character,
+                                                                                                          command=command)
 
             character.memory.add_memory(round=game.round,
                                         tick=game.tick,
