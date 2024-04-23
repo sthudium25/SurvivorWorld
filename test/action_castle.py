@@ -683,11 +683,6 @@ def build_game() -> games.Game:
     return game
 
 def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=2) -> games.Game:
-    cottage = things.Location("Cottage", "A small cottage.")
-    garden_path = things.Location(
-        "Garden Path",
-        "A lush garden path. There is a cottage here.",
-def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=3) -> games.Game:
     # Locations
     camp = things.Location(
         "Camp",
@@ -697,7 +692,7 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
         "Cliffs",
         """the front of some steep cliffs.
             Climb them carefully so you don't fall.""",
-        )
+    )
     beach = things.Location(
         "Beach",
         "the beach, toes in the sand. In front of you is the vast ocean."
@@ -786,26 +781,6 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
     lamp.set_property("is_lit", False)
     lamp.add_command_hint("light lamp")
     player.add_to_inventory(lamp)
-
-    #Fourth character
-    fourth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
-                                 facts_new=make_new_characters,
-                                 archetype="Villain")
-    fourth = GenerativeAgent(
-        fourth_persona
-    )
-    fourth.set_property("character_type", "human")
-    jungle_path.add_character(fourth)
-
-    #Fifth character
-    fifth_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
-                                 facts_new=make_new_characters,
-                                 archetype="Villain")
-    fifth = GenerativeAgent(
-        fifth_persona
-    )
-    fifth.set_property("character_type", "human")
-    beach.add_character(fifth)
 
     # The Game
     # characters = [troll, mother, fourth, fifth]
