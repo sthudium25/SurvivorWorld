@@ -168,7 +168,6 @@ class GenerativeAgent(Character):
 
         return context_list_to_string(perception_descriptions, sep="\n")
 
-      
     def get_standard_info(self, game, include_goals=True, include_perceptions=True):
         """
         Get standard context for this agent
@@ -180,10 +179,10 @@ class GenerativeAgent(Character):
         summary = f"WORLD INFO: {game.world_info}\n"
         summary += f"You are {self.persona.get_personal_summary()}.\n"
         if self.use_goals and include_goals:
-            goals = self.goals.get_goals(round=(game.round-1), as_str=True)
+            goals = self.goals.get_goals(round=game.round, as_str=True)
             if goals:
                 summary += f"Your current GOALS:\n{goals}\n"
-        if self.use_impressions and include_perceptions and self.last_location_observations:
+        if include_perceptions and self.last_location_observations:
             perceptions = self._parse_perceptions()
             if perceptions:
                 summary += f"Your current perceptions are:\n{perceptions}\n"
