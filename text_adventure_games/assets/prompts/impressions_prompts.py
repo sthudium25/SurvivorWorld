@@ -12,7 +12,7 @@ World info: {world_info}
 Personal info: {persona_summary}
 
 Your job is to develop a theory of mind (ToM) for other another character. In doing so, consider the answers questions like:
-- What do you think are the key strategies to win this game?
+- What do you think are this person's key strategies to win this game?
 - Given how they have acted so far, what are their probable next moves?
 - What are their impressions of you based on your interactions or second-hand knowledge of this person?
 - What information that you know should be kept secret from this person?
