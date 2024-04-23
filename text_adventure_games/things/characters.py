@@ -20,6 +20,9 @@ class Character(Thing):
     * A name (can be general like "gravedigger")
     * A description ('You might want to talk to the gravedigger, especially if
       you're looking for a friend. He might be odd but you will find a friend in
+    * A name (can be general like "gravedigger")
+    * A description ('You might want to talk to the gravedigger, especially if
+      you're looking for a friend. He might be odd but you will find a friend in
       him.')
     * A persona written in the first person ("I am low paid labor in this town.
       I do a job that many people shun because of my contact with death. I am
@@ -165,7 +168,7 @@ class GenerativeAgent(Character):
 
         return context_list_to_string(perception_descriptions, sep="\n")
 
-    def get_standard_info(self, game, include_goals=True):
+    def get_standard_info(self, game, include_goals=True, include_perceptions=True):
         """
         Get standard context for this agent
         Includes: world info, persona summary, and (if invoked) goals
@@ -176,9 +179,13 @@ class GenerativeAgent(Character):
         summary = f"WORLD INFO: {game.world_info}\n"
         summary += f"You are {self.persona.get_personal_summary()}.\n"
         if self.use_goals and include_goals:
-            summary += f"Your current GOALS:\n{self.goals.get_goals(round=(game.round-1), as_str=True)}.\n"
-        if self.last_location_observations:
-            summary += f"Your current perceptions are:\n{self._parse_perceptions()}\n"
+            goals = self.goals.get_goals(round=game.round, as_str=True)
+            if goals:
+                summary += f"Your current GOALS:\n{goals}\n"
+        if include_perceptions and self.last_location_observations:
+            perceptions = self._parse_perceptions()
+            if perceptions:
+                summary += f"Your current perceptions are:\n{perceptions}\n"
         return summary
 
     def engage(self, game) -> Union[str, int]:

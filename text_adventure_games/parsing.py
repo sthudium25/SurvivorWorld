@@ -555,9 +555,11 @@ class GptParser(Parser):
             ]
         )
         
-        response = self.gpt_describe(system_instructions, self.command_history)
-        self.add_description_to_history(response)
-        print(self.wrap_text(response) + '\n')
+        # # TODO: I'm commenting this out for now to avoid paying this each time.
+        # # It also doesn't seem to add anything aside from a printing/logging a longer statement.
+        # response = self.gpt_describe(system_instructions, self.command_history)
+        # self.add_description_to_history(response)
+        # print(self.wrap_text(response) + '\n')
 
     def fail(self, command: str, description: str, thing: "Thing"):
         """

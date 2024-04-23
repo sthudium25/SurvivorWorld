@@ -276,11 +276,19 @@ class MemoryStream:
         Returns:
             ObservationNode: an ObservationNode
         """
-        return self.observations[node_id]
+        try:
+            node = self.observations[node_id]
+            return node
+        except IndexError:
+            return None
     
     def get_observation_description(self, node_id):
         node = self.get_observation(node_id)
         return node.node_description
+    
+    def get_observation_type(self, node_id):
+        node = self.get_observation(node_id)
+        return node.node_type
     
     def get_enumerated_description_list(self, 
                                         node_id_list, 

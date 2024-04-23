@@ -83,7 +83,7 @@ class Impressions:
             if char.id == self.id:
                 continue
             char_impression = f"Your theory of mind of and relationship with {char.name}:\n"
-            char_impression += self._get_impression(char) or "None"
+            char_impression += self._get_impression(char) or "None\n"
             char_impressions.append(char_impression)
         return char_impressions
     
@@ -225,7 +225,8 @@ class Impressions:
         else:
             ordering = "in order from least to most relevant"
 
-        message += "Current theory of mind for {t} {o}:\n{i}\n\n".format(t=target_name, o=ordering, i=current_impression)
+        if current_impression:
+            message += "Current theory of mind for {t} {o}:\n{i}\n\n".format(t=target_name, o=ordering, i=current_impression)
         if memories_list:
             memory_str = "".join([f"{i}. {m}\n" for i, m in enumerate(memories_list)])
             message += "Memories to consider in developing a theory of mind for {t}:\n{m}".format(t=target_name, 

@@ -682,6 +682,11 @@ def build_game() -> games.Game:
     game = ActionCastle(cottage, player, characters, custom_actions, "You are playing ACTION CASTLE, an adventure game.")
     return game
 
+def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=2) -> games.Game:
+    cottage = things.Location("Cottage", "A small cottage.")
+    garden_path = things.Location(
+        "Garden Path",
+        "A lush garden path. There is a cottage here.",
 def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=3) -> games.Game:
     # Locations
     camp = things.Location(
@@ -803,7 +808,8 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
     beach.add_character(fifth)
 
     # The Game
-    characters = [troll, mother, fourth, fifth]
+    # characters = [troll, mother, fourth, fifth]
+    characters = [troll, mother]
     # custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
     game = ActionCastleSurvivor(camp, 
                                 player, 

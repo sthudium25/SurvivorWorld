@@ -53,9 +53,9 @@ class Act:
         
         system_prompt, user_prompt = self.build_messages()
 
-        print("act system: ", system_prompt)
-        print("-" * 50)
-        print("act user: ", user_prompt)
+        # print("act system:", system_prompt, sep='\n')
+        # print("-" * 50)
+        # print("act user:", user_prompt, sep='\n')
 
         action_to_take = self.generate_action(system_prompt, user_prompt)
         self.game.logger.debug(f"{self.character.name} chose to take action: {action_to_take}")
@@ -121,8 +121,8 @@ class Act:
         # Reiterate which characters are currently in view
         chars_in_view = self.character.get_characters_in_view(self.game)
         always_included = [
-            "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT: ",
-            f"In this location, you see: {', '.join([c.name for c in chars_in_view])}"
+            "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n",
+            f"In this location, you see: {', '.join([c.name for c in chars_in_view])}\n"
             "Given the above impressions, observations, and others present here, what would you like to do?"]
         always_included_tokens = get_prompt_token_count(content=always_included,
                                                         role="user",
@@ -160,7 +160,8 @@ class Act:
         
         user_messages += always_included[0]
         user_messages += context_list_to_string(context=memories_list, sep="\n")
-        user_messages += always_included[1]
+        # user_messages += context_list_to_string(context=memories_list)
+        user_messages += '\n'+always_included[1]
         return user_messages
 
     def get_user_token_limits(self, remainder, props):
