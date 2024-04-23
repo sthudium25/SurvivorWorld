@@ -45,7 +45,7 @@ Description: defines prompts used in the agent reflection module
 # """
 
 gpt_generalize_prompt = """
-You are an agent in a game and you need to reflect upon your previous reflections and observations to improve your understanding of the environment and how to act within it.
+Based on your character and goals described above, you need to reflect upon your previous reflections and observations to improve your understanding of the environment and how to act within it.
 This could also include considering how to improve your past actions to be more efficient with respect to achieving your goals. 
 You'll be given your current impressions of all other agents, your prior reflections, and action statements that you and other agents around you have made.
 
@@ -69,12 +69,11 @@ Remember, make generalized statements that are rooted in the facts you're been p
 """
 
 
-memory_query_questions = ["What were my key partnerships in this round?",
-                          "How have my recent decisions influenced my alliances and what changes should I make to strengthen or repair relationships with other players?",
-                          "How effectively did I handle major threats this round, and what alliances or betrayals should I anticipate for the next round based on these actions?",
-                          "Which strategies have been effective so far, and how should I adjust my overall game plan to align with the evolving dynamics of the game?"
-
+memory_query_questions = [
+    "What were my key partnerships in this round?",
+    "How have my recent decisions influenced my alliances and what changes should I make to strengthen or repair relationships with other players?",
+    "How effectively did I handle major threats this round, and what alliances or betrayals should I anticipate for the next round based on these actions?",
+    "Which strategies have been effective so far, and how should I adjust my overall game plan to align with the evolving dynamics of the game?"
 ]
-
 
 insight_question = "What five high-level insights can you infer from the above statements? You can make new and/or updated generalizations, but there should be no more than five in total."
