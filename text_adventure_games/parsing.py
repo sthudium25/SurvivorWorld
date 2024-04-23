@@ -459,8 +459,11 @@ class GptParser(Parser):
 
         return keys
     
-    def summarise_and_score_action(self, command, description, thing):
-        action_statement = self.create_action_statement(command, description, thing)
+    def summarise_and_score_action(self, description, thing, command="look", needs_summary=True):
+        if needs_summary:
+            action_statement = self.create_action_statement(command, description, thing)
+        else:
+            action_statement = description
         importance_of_action = gpt_get_action_importance(action_statement,
                                                          call_handler=self.gpt_handler, 
                                                          max_tokens=10,
@@ -528,7 +531,9 @@ class GptParser(Parser):
         """
         # FIRST: we add summarize the action and send it as a memory to the appropriate characters
         if isinstance(thing, Character):
-            summary_of_action, importance_of_action, action_keywords = self.summarise_and_score_action(command, description, thing)
+            summary_of_action, importance_of_action, action_keywords = self.summarise_and_score_action(description, 
+                                                                                                       thing,
+                                                                                                       command=command)
             
             # Make sure that the Narrator GPT knows about the character names 
             command = f"{thing.name}'s action: {command}"
