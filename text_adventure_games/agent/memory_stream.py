@@ -408,13 +408,15 @@ class MemoryStream:
             print("Goal query embedding update failed. Skipping. Caught:\n", e)
     
     # ----------- UPDATE METHODS -----------
-    def update_node_description(self, node_id, new_description) -> bool:
+    def update_node(self, node_id, **kwargs) -> bool:
         try:
             node = self.get_observation(node_id)
-            node.node_description = new_description
         except IndexError:
             return False
         else:
+            for k, v in kwargs.items():
+                if hasattr(node, k):
+                    setattr(node, k, v)
             return True
         
     def update_node_embedding(self, node_id, new_description) -> bool:

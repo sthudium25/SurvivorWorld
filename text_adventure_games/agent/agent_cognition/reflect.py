@@ -345,7 +345,9 @@ def update_existing_generalizations(game: "Game", character: "Character", genera
                     # again, this is malformed, so skip
                     continue
                 else:
-                    _ = character.memory.update_node_description(node_id=prev_idx, 
-                                                                 new_description=desc)
+                    _ = character.memory.update_node(node_id=prev_idx, 
+                                                     node_round=game.round, 
+                                                     node_tick=game.tick,
+                                                     node_description=desc)
                     _ = character.memory.update_node_embedding(node_id=prev_idx,
                                                                new_description=desc)
