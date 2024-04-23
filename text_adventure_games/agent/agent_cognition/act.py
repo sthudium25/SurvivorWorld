@@ -158,8 +158,8 @@ class Act:
                                              tokenizer=self.game.parser.tokenizer)
         
         user_messages += always_included[0]
-        # user_messages += context_list_to_string(context=memories_list, sep="\n")
-        user_messages += context_list_to_string(context=memories_list)
+        user_messages += context_list_to_string(context=memories_list, sep="\n")
+        # user_messages += context_list_to_string(context=memories_list)
         user_messages += '\n'+always_included[1]
         return user_messages
 
