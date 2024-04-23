@@ -1,9 +1,11 @@
 from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field
 import json
 import logging
 import os
 import re
 import time
+from typing import ClassVar
 from typing import ClassVar
 import openai
 import tiktoken
@@ -11,6 +13,7 @@ import tiktoken
 # local imports
 from ..utils.general import enumerate_dict_options
 from ..utils.consts import get_config_file, get_assets_path
+from ..assets.prompts import gpt_helper_prompts as hp
 from ..assets.prompts import gpt_helper_prompts as hp
 
 logger = logging.getLogger(__name__)
@@ -92,9 +95,13 @@ class GptCallHandler:
     
     def __post_init__(self):
         self.original_params = self._save_init_params()
+        self.original_params = self._save_init_params()
         self.client = self.client_handler.get_client(self.api_key_org)
         self.model_limits = self._load_model_limits()
         self._set_requested_model_limits()
+
+    def _save_init_params(self):
+        return asdict(self)
 
     def _save_init_params(self):
         return asdict(self)
@@ -138,6 +145,22 @@ class GptCallHandler:
                  system: str = None, 
                  user: str = None, 
                  messages: list = None) -> str:
+            self.max_tokens = min(self.max_tokens, 8192)
+
+    def update_params(self, **kwargs):
+        for param, new_val in kwargs.items():
+            if hasattr(self, param):
+                setattr(self, param, new_val)
+    
+    def reset_defaults(self):
+        # Reset the parameters to the original values
+        for param, value in self.original_params.items():
+            setattr(self, param, value)
+        
+    def generate(self, 
+                 system: str = None, 
+                 user: str = None, 
+                 messages: list = None) -> str:
         """
         A wrapper for making a call to OpenAI API.
         It expects a function as an argument that should produce the messages argument.        
@@ -148,6 +171,14 @@ class GptCallHandler:
         Returns:
             str: _description_
         """
+        if system and user:
+            # Generate messages
+            messages = [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user}
+            ]
+        elif not messages or not isinstance(messages, list):
+            raise ValueError("You must supply 'system' and 'user' strings or a list of ChatMessages in 'messages'.")
         if system and user:
             # Generate messages
             messages = [
@@ -242,8 +273,21 @@ def gpt_get_summary_description_of_action(statement,
     call_handler.update_params(**handler_kwargs)
 
     system = hp.action_summary_prompt
+def gpt_get_summary_description_of_action(statement, 
+                                          call_handler: GptCallHandler, 
+                                          **handler_kwargs):
+
+    if not isinstance(call_handler, GptCallHandler):
+        raise TypeError("'call_handler' must be a GptCallHandler.")
+    
+    call_handler.update_params(**handler_kwargs)
+
+    system = hp.action_summary_prompt
     messages = [{"role": "system", "content": system},
                 {"role": "user", "content": statement}]
+
+    summary_statement = call_handler.generate(messages=messages)
+    call_handler.reset_defaults()
 
     summary_statement = call_handler.generate(messages=messages)
     call_handler.reset_defaults()
@@ -261,8 +305,21 @@ def gpt_get_action_importance(statement: str,
     call_handler.update_params(**handler_kwargs)
 
     system = hp.action_importance_prompt
+def gpt_get_action_importance(statement: str, 
+                              call_handler: GptCallHandler, 
+                              **handler_kwargs):
+
+    if not isinstance(call_handler, GptCallHandler):
+        raise TypeError("'call_handler' must be a GptCallHandler.")
+    
+    call_handler.update_params(**handler_kwargs)
+
+    system = hp.action_importance_prompt
     messages = [{"role": "system", "content": system},
                 {"role": "user", "content": statement}]
+
+    importance_str = call_handler.generate(messages=messages)
+    call_handler.reset_defaults()
 
     importance_str = call_handler.generate(messages=messages)
     call_handler.reset_defaults()
@@ -285,7 +342,13 @@ def gpt_pick_an_option(instructions,
                        input_str, 
                        call_handler: GptCallHandler, 
                        **handler_kwargs):
+def gpt_pick_an_option(instructions, 
+                       options, 
+                       input_str, 
+                       call_handler: GptCallHandler, 
+                       **handler_kwargs):
     """
+    CREDIT of generalized option picking method: Dr. Chris Callison-Burch (UPenn)
     CREDIT of generalized option picking method: Dr. Chris Callison-Burch (UPenn)
     This function calls GPT to choose one option from a set of options.
     Its arguments are:
@@ -298,6 +361,10 @@ def gpt_pick_an_option(instructions,
     regex, in case it generates more text than is necessary), and then
     returns the option name.
     """
+    if not isinstance(call_handler, GptCallHandler):
+        raise TypeError("'call_handler' must be a GptCallHandler.")
+    
+    call_handler.update_params(**handler_kwargs)
     if not isinstance(call_handler, GptCallHandler):
         raise TypeError("'call_handler' must be a GptCallHandler.")
     
@@ -318,9 +385,23 @@ def gpt_pick_an_option(instructions,
     # Call the OpenAI API
     selection = call_handler.generate(messages=messages)
     call_handler.reset_defaults()
+    messages = [
+        {
+            "role": "system",
+            "content": "{instructions}\n\n{choices_str}\nReturn just the number of the best match.".format(
+                instructions=instructions, choices_str=choices_str
+            ),
+        },
+        {"role": "user", "content": input_str},
+    ]
+
+    # Call the OpenAI API
+    selection = call_handler.generate(messages=messages)
+    call_handler.reset_defaults()
 
     # Use regular expressions to match a number returned by OpenAI and select that option.
     pattern = r"\d+"
+    matches = re.findall(pattern, selection)
     matches = re.findall(pattern, selection)
     if matches:
         index = int(matches[0])

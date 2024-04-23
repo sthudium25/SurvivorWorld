@@ -198,6 +198,15 @@ def enumerate_dict_options(options, names_only=False, inverted=False):
             for i, name in enumerate(options.values()):
                 choices_str += "{i}. {n}\n".format(i=i, n=name)
             return choices_str, None
+        # for cases where the dict is of the form name:object
+        if inverted:
+            for i, name in enumerate(options.keys()):
+                choices_str += "{i}. {n}\n".format(i=i, n=name)
+            return choices_str, None
+        else:
+            for i, name in enumerate(options.values()):
+                choices_str += "{i}. {n}\n".format(i=i, n=name)
+            return choices_str, None
     else:
         for i, (k, v) in enumerate(options.items()):
             choices_str += "{i}. {v}: {k}\n".format(i=i, v=v, k=k)

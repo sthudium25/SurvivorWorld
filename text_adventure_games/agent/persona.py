@@ -154,23 +154,23 @@ class Persona():
         
     # Made more natural-language friendly, not just a list of facts/traits, etc.
     def get_personal_summary(self):
-        summary = f"Meet {self.facts['Name']}, a {self.facts['Age']}-year-old {self.facts['Occupation']}."
+        summary = f"{self.facts['Name']}, a {self.facts['Age']}-year-old {self.facts['Occupation']}."
         if 'Home city' in self.facts and self.facts['Home city']:
-            summary += f" They hail from {self.facts['Home city']}."
+            summary += f"You hail from {self.facts['Home city']}."
         if 'Likes' in self.facts and self.facts['Likes']:
-            summary += f" {self.facts['Name']} is passionate about {', '.join(self.facts['Likes'][:3])}"
+            summary += f"You are passionate about {', '.join(self.facts['Likes'][:3])}"
         if 'Dislikes' in self.facts and self.facts['Dislikes']:
-            summary += f" but has aversions to {', '.join(self.facts['Dislikes'][:3])}."
+            summary += f" but have aversions to {', '.join(self.facts['Dislikes'][:3])}."
         for key in self.facts:
             if key not in ['Name', 'Age', 'Occupation', 'Likes', 'Dislikes', 'Home city']:
-                summary += f"{self.facts['Name'].title()}'s {key.lower()} is/are: {self.facts[key]}."
+                summary += f"Some key facts about yourself are: {key.lower()}, {self.facts[key]}."
         if self.game_theory_strategy:
-            summary += f" In the game, {self.facts['Name']}'s strategy is {self.game_theory_strategy},"
+            summary += f" Your overall game strategy is {self.game_theory_strategy},"
             traits = self.get_trait_summary()
-            summary += f" reflecting their {', '.join(traits[:-1])} and {traits[-1]}."
+            summary += f" reflecting your {', '.join(traits[:-1])} and {traits[-1]}."
         else:  # Just list their traits
             traits = self.get_trait_summary()
-            summary += f" Their traits are {', '.join(traits[:-1])} and {traits[-1]}."
+            summary += f" Your traits are {', '.join(traits[:-1])} and {traits[-1]}."
         return summary
 
     def __str__(self):

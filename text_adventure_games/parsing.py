@@ -6,7 +6,7 @@ and performs the actions that the player intends.  This is the module with
 the most potential for improvement using modern natural language processing.
 The implementation that I have given below only uses simple keyword matching.
 """
-
+from typing import TYPE_CHECKING
 from collections import defaultdict
 import inspect
 import textwrap
@@ -18,15 +18,20 @@ from jellyfish import jaro_winkler_similarity, levenshtein_distance
 # from openai import OpenAI
 # import numpy as np
 
-from text_adventure_games.things.base import Thing
-
-from .things import Character, Item, Location
-from . import actions, blocks
-from .utils.general import (set_up_openai_client, 
-                            normalize_name
-                            )
+from .things import Character
+if TYPE_CHECKING:
+    from .things import Item, Location
+    from text_adventure_games.things.base import Thing
+from . import actions
+from .utils.general import normalize_name
 # from .gpt.parser_kani import DescriptorKani
-from .gpt import gpt_helpers 
+from .gpt.gpt_helpers import (GptCallHandler,
+                              limit_context_length,
+                              gpt_get_action_importance,
+                              gpt_get_summary_description_of_action,
+                              gpt_pick_an_option,
+                              get_prompt_token_count,
+                              get_token_remainder)
 from .agent.memory_stream import MemoryType
 
 
@@ -57,14 +62,14 @@ class Parser:
         # Print the user's commands
         self.echo_commands = echo_commands
 
-    def ok(self, command: str, description: str, thing: Thing):
+    def ok(self, command: str, description: str, thing: "Thing"):
         """
         Print a description of a failed command to the console and add to command history
         """
         print(Parser.wrap_text(description))
         self.add_description_to_history(description)
 
-    def fail(self, command: str, description: str, thing: Thing):
+    def fail(self, command: str, description: str, thing: "Thing"):
         """
         Print a description of a failed command to the console
         """
@@ -116,7 +121,7 @@ class Parser:
                 if not attr == actions.Action:
                     self.add_action(attr)
 
-    def determine_intent(self, command: str, character):
+    def determine_intent(self, command: str, character: Character):
         """
         This function determines what command the player wants to do.
         Here we have implemented it with a simple keyword match. Later
@@ -287,10 +292,10 @@ class Parser:
             return True
         return False
 
-    def get_character_location(self, character: Character) -> Location:
+    def get_character_location(self, character: Character) -> "Location":
         return character.location
 
-    def match_item(self, command: str, item_dict: dict[str, Item]) -> Item:
+    def match_item(self, command: str, item_dict: dict[str, "Item"]) -> "Item":
         """
         Check whether the name any of the items in this dictionary match the
         command. If so, return Item, else return None.
@@ -301,7 +306,7 @@ class Parser:
                 return item
         return None
 
-    def get_items_in_scope(self, character=None) -> dict[str, Item]:
+    def get_items_in_scope(self, character=None) -> dict[str, "Item"]:
         """
         Returns a list of items in character's location and in their inventory
         """
@@ -314,7 +319,7 @@ class Parser:
             items_in_scope[item_name] = character.inventory[item_name]
         return items_in_scope
 
-    def get_direction(self, command: str, location: Location = None) -> str:
+    def get_direction(self, command: str, location: "Location" = None) -> str:
         """
         Converts aliases for directions into its primary direction name.
         """
@@ -340,43 +345,35 @@ class Parser:
                 if exit.lower() in command:
                     return exit
         return None
-    
-    # def get_characters_in_view(self, character: Character):
-    #     # TODO: it would be nicer to have characters listed in the location object
-    #     # however this is more state to maintain.
-    #     """
-    #     Given a character, identifies the other characters in the game that are in the same location
-
-    #     Args:
-    #         character (Character): the current character
-
-    #     Returns:
-    #         list: characters in view of the current character
-    #     """
-    #     chars_in_view = []
-    #     loc_id = character.location.id
-    #     print("location id to match: ", loc_id)
-    #     for char in self.game.characters.values():
-    #         print(f"{char.name} loc id: ", char.location.id)
-    #         if char.location.id == loc_id:
-    #             chars_in_view.append(char)
-    #     if len(chars_in_view) > 0:
-    #         print("Characters in view of ", character.name)
-    #         for c in chars_in_view:
-    #             print(c.name)
-    #     return chars_in_view
 
 
 class GptParser(Parser):
     def __init__(self, game, echo_commands=True, verbose=False):
         super().__init__(game, echo_commands=echo_commands)
         self.verbose = verbose
-        self.client = set_up_openai_client(org="Helicone")
-        self.gpt_model = "gpt-4"  # REMEMBER TO SWITCH BACK TO GPT-4
-        self.max_output_tokens = 256  # You get to pick this
-        self.max_tokens = 8192 - self.max_output_tokens  # GPT-4's max total tokens
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
         self.nlp = spacy.load('en_core_web_sm')
+        self.gpt_handler = self._set_up_gpt()
+        self.max_input_tokens = self.gpt_handler.model_context_limit
+
+    def _set_up_gpt(self):
+        model_params = {
+            "api_key_org": "Helicone",
+            "model": "gpt-4",
+            "max_tokens": 400,
+            "temperature": 1,
+            "top_p": 1,
+            "max_retries": 5
+        }
+
+        return GptCallHandler(**model_params) 
+    
+    def get_handler(self):
+        if self.gpt_handler:
+            return self.gpt_handler
+        else:
+            self.gpt_handler = self._set_up_gpt()
+            return self.gpt_handler
 
     def gpt_describe(self, 
                      system_instructions, 
@@ -399,20 +396,21 @@ class GptParser(Parser):
                 "role": "system",
                 "content": system_instructions
             }]
+            system_count = get_prompt_token_count(content=system_instructions,
+                                                  role="system",
+                                                  pad_reply=False,
+                                                  tokenizer=self.tokenizer)
             # Here, the command history is being stored as a Chat Dict {"role": ..., "content":}
-            context = gpt_helpers.limit_context_length(command_history, self.max_tokens)
+            available_tokens = get_token_remainder(self.max_input_tokens,
+                                                   system_count,
+                                                   self.gpt_handler.max_tokens)
+            
+            # Limit the context for the narrator to the last few turns
+            context = limit_context_length(command_history, available_tokens, max_turns=20)
             messages.extend(context)
             if self.verbose:
                 print(json.dumps(messages, indent=2))
-            response = self.client.chat.completions.create(
-                model=self.gpt_model,
-                messages=messages,
-                temperature=1,
-                max_tokens=self.max_output_tokens,
-                top_p=0.5,
-                frequency_penalty=0,
-                presence_penalty=0
-            )
+            response = self.gpt_handler.generate(messages=messages)
             content = response.choices[0].message.content
             return content
         except Exception as e:
@@ -420,7 +418,7 @@ class GptParser(Parser):
     
     def create_action_statement(self, command: str, description: str, character: Character):
         outcome = f"ACTOR: {character.name}; LOCATION: {character.location.name}, ACTION: {command}; OUTCOME: {description}"
-        summary = gpt_helpers.gpt_get_summary_description_of_action(outcome, self.client, self.model, max_tokens=100)
+        summary = gpt_get_summary_description_of_action(outcome, call_handler=self.gpt_handler, max_tokens=256)
         return summary
 
     def extract_keywords(self, text):
@@ -452,7 +450,6 @@ class GptParser(Parser):
                 else:
                     keys['objects'].add(w.text)
         for ent in doc.ents:
-            # print(ent, ent.label_)
             if ent.label_ in ["PERSON", "ORG", "GPE"]:
                 exists, name = self.check_if_character_exists(ent.text)
                 if exists:
@@ -461,6 +458,16 @@ class GptParser(Parser):
         keys = {k: list(v) for k, v in keys.items()}
 
         return keys
+    
+    def summarise_and_score_action(self, command, description, thing):
+        action_statement = self.create_action_statement(command, description, thing)
+        importance_of_action = gpt_get_action_importance(action_statement,
+                                                         call_handler=self.gpt_handler, 
+                                                         max_tokens=10,
+                                                         top_p=0.25)
+        keywords = self.extract_keywords(action_statement)
+
+        return action_statement, importance_of_action, keywords
     
     def add_command_to_history(self, 
                                command, 
@@ -482,8 +489,16 @@ class GptParser(Parser):
         """
         # This is a user or agent-supplied command so it should be logged as a ChatMessage.user
         super().add_command_to_history(command)
+        character.memory.add_memory(round=self.game.round,
+                                    tick=self.game.tick,
+                                    description=summary.lower(), 
+                                    keywords=keywords, 
+                                    location=character.location.name, 
+                                    success_status=success,
+                                    memory_importance=importance, 
+                                    memory_type=type,
+                                    actor_id=character.id)
         for char in character.chars_in_view:
-            # print(f'passing {character.name}\'s action to {char.name}')
             char.memory.add_memory(round=self.game.round,
                                    tick=self.game.tick,
                                    description=summary.lower(), 
@@ -494,7 +509,7 @@ class GptParser(Parser):
                                    memory_type=type,
                                    actor_id=character.id)
 
-    def ok(self, command: str, description: str, thing: Thing) -> None:
+    def ok(self, command: str, description: str, thing: "Thing") -> None:
         """
         Logs a successful command and the description of its outcome.
 
@@ -511,23 +526,15 @@ class GptParser(Parser):
             description: "The troll got the pole"
             character: troll
         """
-        # ST - 3/14/24:
-        # TODO: May want to do some form of CLIN-style connection between COMMAND and DESCRIPTION
-
         # FIRST: we add summarize the action and send it as a memory to the appropriate characters
         if isinstance(thing, Character):
-            summary_of_action = self.create_action_statement(command, description, thing)
-            importance_of_action = gpt_helpers.gpt_get_action_importance(summary_of_action,
-                                                                         client=self.client, 
-                                                                         model=self.model, 
-                                                                         max_tokens=10)
-            keywords = self.extract_keywords(summary_of_action)
+            summary_of_action, importance_of_action, action_keywords = self.summarise_and_score_action(command, description, thing)
             
             # Make sure that the Narrator GPT knows about the character names 
             command = f"{thing.name}'s action: {command}"
             self.add_command_to_history(command,
                                         summary_of_action, 
-                                        keywords, 
+                                        action_keywords, 
                                         thing,  
                                         importance_of_action,
                                         success=True, 
@@ -554,7 +561,7 @@ class GptParser(Parser):
         # self.add_description_to_history(response)
         # print(self.wrap_text(response) + '\n')
 
-    def fail(self, command: str, description: str, thing: Thing):
+    def fail(self, command: str, description: str, thing: "Thing"):
         """
         Commands that do not pass all preconditions lead to a failure.
         They are logged by this method. 
@@ -580,11 +587,12 @@ class GptParser(Parser):
 
         # FIRST: we add summarize the FAILED action and send it as a memory to the appropriate characters
         if isinstance(thing, Character):
+            print(f"{thing.name} action failed. Adding failure memory to history.")
             # summary_of_action = self.create_action_statement(command, description, thing)
-            importance_of_action = gpt_helpers.gpt_get_action_importance(response,
-                                                                         self.client, 
-                                                                         self.model, 
-                                                                         max_tokens=10)
+            importance_of_action = gpt_get_action_importance(response,
+                                                             call_handler=self.gpt_handler, 
+                                                             max_tokens=10,
+                                                             top_p=0.25)
             keywords = self.extract_keywords(response)
             
             # Make sure that the Narrator GPT knows about the character names 
@@ -598,6 +606,7 @@ class GptParser(Parser):
                                         importance_of_action,
                                         success=False, 
                                         type=MemoryType.ACTION.value)
+            
         if self.verbose:
             print("GPT's Error Description:")
         self.add_description_to_history(response)
@@ -638,214 +647,348 @@ class GptParser2(GptParser):
             ]
         )
 
-        return gpt_helpers.gpt_pick_an_option(instructions, self.command_descriptions, command)
+        return gpt_pick_an_option(instructions, self.command_descriptions, command, self.gpt_handler, max_tokens=10)
 
 
 class GptParser3(GptParser2):
-    def __init__(self, game, echo_commands=True, verbose=False, model='gpt-4'):
+    def __init__(self, game, echo_commands=True, verbose=False):
         super().__init__(game, echo_commands, verbose)
-        self.model = model
 
-    def extract_digit(self, text):
-        return re.findall(r"[-]?\d+", text)[0]
-    
-    def get_characters_and_find_current(self, character=None):
-        current_idx = -999
-        chars = {}
-        for i, char in enumerate(list(self.game.characters)):
-            chars[i] = char
-            if character and char == character.name:
-                current_idx = i
-        return chars, current_idx
-    
     def get_character(
         self, command: str, character: Character = None, hint: str = None, split_words=None, position=None
     ) -> Character:
         """
         This method tries to match a character's name in the command.
-        If no names are matched, it defaults to the passed character. 
+        If no names are matched, it defaults to `game.player`. 
         Args:
             hint: A hint about the role of character we're looking for 
                   (e.g. "giver" or "recipent")
             split_words: not needed for our GptParser
             position: not needed for our GptParser
+        """ """
+        This method tries to match a character's name in the command.
+        If no names are matched, it defaults to the player.
         """
+        if self.verbose:
+            print("Matching a character with GPT.")
+        character_descriptions = {}
+        for name, character in self.game.characters.items():
+            if character.location:
+                d = "{name} - {description} (currently located in {location})"
+                description = d.format(
+                    name=name,
+                    description=character.description,
+                    location=character.location.name,
+                )
+            else:
+                description = "{name} - {description}".format(
+                    name=name, description=character.description
+                )
+            # if character == self.game.player:
+            #     description = "The player: {description}".format(
+            #         description=character.description
+            #     )
 
-        system_prompt = "Given a command, return the character who can be described as: \"{h}\". ".format(h=hint)
-        # Create an enumerated dict of the characters in the game
+            character_descriptions[description] = character
 
-        chars, curr_idx = self.get_characters_and_find_current(character)
-        if character:
-            system_prompt += f"Unless specified, assume \"{curr_idx}: {character.name}\" performs all actions.\nChoose from the following characters:\n"
-        else:
-            system_prompt += "Choose from the following characters:\n"
-        # Format the characters into a list structure for the system prompt
-        system_prompt += "{c}".format(c='\n'.join([str(i)+": "+str(c) for i, c in chars.items()]))
-
-        system_prompt += "\nYou must only return the single number whose corresponding character is performing the action.\n\
-If no command is given, return \"{curr_idx}: {character.name}\""
-        # if hint:
-        #     system_prompt += "As a hint, in the given command, the subject can be described as: \"{h}\". ".format(h=hint)
-        #     system_prompt += "If there are no good matches, the action is performed by the game player, so you should return 0.\n"
-        # else:
-        #     system_prompt += "If there are no good matches, the action is performed by the game player, so you should return 0.\n"
-
-        # create a new client
-        # client = OpenAI()
-
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": "Command: {c}\nThe best character match is number: ".format(c=command)
-                },
-            ],
-            temperature=0,
-            max_tokens=10,
-            top_p=0,
-            frequency_penalty=0,
-            presence_penalty=0
+        instructions = "".join(
+            [
+                "You are the parser for a text adventure game. For an input command try to ",
+                "match the character in the command (if no character is mentioned in the ",
+                "command, then default to '{player}').".format(
+                    player=self.game.player.name
+                ),
+            ]
         )
+        if hint:
+            instructions += f"\nHint: the character you are looking for is the {hint}. "
+        instructions += "\n\nThe possible characters are:"
 
-        # Will probably need to do some parsing of the output here
-        char_idx = response.choices[0].message.content
-        try: 
-            char_idx = self.extract_digit(char_idx)
-            char_idx = int(char_idx)
-        except Exception as e:
-            print("Couldn't match the following response to a number:")
-            print(char_idx)
-            print(e)
-
-        # print("Item system prompt: ", system_prompt)
-        print(f"GPTParse selected character: {char_idx}")
-        if char_idx not in chars:
-            print(f"no player with id {char_idx} in {str(chars)}")
-            return None
-        else:
-            name = chars[char_idx]
-            return self.game.characters[name]
+        return gpt_pick_an_option(instructions, character_descriptions, command, call_handler=self.gpt_handler, max_tokens=10)
 
     def match_item(
-        self, command: str, item_dict: dict[str, Item], hint: str = None
-    ) -> Item:
+        self, command: str, item_dict: dict[str, "Item"], hint: str = None
+    ) -> "Item":
         """
-        Check whether the names of any of the items in this dictionary match the
+        Check whether the name any of the items in this dictionary match the
         command. If so, return Item, else return None.
 
         Args:
             item_dict: A map from item names to Items (could be a player's 
                        inventory or the items at a location)
             hint: what kind of item we're looking for
+        """ """
+        Check whether the name any of the items in this dictionary match the
+        command. If so, return Item, else return None.
         """
-
-        system_prompt = "Given a command, return the item that is the direct object of the action.\nChoose from the following items:\n"
-        items = {i: it for i, it in enumerate(list(item_dict.keys()))}
-        system_prompt += "{c}".format(c=''.join([str(i)+": "+str(item)+"\n" for i, item in items.items()]))
-        system_prompt += """You must only return the single number whose corresponding item best matches the given command. \
-If there are no good matches, return '-999'\n"""
+        if self.verbose:
+            print("Matching an item with GPT.")
+        instructions = "You are the parser for a text adventure game. For an input command try to match the item in the command."
         if hint:
-            system_prompt += "As a hint, in the given command, the item can be described as:\"{h}\".\n".format(h=hint)
-        else:
-            system_prompt += "\n"
-        
-        # print("Item system prompt: ", system_prompt)
-        # client = OpenAI()
+            instructions += f"\nHint: {hint}."
+        instructions += "\n\nThe possible items are:"
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": "Command: {c}\n  The best item match is number: ".format(c=command)
-                },
-            ],
-            temperature=0,
-            max_tokens=10,
-            top_p=0,
-            frequency_penalty=0,
-            presence_penalty=0
-        )
+        item_descriptions = {}
+        for name, item in item_dict.items():
+            if item.location:
+                description = (
+                    "{name} - {description} (currently located in {location})".format(
+                        name=name,
+                        description=item.description,
+                        location=item.location.name,
+                    )
+                )
+            else:
+                description = "{name} - {description}".format(
+                    name=name, description=item.description
+                )
 
-        item_idx = response.choices[0].message.content
-        try:
-            item_idx = self.extract_digit(item_idx)
-            item_idx = int(item_idx)
-        except Exception as e:
-            print(e)
+            item_descriptions[description] = item
+        return gpt_pick_an_option(instructions, item_descriptions, command, call_handler=self.gpt_handler, max_tokens=10)
 
-        print(f"GPTParse selected item: {item_idx}")
-        if item_idx == -999:
-            return None
-        elif item_idx in items:
-            name = items[item_idx]
-            return item_dict[name]
-        else:
-            print(f'Item index {item_idx} not found in {str(items)}')
-
-    def get_direction(self, command: str, location: Location = None) -> str:
+    def get_direction(self, command: str, location: "Location" = None) -> str:
         """
         Return the direction from `location.connections` which the player
         wants to travel to.
         """
-        dirs = list(location.connections.keys())
-        names = [loc.name for loc in location.connections.values()]
-        connections = {i: dl for i, dl in enumerate(zip(dirs, names))}
-        print('Found connections: ', connections)
-
-        system_prompt = """
-        You must select the direction that best matches the description given in a command.
-        The possible directions to choose are:\n
-        """
-        
-        system_prompt += "\n" + "{c}".format(c=''.join([str(i)+": "+str(d)+" or "+str(l)+"\n" for i, (d, l) in connections.items()]))
-        
-        system_prompt += """\nYou must only return the single number whose corresponding direction best matches the given command.
-            If there are no good matches, return '-999'\n"""
-
-        # print("Direction system prompt: ", system_prompt)
-
-        # client = OpenAI()
-
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": "Command: {c}\n  The best direction match is number:  ".format(c=command)
-                }
-            ],
-            temperature=0,
-            max_tokens=100,
-            top_p=0,
-            frequency_penalty=0,
-            presence_penalty=0
+        if self.verbose:
+            print("Matching a direction with GPT.")
+        instructions = "".join(
+            [
+                "You are the parser for a text adventure game. For an input command try to ",
+                "match the direction in the command. Give the cloest matching one, or say ",
+                "None if none match. The possible directions are:",
+            ]
         )
+        directions = {}
+        if location:
+            for direction, to_loc in location.connections.items():
+                loc_description = "{name} - {description}".format(
+                    name=to_loc.name, description=to_loc.description
+                )
+                location_name_direction = "{direction} toward {loc}".format(
+                    direction=direction, loc=loc_description
+                )
+                directions[location_name_direction] = direction
+        other_directions = {
+            "'n' can mean north": "north",
+            "'s' can mean south": "south",
+            "'e' can mean east": "east",
+            "'w' can mean west": "west",
+            "'out' can mean 'go out'": "out",
+            "'in' can mean 'go in'": "in",
+            "'up' can mean 'go up'": "up",
+            "'down' can mean 'go down'": "down",
+        }
+        directions.update(other_directions)
+        return gpt_pick_an_option(instructions, directions, command, call_handler=self.gpt_handler, max_tokens=10)
 
-        dir_idx = response.choices[0].message.content
-        try:
-            dir_idx = self.extract_digit(dir_idx)
-            dir_idx = int(dir_idx)
-        except Exception as e:
-            print(e)
-        print(f"GPTParse selected direction: {dir_idx}")
 
-        if dir_idx in connections:
-            dir_name = connections[dir_idx][0]
-            return dir_name
-        else:
-            print(f'direction id "{dir_idx}" not in location connections: {connections}')
-            return None
+# class GptParser3(GptParser2):
+#     def __init__(self, game, echo_commands=True, verbose=False, model='gpt-4'):
+#         super().__init__(game, echo_commands, verbose)
+#         self.model = model
+
+#     def extract_digit(self, text):
+#         return re.findall(r"[-]?\d+", text)[0]
+    
+#     def get_characters_and_find_current(self, character=None):
+#         current_idx = -999
+#         chars = {}
+#         for i, char in enumerate(list(self.game.characters)):
+#             chars[i] = char
+#             if character and char == character.name:
+#                 current_idx = i
+#         return chars, current_idx
+    
+#     def get_character(
+#         self, command: str, character: Character = None, hint: str = None, split_words=None, position=None
+#     ) -> Character:
+#         """
+#         This method tries to match a character's name in the command.
+#         If no names are matched, it defaults to the passed character. 
+#         Args:
+#             hint: A hint about the role of character we're looking for 
+#                   (e.g. "giver" or "recipent")
+#             split_words: not needed for our GptParser
+#             position: not needed for our GptParser
+#         """
+
+#         system_prompt = "Given a command, return the character who can be described as: \"{h}\". ".format(h=hint)
+#         # Create an enumerated dict of the characters in the game
+
+#         chars, curr_idx = self.get_characters_and_find_current(character)
+#         if character:
+#             system_prompt += f"Unless specified, assume \"{curr_idx}: {character.name}\" performs all actions.\nChoose from the following characters:\n"
+#         else:
+#             system_prompt += "Choose from the following characters:\n"
+#         # Format the characters into a list structure for the system prompt
+#         system_prompt += "{c}".format(c='\n'.join([str(i)+": "+str(c) for i, c in chars.items()]))
+
+#         system_prompt += "\nYou must only return the single number whose corresponding character is performing the action.\n\
+# If no command is given, return \"{curr_idx}: {character.name}\""
+#         # if hint:
+#         #     system_prompt += "As a hint, in the given command, the subject can be described as: \"{h}\". ".format(h=hint)
+#         #     system_prompt += "If there are no good matches, the action is performed by the game player, so you should return 0.\n"
+#         # else:
+#         #     system_prompt += "If there are no good matches, the action is performed by the game player, so you should return 0.\n"
+
+#         # create a new client
+#         # client = OpenAI()
+
+#         response = self.client.chat.completions.create(
+#             model=self.model,
+#             messages=[
+#                 {
+#                     "role": "system",
+#                     "content": system_prompt
+#                 },
+#                 {
+#                     "role": "user",
+#                     "content": "Command: {c}\nThe best character match is number: ".format(c=command)
+#                 },
+#             ],
+#             temperature=0,
+#             max_tokens=10,
+#             top_p=0,
+#             frequency_penalty=0,
+#             presence_penalty=0
+#         )
+
+#         # Will probably need to do some parsing of the output here
+#         char_idx = response.choices[0].message.content
+#         try: 
+#             char_idx = self.extract_digit(char_idx)
+#             char_idx = int(char_idx)
+#         except Exception as e:
+#             print("Couldn't match the following response to a number:")
+#             print(char_idx)
+#             print(e)
+
+#         # print("Item system prompt: ", system_prompt)
+#         print(f"GPTParse selected character: {char_idx}")
+#         if char_idx not in chars:
+#             print(f"no player with id {char_idx} in {str(chars)}")
+#             return None
+#         else:
+#             name = chars[char_idx]
+#             return self.game.characters[name]
+
+#     def match_item(
+#         self, command: str, item_dict: dict[str, Item], hint: str = None
+#     ) -> Item:
+#         """
+#         Check whether the names of any of the items in this dictionary match the
+#         command. If so, return Item, else return None.
+
+#         Args:
+#             item_dict: A map from item names to Items (could be a player's 
+#                        inventory or the items at a location)
+#             hint: what kind of item we're looking for
+#         """
+
+#         system_prompt = "Given a command, return the item that is the direct object of the action.\nChoose from the following items:\n"
+#         items = {i: it for i, it in enumerate(list(item_dict.keys()))}
+#         system_prompt += "{c}".format(c=''.join([str(i)+": "+str(item)+"\n" for i, item in items.items()]))
+#         system_prompt += """You must only return the single number whose corresponding item best matches the given command. \
+# If there are no good matches, return '-999'\n"""
+#         if hint:
+#             system_prompt += "As a hint, in the given command, the item can be described as:\"{h}\".\n".format(h=hint)
+#         else:
+#             system_prompt += "\n"
+        
+#         # print("Item system prompt: ", system_prompt)
+#         # client = OpenAI()
+
+#         response = self.client.chat.completions.create(
+#             model=self.model,
+#             messages=[
+#                 {
+#                     "role": "system",
+#                     "content": system_prompt
+#                 },
+#                 {
+#                     "role": "user",
+#                     "content": "Command: {c}\n  The best item match is number: ".format(c=command)
+#                 },
+#             ],
+#             temperature=0,
+#             max_tokens=10,
+#             top_p=0,
+#             frequency_penalty=0,
+#             presence_penalty=0
+#         )
+
+#         item_idx = response.choices[0].message.content
+#         try:
+#             item_idx = self.extract_digit(item_idx)
+#             item_idx = int(item_idx)
+#         except Exception as e:
+#             print(e)
+
+#         print(f"GPTParse selected item: {item_idx}")
+#         if item_idx == -999:
+#             return None
+#         elif item_idx in items:
+#             name = items[item_idx]
+#             return item_dict[name]
+#         else:
+#             print(f'Item index {item_idx} not found in {str(items)}')
+
+#     def get_direction(self, command: str, location: Location = None) -> str:
+#         """
+#         Return the direction from `location.connections` which the player
+#         wants to travel to.
+#         """
+#         dirs = list(location.connections.keys())
+#         names = [loc.name for loc in location.connections.values()]
+#         connections = {i: dl for i, dl in enumerate(zip(dirs, names))}
+#         print('Found connections: ', connections)
+
+#         system_prompt = """
+#         You must select the direction that best matches the description given in a command.
+#         The possible directions to choose are:\n
+#         """
+        
+#         system_prompt += "\n" + "{c}".format(c=''.join([str(i)+": "+str(d)+" or "+str(l)+"\n" for i, (d, l) in connections.items()]))
+        
+#         system_prompt += """\nYou must only return the single number whose corresponding direction best matches the given command.
+#             If there are no good matches, return '-999'\n"""
+
+#         # print("Direction system prompt: ", system_prompt)
+
+#         # client = OpenAI()
+
+#         response = self.client.chat.completions.create(
+#             model=self.model,
+#             messages=[
+#                 {
+#                     "role": "system",
+#                     "content": system_prompt
+#                 },
+#                 {
+#                     "role": "user",
+#                     "content": "Command: {c}\n  The best direction match is number:  ".format(c=command)
+#                 }
+#             ],
+#             temperature=0,
+#             max_tokens=100,
+#             top_p=0,
+#             frequency_penalty=0,
+#             presence_penalty=0
+#         )
+
+#         dir_idx = response.choices[0].message.content
+#         try:
+#             dir_idx = self.extract_digit(dir_idx)
+#             dir_idx = int(dir_idx)
+#         except Exception as e:
+#             print(e)
+#         print(f"GPTParse selected direction: {dir_idx}")
+
+#         if dir_idx in connections:
+#             dir_name = connections[dir_idx][0]
+#             return dir_name
+#         else:
+#             print(f'direction id "{dir_idx}" not in location connections: {connections}')
+#             return None

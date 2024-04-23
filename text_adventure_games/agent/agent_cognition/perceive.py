@@ -47,23 +47,17 @@ def add_new_observations(game: "Game", character: "Character", new_percepts: Dic
         print(f"{character.name} sees: {observations}")
         for statement in observations:
             # print(statement)
-            # TODO: "create_action_statement" method is awkward as part of the Parser class
-            action_statement = game.parser.create_action_statement(command="describe your surroundings",
-                                                                   description=statement,
-                                                                   character=character)
-            
-            importance_score = gpt_get_action_importance(action_statement,
-                                                         client=game.parser.client, 
-                                                         model=game.parser.model, 
-                                                         max_tokens=10)
-            keywords = game.parser.extract_keywords(action_statement)
+            command = "Look around at the surroundings"
+            action_statement, action_importance, action_keywords = game.parser.summarise_and_score_action(command,
+                                                                                                          statement, 
+                                                                                                          character)
 
             character.memory.add_memory(round=game.round,
                                         tick=game.tick,
                                         description=action_statement,
-                                        keywords=keywords,
+                                        keywords=action_keywords,
                                         location=character.location.name,
                                         success_status=True,
-                                        memory_importance=importance_score,
+                                        memory_importance=action_importance,
                                         memory_type=MemoryType.PERCEPT.value,
                                         actor_id=character.id)

@@ -108,7 +108,8 @@ class Act:
         system += ap.action_system_end
         
         game_actions = self.game.parser.actions
-        choices_str, _ = enumerate_dict_options(game_actions, names_only=True)
+        # Added inverted argument because the game actions are inverted
+        choices_str, _ = enumerate_dict_options(game_actions, names_only=True, inverted=True)
         system += choices_str
 
         sys_token_count = get_prompt_token_count(content=system, role='system', pad_reply=False)
