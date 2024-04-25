@@ -176,7 +176,6 @@ config.*
 
 # testing notebooks:
 test/*.ipynb
-test/game_personas
 
 # log data files
 logs/*
