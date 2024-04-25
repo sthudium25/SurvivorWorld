@@ -198,11 +198,16 @@ class GenerativeAgent(Character):
         Returns:
             Union[str, int]: An action string or int flag -999 to trigger skipped action
         """
-        # If this is the end of a round, force reflection
-        if game.tick == game.max_ticks_per_round - 1:
-            reflect(game, self) 
+        # if this is the start of a round, set up the goals:
+        if game.tick == 0:
             if self.use_goals:
                 self.goals.gpt_generate_goals(game)
+
+        # If this is the end of a round, force reflection
+        if game.tick == (game.max_ticks_per_round - 1):
+            reflect(game, self) 
+            if self.use_goals:
+                self.goals.evaluate_goals(game)
             return -999
 
         # Percieve the agent's surroundings 
