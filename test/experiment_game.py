@@ -1,11 +1,17 @@
 import logging
 import os
+import random
 from SurvivorWorld.text_adventure_games import games, things, actions, blocks
 from SurvivorWorld.text_adventure_games.agent.persona import Persona
 from SurvivorWorld.text_adventure_games.things.characters import GenerativeAgent
 from SurvivorWorld.text_adventure_games.utils.build_agent import build_agent
 from SurvivorWorld.text_adventure_games.utils.custom_logging import logging_setup
 from SurvivorWorld.text_adventure_games.utils.custom_logging import logger
+
+GROUP_MAPPING = {"A": (False, False),
+                 "B": (True, False),
+                 "C": (False, True),
+                 "D": (True, True)}
 
 
 class ExperimentGame(games.SurvivorGame):
@@ -92,22 +98,25 @@ def build_experiment(experiment_name, experiment_id, max_ticks=5, num_finalists=
     # Characters
     characters = []
     char_locations = [camp, camp, beach, beach, jungle_path, jungle_path, ocean, ocean]
+    char_groups = ["A", "A", "B", "B", "C", "C", "D", "D"]
+    random.shuffle(char_groups)
+    random.shuffle(char_locations)
+    start_at = char_locations[0]
 
     for i, filename in enumerate(os.listdir("game_personas")):
-        print(filename)
-        print(os.getcwd())
         if filename.endswith(".json"):
             persona = Persona.import_persona("game_personas/" + filename)
-            character = GenerativeAgent(persona)
+            use_goals, use_impressions = GROUP_MAPPING[char_groups[i]]
+            character = GenerativeAgent(persona, use_goals, use_impressions)
             location = char_locations[i]
             location.add_character(character)
             characters.append(character)
-            print("Persona added: ", character.name)
+            print(f"Character {character.name} starts at {location.name} and belongs to Group {char_groups[i]}")
     
     player = characters.pop(0)
 
     # The Game
-    game = ExperimentGame(camp, 
+    game = ExperimentGame(start_at, 
                             player, 
                             characters, 
                             custom_actions=None,
