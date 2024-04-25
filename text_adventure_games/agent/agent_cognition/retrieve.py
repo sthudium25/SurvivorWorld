@@ -175,10 +175,6 @@ def get_relevant_memory_ids(seach_keys, character):
             node_ids = character.memory.keyword_nodes[kw_type][w]
             memory_ids.extend(node_ids)
 
-    # print(f"Gathered ids: {list(set(memory_ids))}")
-    # print(f"Character observations count: {len(character.memory.observations)}")
-    # print(f"Character num_observations counter: {character.memory.num_observations}")
-    # print(f"Max node id is: {max(memory_ids)}; min is: {min(memory_ids)}")
     return list(set(memory_ids))
     
 def gather_keywords_for_search(game, character, query):
@@ -223,16 +219,25 @@ def minmax_normalize(lst, target_min: int, target_max: int):
     Returns:
         np.array: range normalized values
     """
-    min_val = min(lst)
-    max_val = max(lst)
+    
+    try:
+        min_val = min(lst)
+        max_val = max(lst)
+    except TypeError:
+        min_val = np.nanmin(lst)
+        max_val = np.nanmax(lst)
     range_val = max_val - min_val
-
     # If there is no variance in the values, they will not contribute to the score
     if range_val == 0:
         out = [0.5] * len(lst)
         return out
-
-    out = [((x - min_val) * (target_max - target_min) / range_val + target_min) for x in lst]
+    try:
+        out = [((x - min_val) * (target_max - target_min) / range_val + target_min) for x in lst]
+    except TypeError:
+        # If there are None values if this list for some reason, replace them with the midpoint value.
+        mid_val = (max_val + min_val) / 2
+        tmp = [x if x else mid_val for x in lst]
+        out = [((x - min_val) * (target_max - target_min) / range_val + target_min) for x in tmp]
     return np.array(out)
 
 # def cosine_similarity(x, query):

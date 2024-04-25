@@ -119,7 +119,6 @@ def generalize(game, character):
     # Get Static Components (System Prompt and Impressions don't update during Reflection) #
 
     # load system prompt
-    # TODO: should we include goals here?
     system_prompt = character.get_standard_info(game, include_goals=True, include_perceptions=False) + rp.gpt_generalize_prompt
     # get the number of tokens in the system prompt
     system_prompt_token_count = get_prompt_token_count(content=system_prompt, role='system', pad_reply=False)
@@ -135,23 +134,17 @@ def generalize(game, character):
     # containing <|start|>assistant<|message|>
     impressions_token_count = get_prompt_token_count(content=impressions, role='user', pad_reply=True)
 
-    # print('-'*100)
-    # print("IMPRESSIONS:", impressions)
-    # print('-'*100)
-
-    # print('-'*100)
     # make a list of relevant memories that have been retrieved based on the query questions
     relevant_memories = []
     for question in rp.memory_query_questions:
-        # print("\nQ:", question)
-        for memory in retrieve.retrieve(game=game, 
-                                        character=character, 
-                                        query=question, 
-                                        n=memories_per_retrieval, 
-                                        include_idx=True):
-            # print("M:", memory, end='')
-            relevant_memories.append(memory)
-    # print('-'*100)
+        memories = retrieve.retrieve(game=game, 
+                                     character=character, 
+                                     query=question, 
+                                     n=memories_per_retrieval, 
+                                     include_idx=True)
+            
+        relevant_memories.extend(memories)
+    
     relevant_memories = list(set(relevant_memories))
     # relevant_memories = [memory+'\n' for memory in relevant_memories]
 
@@ -222,9 +215,6 @@ def generalize(game, character):
         # join the list items into a string – note that the list values end with newline characters,
         # so join using an empty string
         user_prompt_str = "".join(user_prompt_list)
-
-        print(f"{character.name} reflects on the following impressions and memories:", user_prompt_str, sep='\n')
-        print('-'*50)
         
         success = False
         while not success:
@@ -234,8 +224,6 @@ def generalize(game, character):
                     system=system_prompt,
                     user=user_prompt_str
                 )
-
-                print("GPT RESPONSE:", response, sep='\n')
 
                 # convert string response to dictionary
                 new_generalizations = json.loads(response)
@@ -332,11 +320,11 @@ def update_existing_generalizations(game: "Game", character: "Character", genera
         for ref in updated_gens:
             memory_type = character.memory.get_observation_type(ref['index'])
             if memory_type.value != MemoryType.REFLECTION.value:
-                print(f"{character.name} tried to update the following memory type: {memory_type}. It is being stored as a new memory.")
+                # print(f"{character.name} tried to update the following memory type: {memory_type}. It is being stored as a new memory.")
                 add_new_generalization_helper(game=game, character=character, generalization=ref)
             
             else:
-                print(f"Updating generalization: {ref} for {character.name}")
+                # print(f"Updating generalization: {ref} for {character.name}")
                 try:
                     prev_idx = int(ref["index"])
                     desc = ref["statement"]
