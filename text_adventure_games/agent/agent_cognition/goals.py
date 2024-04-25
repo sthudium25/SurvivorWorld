@@ -95,7 +95,7 @@ class Goals:
         return goal
     
     def build_goal_prompts(self, game):
-        system_prompt, sys_tkn_count = self.build_system_prompt()
+        system_prompt, sys_tkn_count = self.build_system_prompt(game)
         consumed_tokens = sys_tkn_count + self.token_offset
         user_prompt = self.build_user_prompt(game, consumed_tokens=consumed_tokens)
         return system_prompt, user_prompt
@@ -125,7 +125,7 @@ class Goals:
         # retreive goals and scores for prev round and two rounds prior
         round = game.round
         goal_prev = None
-        goal_prev = None
+        goal_prev_2 = None
         if round > 0:
             goal_prev = self.get_goals(round=round-1, as_str=True)
             score = self.get_goal_scores(round=round-1, as_str=True)
