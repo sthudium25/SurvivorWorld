@@ -107,10 +107,10 @@ class Persona():
             persona_dict = json.load(f)
 
         # Create a new Persona instance with the loaded data
-        persona.archetype_base = persona_dict['archetype_base']
         persona = cls(persona_dict['facts'])
         # persona.traits = {tname: {'score': trait['score'], 'adjective': trait['adjective']} for tname, trait in persona_dict['traits'].items()}
         # persona.traits = {tname: TraitScale(**trait) for tname, trait in persona_dict['traits'].items()}
+        persona.archetype_base = persona_dict['archetype_base']
         persona.summary = persona_dict['fact_summary']
         persona.description = persona_dict['description']
         persona.strategy_in_effect = persona_dict['strategy_in_effect']
