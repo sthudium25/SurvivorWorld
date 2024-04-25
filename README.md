@@ -16,12 +16,14 @@
 
 This repository accompanies our work, "[WORKING TITLE] A Framework for Designing Generative Agents in Competitive Environments". This work builds upon the great work of Joon Sung Park, Bodhisattwa Prasad Majumder, and others who have led the exploration of using LMs as generative agents. We develop a framework to extend prior works to new environments, namely competitive game environments that require agent collaboration, deception, and strategic planning. We hope to answer the following questions that fall into two categories: 
 
-1. Agent performance and behavior:
-  * How does an agent’s Persona impact their performance in the competitive game environment?
+1. Agent Persona:
+  * Performance and behaviour depending on agent’s persona
 
-2. Agent goal setting and achievement:
-  * How long do agents pursue each of their goals? What is the completion percentage of the goals they set for themselves?
-  * What is the impact of cognitive modules on agent performance and goal setting? (e.g. without inference over relationships in the game, do goals become less directed toward interaction with other agents?)
+2. Goal and Theory of Mind Architecture:
+  * Performance with goal archtecture (e.g. without inference over relationships in the game, do goals become less directed toward interaction with other agents?)
+  * Performance with Theory of Mind (impressions) architecture
+  * Performance with both architectures
+  * Preference of a certain priority level of goal by NPC and their completion rates
 
 -------------
 
