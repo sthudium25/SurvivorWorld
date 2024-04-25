@@ -47,7 +47,6 @@ if TYPE_CHECKING:
     from text_adventure_games.games import Game
     from text_adventure_games.things import Character
 
-GPT4_MAX_TOKENS = 8192
 REFLECTION_MAX_OUTPUT = 512
 REFLECTION_RETRIES = 5
 
