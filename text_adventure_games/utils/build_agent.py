@@ -153,6 +153,7 @@ def create_persona(facts: Dict,
             trait.set_adjective(model=model)
             p.add_trait(trait)
         p.set_game_theory_strategy(archetype_game_theory_mapping[archetype]) # Sets default strategy based on archetype
+        p.set_archetype(archetype)
     else:
         raise ValueError("One of either trait_scores or archetype must be specified.")
     
