@@ -124,10 +124,12 @@ class Goals:
         reflections_limit, goals_limit = int(available_tokens * 0.6), int(available_tokens * 0.3)
         # retreive goals and scores for prev round and two rounds prior
         round = game.round
-        if round > 1:
+        goal_prev = None
+        goal_prev = None
+        if round > 0:
             goal_prev = self.get_goals(round=round-1, as_str=True)
             score = self.get_goal_scores(round=round-1, as_str=True)
-        if round > 2:
+        if round > 1:
             goal_prev_2 = self.get_goals(round=round-2, as_str=True)
             score_2 = self.get_goal_scores(round=round-2, as_str=True)
         
@@ -258,55 +260,57 @@ class Goals:
         Returns:
             str: a completion based score for each priority level
         """
-        client = set_up_openai_client("Helicone")
 
         system_prompt = gp.evaluate_goals_prompt
+        system_prompt_tokens = get_prompt_token_count(system_prompt, role="system")
         
-        user_prompt = self.build_eval_user_prompt
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
+        user_prompt = self.build_eval_user_prompt(game, consumed_tokens=system_prompt_tokens)
        
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            # max_tokens=IMPRESSION_MAX_OUTPUT,
-            temperature=1,
-            top_p=1)
-        
-        scores = response.choices[0].message.content
-
+        scores = self.gpt_handler.generate(system=system_prompt, user=user_prompt)
         self.score_update(scores, game)
 
         return scores
     
-    def build_eval_user_prompt(self, game):
+    def build_eval_user_prompt(self, game, consumed_tokens=0):
 
-        user_prompt = "Assign the integer by comparing the goal with the reflections provided below:\n"
+        goal = self.get_goals(round=game.round, as_str=True)
+        goal_prompt = f"Goal:{goal}\n\n" 
 
-        goal = self.get_goals(round=game.round)
-        user_prompt += f"Goal:{goal}\n" 
+        always_included = ["Score the progress toward the goal that is suggested by the reflections provided below:\n",
+                           goal_prompt,
+                           "Your reflections and actions from this round:"
+                           ]
+        always_included_tokens = get_prompt_token_count(always_included, role="user", pad_reply=True)
+        available_tokens = get_token_remainder(self.gpt_handler.model_context_limit,
+                                               consumed_tokens,
+                                               always_included_tokens)
 
         # retrieving apt reflection and action nodes
-        reflection_raw = []
+        reflections_raw = []
         actions_raw = []
         round = game.round
         node_ids = self.character.memory.get_observations_by_round(round)
         for node_id in node_ids:
             node = self.character.memory.get_observation(node_id)
-            if node.node_type.value == 3:
-                reflection_raw.append(node.node_description)
-            if node.node_type.value == 1:
+            # Get the reflections and actions that this agent has made this round
+            if node.node_type.value == 3 and node.node_is_self == 1:
+                reflections_raw.append(node.node_description)
+            if node.node_type.value == 1 and node.node_is_self == 1:
                 actions_raw.append(node.node_description)
-        reflection = "\n".join(reflection_raw)
-        action = "\n".join(actions_raw)
 
-        user_prompt += f"Reflections and Action:\n{reflection}\n\n{action}\n"
-
-        self.recent_reflection = reflection
-
+        reflections_list = limit_context_length(history=reflections_raw,
+                                                max_tokens=available_tokens // 2,
+                                                tokenizer=game.parser.tokenizer)
+        reflections_str = context_list_to_string(reflections_list, sep='\n')
+        
+        actions_list = limit_context_length(history=actions_raw,
+                                            max_tokens=available_tokens // 2,
+                                            tokenizer=game.parser.tokenizer)
+        actions_str = context_list_to_string(actions_list, sep='\n')
+        user_prompt = always_included[0]
+        user_prompt += goal_prompt
+        user_prompt += f"Reflections:\n{reflections_str}\n\n"
+        user_prompt += f"Actions: {actions_str}\n"
         return user_prompt
     
     def score_update(self, score: str, game: "Game"):
