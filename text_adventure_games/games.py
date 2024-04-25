@@ -498,6 +498,11 @@ class SurvivorGame(Game):
 
                 # Confirming Round increments
                 print(f"ROUND: {self.round}.{self.tick}")
+                
+                # If this is the end of the round, vote
+                if self.tick == (self.max_ticks_per_round - 1):
+                    self.handle_voting_sessions()
+
                 for character in permutation(list(self.characters.values())):  # random permuted ordering, not based on character initiative
                     print(f"It is: {character.name}'s turn")
                     self.turn_handler(character)
@@ -506,7 +511,7 @@ class SurvivorGame(Game):
                 self.total_ticks += 1
             
             # NOTE: this placement allows agents to reflect prior to voting.
-            self.handle_voting_sessions()
+            
             if self.is_game_over():
                 break
 
@@ -516,7 +521,7 @@ class SurvivorGame(Game):
     def turn_handler(self, character):
         # set the current player to the game's "player" for description purposes
         self.player = character
-
+        
         # Update the world info with new tick, contestant counts, and non-player contestant names
         self.update_world_info()
 
