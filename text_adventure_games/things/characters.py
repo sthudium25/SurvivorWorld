@@ -12,6 +12,12 @@ from ..agent.agent_cognition.goals import Goals
 from ..agent.agent_cognition.perceive import percieve_location
 from ..gpt.gpt_helpers import context_list_to_string
 
+# Used to map group to use_goals and use_impressions
+GROUP_MAPPING = {"A": (False, False),
+                 "B": (True, False),
+                 "C": (False, True),
+                 "D": (True, True)}
+
 
 class Character(Thing):
     """
@@ -124,21 +130,20 @@ class GenerativeAgent(Character):
     
     def __init__(self, 
                  persona,
-                 use_goals: bool = True, 
-                 use_impressions: bool = True):
+                 group: str = "D"):
         super().__init__(persona.facts["Name"], persona.description, persona=persona.summary)
 
         # Cognition settings
-        self.use_goals = use_goals
-        self.use_impressions = use_impressions
+        self.group = group
+        self.use_goals, self.use_impressions = GROUP_MAPPING[self.group]
 
         # Set the Agent's persona, empty impressions, and initialize empty goals:
         self.persona = persona
-        if use_impressions:
+        if self.use_impressions:
             self.impressions = Impressions(self.name, self.id)
         else:
             self.impressions = None
-        if use_goals:
+        if self.use_goals:
             self.goals = Goals(self)
         else:
             self.goals = None

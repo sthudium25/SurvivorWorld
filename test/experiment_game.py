@@ -106,8 +106,7 @@ def build_experiment(experiment_name, experiment_id, max_ticks=5, num_finalists=
     for i, filename in enumerate(os.listdir("game_personas")):
         if filename.endswith(".json"):
             persona = Persona.import_persona("game_personas/" + filename)
-            use_goals, use_impressions = GROUP_MAPPING[char_groups[i]]
-            character = GenerativeAgent(persona, use_goals, use_impressions)
+            character = GenerativeAgent(persona, char_groups[i])
             location = char_locations[i]
             location.add_character(character)
             characters.append(character)
