@@ -324,6 +324,17 @@ class MemoryStream:
     def get_observations_by_round(self, round):
         return self.this_round_nodes[round]
     
+    def get_observations_after_round(self, round, inclusive=False):
+        nodes = []
+        if inclusive:
+            requested_rounds = [r for r in self.this_round_nodes if r >= round]
+        else:
+            requested_rounds = [r for r in self.this_round_nodes if r > round]
+        for r in requested_rounds:
+            r_nodes = self.get_observations_by_round(r)
+            nodes.append(r_nodes)
+        return nodes
+    
     def get_observations_by_type(self, obs_type):
         """
         Get a list of node_ids of a specified type
