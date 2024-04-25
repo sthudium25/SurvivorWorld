@@ -216,7 +216,7 @@ class VotingSession:
             memories = limit_context_length(memories,
                                             context_limit)
                                                                 
-            user_prompt += f"SELECT RELEVANT MEMORIES to the vote:\n{context_list_to_string(impressions)}\n\n"
+            user_prompt += f"SELECT RELEVANT MEMORIES to the vote:\n{context_list_to_string(memories)}\n\n"
 
         user_prompt += user_prompt_end
         return user_prompt

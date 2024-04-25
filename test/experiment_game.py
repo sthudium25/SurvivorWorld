@@ -35,7 +35,7 @@ class ExperimentGame(games.SurvivorGame):
                             experiment_name=experiment_name,
                             experiment_id=experiment_id)
             
-def build_experiment(experiment_name, experiment_id, max_ticks=5, num_finalists=2) -> games.Game:
+def build_experiment(experiment_name, experiment_id, max_ticks=2, num_finalists=2) -> games.Game:
       # Locations
     camp = things.Location(
         "Camp",

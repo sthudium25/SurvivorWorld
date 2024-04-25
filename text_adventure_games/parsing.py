@@ -411,8 +411,7 @@ class GptParser(Parser):
             if self.verbose:
                 print(json.dumps(messages, indent=2))
             response = self.gpt_handler.generate(messages=messages)
-            content = response.choices[0].message.content
-            return content
+            return response
         except Exception as e:
             return f"Something went wrong with GPT: {e}"
     
