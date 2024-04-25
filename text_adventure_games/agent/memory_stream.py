@@ -10,6 +10,7 @@ from enum import Enum
 from collections import defaultdict
 from dataclasses import dataclass, field
 import re
+import numpy as np
 from spacy import load as spacyload
 # from uuid import uuid4
 
@@ -373,6 +374,9 @@ class MemoryStream:
         """
         if self.node_exists(index):
             return self.memory_embeddings[index]
+        
+    def get_query_embeddings(self):
+        return np.array(list([q for q in self.query_embeddings.values() if q.all()]))
         
     def get_relationships_summary(self):
         raise NotImplementedError

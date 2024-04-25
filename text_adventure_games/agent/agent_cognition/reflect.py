@@ -34,12 +34,11 @@ import json
 # local imports
 from text_adventure_games.agent.memory_stream import MemoryType
 from text_adventure_games.assets.prompts import reflection_prompts as rp
-from text_adventure_games.gpt.gpt_helpers import (limit_context_length, 
-                                                  gpt_get_action_importance, 
+from text_adventure_games.gpt.gpt_helpers import (limit_context_length,
                                                   get_prompt_token_count,
                                                   get_token_remainder, 
                                                   GptCallHandler)
-from text_adventure_games.utils.general import set_up_openai_client
+
 from ordered_set import OrderedSet
 from . import retrieve
 
@@ -128,11 +127,14 @@ def generalize(game, character):
     # print('-'*100)
     
     # Get IMPRESSIONS of each character still in the game
-    impressions = character.impressions.get_multiple_impressions(game.characters.values())
+    impressions_token_count = 0
+    impressions = []
+    if character.use_impressions:
+        impressions = character.impressions.get_multiple_impressions(game.characters.values())
 
-    # count the number of tokens in the impressions, including a padding for GPT's reply
-    # containing <|start|>assistant<|message|>
-    impressions_token_count = get_prompt_token_count(content=impressions, role='user', pad_reply=True)
+        # count the number of tokens in the impressions, including a padding for GPT's reply
+        # containing <|start|>assistant<|message|>
+        impressions_token_count = get_prompt_token_count(content=impressions, role='user', pad_reply=True)
 
     # make a list of relevant memories that have been retrieved based on the query questions
     relevant_memories = []

@@ -149,9 +149,9 @@ def calculate_node_relevance(character, memory_ids, query):
         relevances = cosine_similarity(memory_embeddings, query_embedding).flatten()
     else:
         # if no query is passed, then the default queries will be used: 
-        # persona, goals, relationships, last perception
-        # Take the average relevance of all of these
-        default_embeddings = np.array(list(character.memory.query_embeddings.values()))
+        # persona, goals
+        # Take the max relevance of all of these
+        default_embeddings = character.memory.get_query_embeddings()
         raw_relevance = cosine_similarity(memory_embeddings, default_embeddings)
         relevances = np.max(raw_relevance, axis=1)
     
