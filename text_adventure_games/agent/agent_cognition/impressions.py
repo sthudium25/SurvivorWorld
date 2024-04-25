@@ -195,7 +195,7 @@ class Impressions:
     def build_system_prompt(self, game, character, target_name):
         system_prompt = character.get_standard_info(game, include_perceptions=False)
         system_prompt += ip.gpt_impressions_prompt.format(target_name=target_name)
-        sys_tkn_count = get_prompt_token_count(system_prompt)
+        sys_tkn_count = get_prompt_token_count(system_prompt, role="system", tokenizer=game.parser.tokenizer)
         return system_prompt, sys_tkn_count
 
     def build_user_message(self, game, character, target, consumed_tokens=0) -> str:
@@ -210,6 +210,11 @@ class Impressions:
         Returns:
             str: _description_
         """
+        always_included = ["Target person: {t}\n\n".format(t=target.name)]
+        always_included_count = get_prompt_token_count(always_included[0], 
+                                                       role="user", 
+                                                       pad_reply=True, 
+                                                       tokenizer=game.parser.tokenizer)
         # get the agent's current impression of the target character
         target_impression = self._get_impression(target)
 
@@ -234,7 +239,8 @@ class Impressions:
         
         available_tokens = get_token_remainder(self.gpt_handler.model_context_limit,
                                                consumed_tokens,
-                                               target_impression_tkns, 
+                                               target_impression_tkns,
+                                               always_included_count, 
                                                self.gpt_handler.max_tokens  # Max output tokens set by user
                                                )
         if context_list:
@@ -242,7 +248,7 @@ class Impressions:
                                                 max_tokens=available_tokens,
                                                 tokenizer=game.parser.tokenizer)
 
-        message = "Target person: {t}\n\n".format(t=target.name)
+        message = always_included[0]
         if self.chronological:
             ordering = "in chronological order"
         else:
