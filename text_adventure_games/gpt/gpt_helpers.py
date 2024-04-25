@@ -76,6 +76,7 @@ class GptCallHandler:
     # Class variables
     model_limits: ClassVar = field(init=False)
     client_handler: ClassVar = ClientInitializer()
+    calls_made: ClassVar = 0
 
     # Instance variables
     api_key_org: str = "Helicone"
@@ -200,6 +201,8 @@ class GptCallHandler:
                 # Adding some helpful prints but will still raise the error
                 self._handle_APIConnectionError(e)
                 self._log_gpt_error(e)
+            finally:
+                self.calls_made += 1
 
     def _log_gpt_error(self, e):
         logger.error("GPT Error: {}".format(e))                 

@@ -7,10 +7,6 @@ Description: defines prompts used in the agent impressions module.
 """
 
 gpt_impressions_prompt = """
-World info: {world_info}
-
-Personal info: {persona_summary}
-
 Your job is to develop a theory of mind (ToM) for other another character. In doing so, consider the answers questions like:
 - What do you think are this person's key strategies to win this game?
 - Given how they have acted so far, what are their probable next moves?

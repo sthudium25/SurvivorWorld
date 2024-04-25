@@ -12,21 +12,21 @@ Description: defines how agents store interpersonal impressions and theory-of-mi
 
 """
 from collections import defaultdict
-from typing import TYPE_CHECKING, Dict
-import json
+from typing import TYPE_CHECKING
 
 # local imports
-from text_adventure_games.agent.memory_stream import MemoryType
 from text_adventure_games.assets.prompts import impressions_prompts as ip
-from text_adventure_games.gpt.gpt_helpers import limit_context_length, gpt_get_action_importance
-from text_adventure_games.utils.general import set_up_openai_client
+from text_adventure_games.gpt.gpt_helpers import (limit_context_length, 
+                                                  get_token_remainder,
+                                                  get_prompt_token_count,
+                                                  context_list_to_string, 
+                                                  GptCallHandler)
 from text_adventure_games.agent.agent_cognition import retrieve
 
 if TYPE_CHECKING:
     from text_adventure_games.games import Game
     from text_adventure_games.things import Character
 
-GPT4_MAX_TOKENS = 8192
 IMPRESSION_MAX_OUTPUT = 512
 
 
@@ -49,6 +49,24 @@ class Impressions:
         self.impressions = defaultdict(dict)
         self.name = name
         self.id = id
+        self.last_target = None
+
+        # GPT Call handler attrs
+        self.gpt_handler = self._set_up_gpt()
+        self.token_offset = 50  # Taking into account a few variable tokens in the user prompt
+        self.offset_pad = 5
+ 
+    def _set_up_gpt(self):
+        model_params = {
+            "api_key_org": "Helicone",
+            "model": "gpt-4",
+            "max_tokens": IMPRESSION_MAX_OUTPUT,
+            "temperature": 1,
+            "top_p": 1,
+            "max_retries": 5
+        }
+
+        return GptCallHandler(**model_params)
 
     def _get_impression(self, target: "Character", str_only=True):
         """
@@ -127,32 +145,10 @@ class Impressions:
         Returns:
             None
         """
-        # get the agent's current impression of the target character
-        target_impression = self._get_impression(target)
-        
-        # Get relevant memories 
-        if target_impression:
-            # keep nodes from the last round that mention the character's name
-            memory_ids = character.memory.get_observations_by_round(game.round)
-            nodes = [character.memory.get_observation(m_id) for m_id in memory_ids]
-            context_list = [node.node_description for node in nodes if target.name in node.node_keywords]
-            self.chronological = True
-        else:
-            # IF this agent has never reflected upon this target, get the 10 most relevant memories about them
-            # TODO: how could this query be improved?
-            # Relevant memories: least to most 
-            context_list = retrieve.retrieve(game, 
-                                             character, 
-                                             n=10, 
-                                             query=f"I want to remember everything I know about {target.name}")
-            self.chronological = False
-        if context_list:
-            context_list = limit_context_length(context_list, 
-                                                max_tokens=GPT4_MAX_TOKENS-IMPRESSION_MAX_OUTPUT,
-                                                tokenizer=game.parser.tokenizer)
-        # TODO: add rules for min number memories here?
-        
-        impression = self.gpt_generate_impression(game, character, target.name, context_list, str(target_impression))
+        self.last_target = target
+        system, user = self.build_impression_prompts(game, character, target)
+
+        impression = self.gpt_generate_impression(system, user)
         # print(f"{character.name} impression of {target.name}: {impression}")
 
         self.impressions.update({f"{target.name}_{target.id}": {"impression": impression,
@@ -161,11 +157,8 @@ class Impressions:
                                                                 "creation": game.total_ticks}})
   
     def gpt_generate_impression(self, 
-                                game: "Game", 
-                                character: "Character", 
-                                target_name, 
-                                memories, 
-                                current_impression) -> str:
+                                system_prompt,
+                                user_prompt) -> str:
         """
         Call to GPT to create a new impression of the target character.
         System prompt uses: world info, agent personal summary, and the target's name
@@ -181,32 +174,31 @@ class Impressions:
         Returns:
             str: a new or updated impression
         """
-        client = set_up_openai_client("Helicone")
-
-        system_prompt = ip.gpt_impressions_prompt.format(world_info=game.world_info,
-                                                         # TODO: need to replace this once personal summary is finalized
-                                                         persona_summary=character.persona.summary,
-                                                         target_name=target_name)
+        impression = self.gpt_handler.generate(system=system_prompt, user=user_prompt)
+        if isinstance(impression, tuple):
+            # This occurs when there was a Bad Request Error cause for exceeding token limit
+            success, token_difference = impression
+            # Add this offset to the calculations of token limits and pad it 
+            self.token_offset = token_difference + self.offset_pad
+            self.offset_pad += 2 * self.offset_pad 
+            return self.set_impression(self.game, self.character, self.last_target)
         
-        user_prompt = self.build_user_message(target_name, memories, current_impression)
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            max_tokens=IMPRESSION_MAX_OUTPUT,
-            temperature=1,
-            top_p=1,
-        )
-
-        impression = response.choices[0].message.content
         return impression
 
-    def build_user_message(self, target_name, memories_list, current_impression) -> str:
+    def build_impression_prompts(self, game, character, target):
+        system_prompt, sys_token_count = self.build_system_prompt(game, character, target.name)
+        consumed_tokens = sys_token_count + self.token_offset
+        
+        user_prompt = self.build_user_message(game, character, target, consumed_tokens=consumed_tokens)
+        return system_prompt, user_prompt
+    
+    def build_system_prompt(self, game, character, target_name):
+        system_prompt = character.get_standard_info(game, include_perceptions=False)
+        system_prompt += ip.gpt_impressions_prompt.format(target_name=target_name)
+        sys_tkn_count = get_prompt_token_count(system_prompt, role="system", tokenizer=game.parser.tokenizer)
+        return system_prompt, sys_tkn_count
+
+    def build_user_message(self, game, character, target, consumed_tokens=0) -> str:
         """
         Helper method to build out the user message string for impression prompting.
 
@@ -218,18 +210,55 @@ class Impressions:
         Returns:
             str: _description_
         """
+        always_included = ["Target person: {t}\n\n".format(t=target.name)]
+        always_included_count = get_prompt_token_count(always_included[0], 
+                                                       role="user", 
+                                                       pad_reply=True, 
+                                                       tokenizer=game.parser.tokenizer)
+        # get the agent's current impression of the target character
+        target_impression = self._get_impression(target)
 
-        message = "Person: {t}\n\n".format(t=target_name)
+        # Get relevant memories 
+        if target_impression:
+            # keep nodes from the last round that mention the character's name
+            memory_ids = character.memory.get_observations_by_round(game.round)
+            nodes = [character.memory.get_observation(m_id) for m_id in memory_ids]
+            context_list = [node.node_description for node in nodes if target.name in node.node_keywords]
+            self.chronological = True
+            target_impression_tkns = get_prompt_token_count(target_impression)
+        else:
+            # IF this agent has never reflected upon this target, get the 10 most relevant memories about them
+            # TODO: how could this query be improved?
+            # Relevant memories: least to most 
+            context_list = retrieve.retrieve(game, 
+                                             character, 
+                                             n=-1, 
+                                             query=f"I want to remember everything I know about {target.name}")
+            self.chronological = False
+            target_impression_tkns = 0
+        
+        available_tokens = get_token_remainder(self.gpt_handler.model_context_limit,
+                                               consumed_tokens,
+                                               target_impression_tkns,
+                                               always_included_count, 
+                                               self.gpt_handler.max_tokens  # Max output tokens set by user
+                                               )
+        if context_list:
+            context_list = limit_context_length(context_list, 
+                                                max_tokens=available_tokens,
+                                                tokenizer=game.parser.tokenizer)
+
+        message = always_included[0]
         if self.chronological:
             ordering = "in chronological order"
         else:
             ordering = "in order from least to most relevant"
 
-        if current_impression:
-            message += "Current theory of mind for {t} {o}:\n{i}\n\n".format(t=target_name, o=ordering, i=current_impression)
-        if memories_list:
-            memory_str = "".join([f"{i}. {m}\n" for i, m in enumerate(memories_list)])
-            message += "Memories to consider in developing a theory of mind for {t}:\n{m}".format(t=target_name, 
+        if target_impression:
+            message += "Current theory of mind for {t} {o}:\n{i}\n\n".format(t=target.name, o=ordering, i=target_impression)
+        if context_list:
+            memory_str = context_list_to_string(context_list, sep="\n")
+            message += "Memories to consider in developing a theory of mind for {t}:\n{m}".format(t=target.name, 
                                                                                                   m=memory_str)
         
         return message

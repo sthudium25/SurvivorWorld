@@ -1,9 +1,5 @@
 gpt_goals_prompt = """
-World info: {world_info}
-
-Personal info: {persona_summary}
-
-Using the context above, as well as information you'll be provided about your past reflections and impressions of others, 
+\nUsing the context above that describes the world and yourself, as well as information you'll be provided about your past reflections and impressions of others, 
 create high level goals at several priority levels for the next round. You can keep the previous goal, update the previous goal or create a new one based on your strategy.
 
 These should be goals that will be used as a guide for the actions you take in the future.

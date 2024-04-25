@@ -10,13 +10,18 @@ from collections import defaultdict
 
 import numpy as np
 from text_adventure_games.utils.general import set_up_openai_client, get_text_embedding
-from text_adventure_games.assets.prompts import goal_prompt
+from text_adventure_games.assets.prompts import goal_prompt as gp
+from text_adventure_games.gpt.gpt_helpers import (GptCallHandler,
+                                                  limit_context_length,
+                                                  get_prompt_token_count,
+                                                  get_token_remainder,
+                                                  context_list_to_string)
 
 if TYPE_CHECKING:
     from text_adventure_games.things.characters import Character
     from text_adventure_games.games import Game
 
-GPT4_MAX_TOKENS = 8192
+GOALS_MAX_OUTPUT = 256
 
 # 1. Get character's goals
 # 2. Obtain a list of memories
@@ -42,6 +47,23 @@ class Goals:
         self.recent_reflection = None
         self.goal_embeddings = defaultdict(np.ndarray)
 
+        # GPT Call handler attrs
+        self.gpt_handler = self._set_up_gpt()
+        self.token_offset = 50  # Taking into account a few variable tokens in the user prompt
+        self.offset_pad = 5
+ 
+    def _set_up_gpt(self):
+        model_params = {
+            "api_key_org": "Helicone",
+            "model": "gpt-4",
+            "max_tokens": GOALS_MAX_OUTPUT,
+            "temperature": 1,
+            "top_p": 1,
+            "max_retries": 5
+        }
+
+        return GptCallHandler(**model_params)
+
     def gpt_generate_goals(self, game: "Game") -> str:
         """
         Calls GPT to create a goal for the character
@@ -54,26 +76,17 @@ class Goals:
         Returns:
             str: a new goal for this round
         """
-        client = set_up_openai_client("Helicone")
 
-        system_prompt = goal_prompt.gpt_goals_prompt.format(world_info=game.world_info, 
-                                                            persona_summary=self.character.persona.summary)
-
-        user_prompt = self.build_user_prompt(game)
+        system, user = self.build_goal_prompts(game)
         
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-       
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            # max_tokens=IMPRESSION_MAX_OUTPUT,
-            temperature=1,
-            top_p=1)
-        
-        goal = response.choices[0].message.content
+        goal = self.gpt_handler.generate(system=system, user=user)
+        if isinstance(goal, tuple):
+            # This occurs when there was a Bad Request Error cause for exceeding token limit
+            success, token_difference = goal
+            # Add this offset to the calculations of token limits and pad it 
+            self.token_offset = token_difference + self.offset_pad
+            self.offset_pad += 2 * self.offset_pad 
+            return self.gpt_generate_goals(self.game)
         
         # get embedding of goal
         goal_embed = self._create_goal_embedding(goal)
@@ -81,25 +94,53 @@ class Goals:
         self.goal_update(goal, goal_embed, game)
         return goal
     
-    def build_user_prompt(self, game):
+    def build_goal_prompts(self, game):
+        system_prompt, sys_tkn_count = self.build_system_prompt()
+        consumed_tokens = sys_tkn_count + self.token_offset
+        user_prompt = self.build_user_prompt(game, consumed_tokens=consumed_tokens)
+        return system_prompt, user_prompt
+    
+    def build_system_prompt(self, game):
 
-        #retreive goals and scores for prev round and two rounds prior
-        round = game.round
-        if round > 1:
-            goal_prev = self.get_goals(round = round-1)
-            score = self.get_goal_scores(round = round-1)
-        if round > 2:
-            goal_prev_2 = self.get_goals(round = round-2)
-            score_2 = self.get_goal_scores(round = round-2)
+        system_prompt = self.character.get_standard_info(game, include_perceptions=False)
+        system_prompt += gp.gpt_goals_prompt
+
+        system_tkn_count = get_prompt_token_count(system_prompt, role="system", pad_reply=False, tokenizer=game.parser.tokenizer)
+        return system_prompt, system_tkn_count
         
-        #retreive refelction nodes for two rounds prior
+    def build_user_prompt(self, game, consumed_tokens=0):
+
+        always_included = ["Additional context for creating your goal:\n",
+                           "You can keep the previous goal, update the previous goal or create a new one based on your strategy."]
+        always_included_count = get_prompt_token_count(always_included, 
+                                                       role="user", 
+                                                       pad_reply=True, 
+                                                       tokenizer=game.parser.tokenizer)
+        available_tokens = get_token_remainder(self.gpt_handler.model_context_limit,
+                                               self.gpt_handler.max_tokens,
+                                               consumed_tokens,
+                                               always_included_count)
+        
+        reflections_limit, goals_limit = int(available_tokens * 0.6), int(available_tokens * 0.3)
+        # retreive goals and scores for prev round and two rounds prior
+        round = game.round
+        goal_prev = None
+        goal_prev = None
+        if round > 0:
+            goal_prev = self.get_goals(round=round-1, as_str=True)
+            score = self.get_goal_scores(round=round-1, as_str=True)
+        if round > 1:
+            goal_prev_2 = self.get_goals(round=round-2, as_str=True)
+            score_2 = self.get_goal_scores(round=round-2, as_str=True)
+        
+        # retreive refelction nodes for two rounds prior
         reflection_raw_2 = []
-        node_ids = self.character.memory.get_observations_by_round(round-2)
+        node_ids = self.character.memory.get_observations_after_round(round-2, inclusive=True)
         for node_id in node_ids:
             node = self.character.memory.get_observation(node_id)
             if node.node_type.value == 3:
                 reflection_raw_2.append(node.node_description)
-        reflection_2 = "\n".join(reflection_raw_2)
+        # reflection_2 = "\n".join(reflection_raw_2)
 
         # get all character objects
         # char_objects = list(game.characters.values())
@@ -109,20 +150,39 @@ class Goals:
         # else:
         #     impressions_str = None
 
-        user_prompt = "Additional context for creating your goal:\n"
-        if self.recent_reflection is not None:
-            user_prompt += f"Reflections on prior round:\n{self.recent_reflection}\n\n"
-            user_prompt += f"Reflections on two rounds prior:\n{reflection_2}\n\n"
+        user_prompt = always_included[0]
+        if reflection_raw_2:
+            # user_prompt += f"Reflections on prior round:\n{self.recent_reflection}\n\n"
+            user_prompt += "Reflections on last two rounds:"
+            context_list = limit_context_length(history=reflection_raw_2,
+                                                max_tokens=reflections_limit,
+                                                tokenizer=game.parser.tokenizer)
+            reflection_2 = context_list_to_string(context_list, sep='\n')
+            user_prompt += f"{reflection_2}\n"
         if goal_prev:
-            user_prompt += f"Goals of prior round:\n{goal_prev}\n\n"
-            user_prompt += f"Goal Completion Score of prior round:\n{score}\n\n"
+            context_list = ["Goals of prior round:", 
+                            goal_prev, 
+                            "Goal Completion Score of prior round:", 
+                            score]
+            context_list = limit_context_length(history=context_list,
+                                                max_tokens=goals_limit // 2,
+                                                tokenizer=game.parser.tokenizer)
+            goal_prev_str = context_list_to_string(context_list, sep='\n')
+            user_prompt += f"{goal_prev_str}\n\n"
         if goal_prev_2:
-            user_prompt += f"Goals of two rounds prior:\n{goal_prev_2}\n\n"
-            user_prompt += f"Goal Completion Score of two rounds prior:\n{score_2}\n\n"
+            context_list = ["Goals of two rounds prior:", 
+                            goal_prev_2, 
+                            "Goal Completion Score of two rounds prior:", 
+                            score_2]
+            context_list = limit_context_length(history=context_list,
+                                                max_tokens=goals_limit // 2,
+                                                tokenizer=game.parser.tokenizer)
+            goal_prev_2_str = context_list_to_string(context_list, sep='\n')
+            user_prompt += f"{goal_prev_2_str}\n"
 
         # if impressions_str:
         #     user_prompt += f"Impressions: \n{impressions_str}\n"
-        user_prompt += "You can keep the previous goal, update the previous goal or create a new one based on your strategy."
+        user_prompt += always_included[1]
         return user_prompt
     
     def goal_update(self, goal: str, goal_embedding: np.ndarray, game: "Game"):
@@ -188,7 +248,7 @@ class Goals:
         if curr_embedding is not None:
             self.character.memory.set_goal_query(curr_embedding)
 
-    #################evaluation###################
+    # ----------- EVALUATION -----------
     def evaluate_goals(self, game: "Game"):
         """
         Calls GPT to quantify the goal completion
@@ -200,55 +260,57 @@ class Goals:
         Returns:
             str: a completion based score for each priority level
         """
-        client = set_up_openai_client("Helicone")
 
-        system_prompt = goal_prompt.evaluate_goals_prompt
+        system_prompt = gp.evaluate_goals_prompt
+        system_prompt_tokens = get_prompt_token_count(system_prompt, role="system")
         
-        user_prompt = self.build_eval_user_prompt
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
+        user_prompt = self.build_eval_user_prompt(game, consumed_tokens=system_prompt_tokens)
        
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            # max_tokens=IMPRESSION_MAX_OUTPUT,
-            temperature=1,
-            top_p=1)
-        
-        scores = response.choices[0].message.content
-
+        scores = self.gpt_handler.generate(system=system_prompt, user=user_prompt)
         self.score_update(scores, game)
 
         return scores
     
-    def build_eval_user_prompt(self, game):
+    def build_eval_user_prompt(self, game, consumed_tokens=0):
 
-        user_prompt = "Assign the integer by comparing the goal with the reflections provided below:\n"
+        goal = self.get_goals(round=game.round, as_str=True)
+        goal_prompt = f"Goal:{goal}\n\n" 
 
-        goal = self.get_goals(round = game.round)
-        user_prompt += f"Goal:{goal}\n" 
+        always_included = ["Score the progress toward the goal that is suggested by the reflections provided below:\n",
+                           goal_prompt,
+                           "Your reflections and actions from this round:"
+                           ]
+        always_included_tokens = get_prompt_token_count(always_included, role="user", pad_reply=True)
+        available_tokens = get_token_remainder(self.gpt_handler.model_context_limit,
+                                               consumed_tokens,
+                                               always_included_tokens)
 
         # retrieving apt reflection and action nodes
-        reflection_raw = []
+        reflections_raw = []
         actions_raw = []
         round = game.round
         node_ids = self.character.memory.get_observations_by_round(round)
         for node_id in node_ids:
             node = self.character.memory.get_observation(node_id)
-            if node.node_type.value == 3:
-                reflection_raw.append(node.node_description)
-            if node.node_type.value == 1:
+            # Get the reflections and actions that this agent has made this round
+            if node.node_type.value == 3 and node.node_is_self == 1:
+                reflections_raw.append(node.node_description)
+            if node.node_type.value == 1 and node.node_is_self == 1:
                 actions_raw.append(node.node_description)
-        reflection = "\n".join(reflection_raw)
-        action = "\n".join(actions_raw)
 
-        user_prompt += f"Reflections and Action:\n{reflection}\n\n{action}\n"
-
-        self.recent_reflection = reflection
-
+        reflections_list = limit_context_length(history=reflections_raw,
+                                                max_tokens=available_tokens // 2,
+                                                tokenizer=game.parser.tokenizer)
+        reflections_str = context_list_to_string(reflections_list, sep='\n')
+        
+        actions_list = limit_context_length(history=actions_raw,
+                                            max_tokens=available_tokens // 2,
+                                            tokenizer=game.parser.tokenizer)
+        actions_str = context_list_to_string(actions_list, sep='\n')
+        user_prompt = always_included[0]
+        user_prompt += goal_prompt
+        user_prompt += f"Reflections:\n{reflections_str}\n\n"
+        user_prompt += f"Actions: {actions_str}\n"
         return user_prompt
     
     def score_update(self, score: str, game: "Game"):
@@ -290,7 +352,7 @@ class Goals:
             score = self.goal_scores[round]
         else:
             score = self.goal_scores
+
+        if as_str:
+            return self.stringify_goal(score)
         return score
-
-
-
