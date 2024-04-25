@@ -332,7 +332,7 @@ class MemoryStream:
             requested_rounds = [r for r in self.this_round_nodes if r > round]
         for r in requested_rounds:
             r_nodes = self.get_observations_by_round(r)
-            nodes.append(r_nodes)
+            nodes.extend(r_nodes)
         return nodes
     
     def get_observations_by_type(self, obs_type):
