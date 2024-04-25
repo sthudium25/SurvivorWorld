@@ -189,8 +189,11 @@ def gather_keywords_for_search(game, character, query):
     # 2. goals
     # TODO: need to confirm how goals are stored and if any parsing needs to done to pass them as a string  
     prev_round = max(0, game.round - 1)
-    current_goals = character.goals.get_goals(round=prev_round, as_str=True)
-
+    try:
+        current_goals = character.goals.get_goals(round=prev_round, as_str=True)
+    except AttributeError:
+        current_goals = None
+    
     if current_goals:
         goal_kwds = game.parser.extract_keywords(current_goals)
         if goal_kwds:

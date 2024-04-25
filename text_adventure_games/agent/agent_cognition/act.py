@@ -122,8 +122,8 @@ class Act:
         chars_in_view = self.character.get_characters_in_view(self.game)
         always_included = [
             "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n",
-            f"In this location, you see: {', '.join([c.name for c in chars_in_view])}\n"
-            "Given the above impressions, observations, and others present here, what would you like to do?"]
+            f"In this location, you see: {', '.join([c.name for c in chars_in_view])}\n",
+            "Given the above information and others present here, what would you like to do?"]
         always_included_tokens = get_prompt_token_count(content=always_included,
                                                         role="user",
                                                         pad_reply=True, 
@@ -139,15 +139,18 @@ class Act:
 
         # Add the theory of mind of agents in the vicinity
         # and limit the inclusion to the token count defined in "imp_limit"
-        impressions = self.character.impressions.get_multiple_impressions(chars_in_view)
-
-        impressions, tok_count = limit_context_length(history=impressions,
-                                                      max_tokens=imp_limit,
-                                                      tokenizer=self.game.parser.tokenizer,
-                                                      return_count=True)
-    
-        # Add the impressions to the user prompt
-        user_messages = context_list_to_string(impressions)
+        user_messages = ""
+        tok_count = 0
+        try:
+            impressions = self.character.impressions.get_multiple_impressions(chars_in_view)
+            impressions, tok_count = limit_context_length(history=impressions,
+                                                max_tokens=imp_limit,
+                                                tokenizer=self.game.parser.tokenizer,
+                                                return_count=True)
+            # Add the impressions to the user prompt
+            user_messages += context_list_to_string(impressions)
+        except AttributeError:
+            pass
 
         # Retrieve ALL relevant memories to the situation
         memories_list = retrieve(self.game, self.character, query=None, n=-1)  # Should we limit this too or just let it fill up?
@@ -162,6 +165,7 @@ class Act:
         user_messages += context_list_to_string(context=memories_list, sep="\n")
         # user_messages += context_list_to_string(context=memories_list)
         user_messages += '\n'+always_included[1]
+        user_messages += '\n'+always_included[2]
         return user_messages
 
     def get_user_token_limits(self, remainder, props):

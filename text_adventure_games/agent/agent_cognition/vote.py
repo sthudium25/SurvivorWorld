@@ -149,7 +149,10 @@ class VotingSession:
     def _gather_voter_context(self, game: "Game", voter: "Character"):
         voter_std_info = voter.get_standard_info(game)
         valid_options = self.get_vote_options(voter)
-        impressions = voter.impressions.get_multiple_impressions(valid_options)
+        try:
+            impressions = voter.impressions.get_multiple_impressions(valid_options)
+        except AttributeError:
+            impressions = None
         query = "".join([
             f"Before the vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
             "have done to influence my position in the game."
@@ -213,7 +216,7 @@ class VotingSession:
             memories = limit_context_length(memories,
                                             context_limit)
                                                                 
-            user_prompt += f"SELECT RELEVANT MEMORIES to the vote:\n{context_list_to_string(impressions)}\n\n"
+            user_prompt += f"SELECT RELEVANT MEMORIES to the vote:\n{context_list_to_string(memories)}\n\n"
 
         user_prompt += user_prompt_end
         return user_prompt

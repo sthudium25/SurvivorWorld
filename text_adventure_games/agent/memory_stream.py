@@ -408,7 +408,10 @@ class MemoryStream:
             _type_: _description_
         """
         cached_queries = {}
-        current_goal_embed = character.goals.get_goal_embedding(round=round)
+        try:
+            current_goal_embed = character.goals.get_goal_embedding(round=round)
+        except:
+            current_goal_embed = None
         persona_embed = get_text_embedding(character.persona.summary)
         if persona_embed is not None:
             cached_queries["persona"] = persona_embed
