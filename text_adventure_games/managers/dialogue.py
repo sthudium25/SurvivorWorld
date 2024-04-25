@@ -105,14 +105,17 @@ class Dialogue:
         ### IMPRESSIONS OF OTHER CHARACTERS###
         if update_impressions:
             # get impressions of the other game characters
-            impressions = character.impressions.get_multiple_impressions(self.game.characters.values())
-            impressions = "YOUR IMPRESSIONS OF OTHERS:\n" + "\n".join(impressions) + "\n\n"
+            try:
+                impressions = character.impressions.get_multiple_impressions(self.game.characters.values())
+                impressions = "YOUR IMPRESSIONS OF OTHERS:\n" + "\n".join(impressions) + "\n\n"
 
-            # get the impressions token count
-            impressions_token_count = get_prompt_token_count(content=impressions, role=None, pad_reply=False)
+                # get the impressions token count
+                impressions_token_count = get_prompt_token_count(content=impressions, role=None, pad_reply=False)
 
-            # update the character's impressions in the characters system dictionary
-            self.characters_user[character.name]['impressions'] = (impressions_token_count, impressions)
+                # update the character's impressions in the characters system dictionary
+                self.characters_user[character.name]['impressions'] = (impressions_token_count, impressions)
+            except AttributeError:
+                self.characters_user[character.name]['impressions'] = (0, "")
 
         ### MEMORIES OF CHARACTERS IN DIALOGUE/MENTIONED ###
 
@@ -121,8 +124,11 @@ class Dialogue:
 
             # make a memory retrieval query based on characters partaking/mentioned in this conversation
             query = ''.join(["You are in dialogue with: ",
-                            ', '.join([x.name for x in self.participants if x.name != character.name])+'.\n',
-                            f"Your goals are: {character.goals.get_goals(round=(self.game.round-1), as_str=True)}\n"])
+                            ', '.join([x.name for x in self.participants if x.name != character.name])+'.\n'])
+            try:
+                query += f"Your goals are: {character.goals.get_goals(round=(self.game.round-1), as_str=True)}\n"
+            except AttributeError:
+                pass
             query += self.dialogue_history[-1]
 
             # get the 25 most recent/relevant/important memories

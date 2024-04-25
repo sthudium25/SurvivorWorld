@@ -140,6 +140,7 @@ class Act:
         # Add the theory of mind of agents in the vicinity
         # and limit the inclusion to the token count defined in "imp_limit"
         user_messages = ""
+        tok_count = 0
         try:
             impressions = self.character.impressions.get_multiple_impressions(chars_in_view)
             impressions, tok_count = limit_context_length(history=impressions,
