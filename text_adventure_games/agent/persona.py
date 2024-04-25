@@ -32,6 +32,7 @@ class Persona():
         self.game_theory_strategy = "nothing specific yet"
         self.strategy_in_effect = False
         self.speaking_style = ""
+        self.archetype_base = None
 
     def add_trait(self, trait):
         if trait.name not in self.traits:
@@ -53,6 +54,9 @@ class Persona():
     def get_trait_summary(self):
         return [f"{tname} which *tends* to be {self.traits[tname].get_adjective()}" for tname in self.traits]
     
+    def set_archetype(self, archetype: str):
+        self.archetype_base = archetype
+
     def start_strategy(self):
         self.strategy_in_effect = True
 
@@ -77,6 +81,7 @@ class Persona():
         filepath = filedir + filename
 
         persona_dict = {  # Convert the persona to a dictionary
+            'archetype_base': self.archetype_base,
             'traits': {tname: {'score': trait.score, 'adjective': trait.adjective} for tname, trait in self.traits.items()},
             'facts': self.facts,
             'fact_summary': self.summary,
@@ -102,6 +107,7 @@ class Persona():
             persona_dict = json.load(f)
 
         # Create a new Persona instance with the loaded data
+        persona.archetype_base = persona_dict['archetype_base']
         persona = cls(persona_dict['facts'])
         # persona.traits = {tname: {'score': trait['score'], 'adjective': trait['adjective']} for tname, trait in persona_dict['traits'].items()}
         # persona.traits = {tname: TraitScale(**trait) for tname, trait in persona_dict['traits'].items()}
