@@ -1,6 +1,6 @@
 action_system_mid = """
 Given the context of your environment, past memories, and interpretation of relationships with other characters,
-select a next action that advances your goals or strategy. 
+select a next action that advances your goals or strategy. You can only select one action, selecting multiple would cause an error.
 """
 
 action_system_end = """
