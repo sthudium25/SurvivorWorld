@@ -1,6 +1,7 @@
 import json
 import inspect
 from collections import defaultdict, namedtuple
+import os
 from typing import TYPE_CHECKING
 from numpy.random import permutation
 
@@ -10,6 +11,8 @@ from . import parsing, actions, blocks
 from .utils.custom_logging import logger
 from .agent.agent_cognition.vote import VotingSession, JuryVotingSession
 from .assets.prompts import vote_prompt, world_info_prompt
+from .utils.consts import get_output_logs_path
+from .utils.general import create_dirs, get_logger_extras
 
 class Game:
     """
@@ -464,7 +467,10 @@ class SurvivorGame(Game):
                  experiment_name: str = "exp1",
                  experiment_id: int = 1):
         super().__init__(start_at, player, characters, custom_actions)
-        self.logger = logger.CustomLogger(experiment_name=experiment_name, sim_id=experiment_id).get_logger()
+        game_logger = logger.CustomLogger(experiment_name=experiment_name, sim_id=experiment_id)
+        self.logger = game_logger.get_logger()
+        self.experiment_name = experiment_name
+        self.experiment_id = game_logger.get_simulation_id()
         
         self.original_player_id = self.player.id
         
@@ -481,6 +487,9 @@ class SurvivorGame(Game):
         self.voting_history = defaultdict(lambda: defaultdict(list))
         self.num_finalists = num_finalists
         self.winner_declared = False
+
+        # Log the starting loctions of the characters
+        self._log_starting_locs()
 
     def update_world_info(self):
         params = {"contestant_count": len(self.characters),
@@ -701,3 +710,45 @@ class SurvivorGame(Game):
                                 memory_importance=10, 
                                 memory_type=MemoryType.ACTION.value,
                                 actor_id=c.id)
+            
+    def _log_starting_locs(self):
+        for c in self.characters.values():
+            extras = get_logger_extras(self, c)
+            extras["type"] = "Origin"
+            message = f"Starting point: {c.location.name}"
+            self.logger.debug(msg=message, extra=extras)
+
+    def save_simulation_data(self):
+        output_path = get_output_logs_path()
+        experiment_dir = f"logs/{self.experiment_name}-{self.experiment_id}/"
+        fp = os.path.join(output_path, experiment_dir, "voting_history.json")
+        create_dirs(fp)
+
+        # Save voting history
+        with open(fp, mode="w") as f:
+            json.dump(self.voting_history, f, indent=4)
+
+        # Save goal scores and goals
+        fp = os.path.join(output_path, experiment_dir, "character_goals.json")
+        create_dirs(fp)
+        
+        with open(fp, mode="w") as f:
+            output = {}
+            for name, c in self.characters.items():
+                output[name] = c.get_goals() or "None"
+
+            for name, c in self.jury.items():
+                output[name] = c.get_goals() or "None"
+            json.dump(output, f, indent=4)
+
+        fp = os.path.join(output_path, experiment_dir, "character_goal_scores.json")
+        create_dirs(fp)
+
+        with open(fp, mode="w") as f:
+            output = {}
+            for name, c in self.characters.items():
+                output[name] = c.get_goal_scores() or "None"
+
+            for name, c in self.jury.items():
+                output[name] = c.get_goal_scores() or "None"
+            json.dump(output, f, indent=4)

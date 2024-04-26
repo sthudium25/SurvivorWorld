@@ -184,7 +184,7 @@ class GenerativeAgent(Character):
         summary = f"WORLD INFO: {game.world_info}\n"
         summary += f"You are {self.persona.get_personal_summary()}.\n"
         if self.use_goals and include_goals:
-            goals = self.goals.get_goals(round=game.round, as_str=True)
+            goals = self.get_goals(round=game.round, as_str=True)
             if goals:
                 summary += f"Your current GOALS:\n{goals}\n"
         if include_perceptions and self.last_location_observations:
@@ -193,10 +193,22 @@ class GenerativeAgent(Character):
                 summary += f"Your current perceptions are:\n{perceptions}\n"
         return summary
     
+    def get_goals(self, round=-1, priority="all", as_str=False):
+        if self.use_goals:
+            return self.goals.get_goals(round=round, priority=priority, as_str=as_str)
+        else:
+            return None
+        
+    def get_goal_scores(self, round=-1, priority="all", as_str=False):
+        if self.use_goals:
+            return self.goals.get_goal_scores(round=round, priority=priority, as_str=as_str)
+        else:
+            return None
+
     def generate_goals(self, game):
         # if this is the start of a round, set up the goals:
         if game.tick == 0 and self.use_goals: 
-            print(f"Setting goal for {self.name}")
+            # print(f"Setting goal for {self.name}")
             self.goals.gpt_generate_goals(game)
 
     def engage(self, game) -> Union[str, int]:
