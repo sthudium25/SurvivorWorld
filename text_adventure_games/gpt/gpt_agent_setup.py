@@ -4,16 +4,27 @@ Author: Samuel Thudium (sam.thudium1@gmail.com)
 File: gpt_agent.py
 Description: Methods that access the OPENAI API and make a call to GPT
 """
-# TODO: These clients all use personal API KEYS; should confirm what HELICONE can be used for.
 import re
 import openai
 
 # relative imports
 from ..utils import general
+from .gpt_helpers import GptCallHandler
+
+GPT_HANDLER = GptCallHandler(**{
+    "api_key_org": "Helicone",
+    "model": "gpt-4",
+    "max_tokens": 100,
+    "temperature": 1,
+    "top_p": 1,
+    "max_retries": 5
+})
+
 
 def get_new_character_from_gpt(description, model: str = "gpt-3.5-turbo"):
 
-    client = general.set_up_openai_client(org="Penn")
+    # client = general.set_up_openai_client(org="Penn")
+    GPT_HANDLER.update_params(max_tokens=200, temperature=1.25)
 
     system_prompt = """
 You are a character generator. You should fill in the following character information\
@@ -30,26 +41,12 @@ Example Output:
 
 Create a JSON structure from the output.
 """
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": system_prompt
-            },
-            {
-                "role": "user",
-                "content": f"Create a character who fits this description: {description}"
-            }
-        ],
-        temperature=1.25,
-        max_tokens=200,
-        top_p=1,
-        # response_format={"type": "json_object"},
-    )
 
-    facts_json, error_in_json = general.extract_json_from_string(response.choices[0].message.content)
-    print(f"Generated JSON: {facts_json}")
+    user_prompt = f"Create a character who fits this description: {description}"
+    response = GPT_HANDLER.generate(system_prompt, user_prompt)
+    GPT_HANDLER.reset_defaults()
+
+    facts_json, error_in_json = general.extract_json_from_string(response)
     return facts_json, error_in_json
 
 def get_trait_continuum(low: str, high: str, mid: str = None, model='gpt-3.5-turbo'):
@@ -73,25 +70,11 @@ def get_trait_continuum(low: str, high: str, mid: str = None, model='gpt-3.5-tur
         user_prompt += f"Provide a list of 15 adjectives that range from\
         'Low: {low}' to 'High: {high}' with a smooth transition in between."
 
-    client = general.set_up_openai_client(org="Penn")
+    GPT_HANDLER.update_params(top_p=0.5)
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": system_prompt
-            },
-            {
-                "role": "user",
-                "content": user_prompt
-            }
-        ],
-        temperature=1,
-        max_tokens=100,
-        top_p=0.5)
+    continuum = GPT_HANDLER.generate(system=system_prompt, user=user_prompt)
+    GPT_HANDLER.reset_defaults()
 
-    continuum = response.choices[0].message.content
     scale = general.extract_enumerated_list(continuum)
     return scale
 
@@ -117,25 +100,12 @@ def get_target_adjective(low: str,
     user_prompt = f"On a smooth transition scale from {low_int}={low} to {high_int}={high},\
         a target score of {target} is represented by the adjective:"
 
-    client = general.set_up_openai_client(org="Penn")
+    GPT_HANDLER.update_params(max_tokens=10, top_p=0.5)
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": system_prompt
-            },
-            {
-                "role": "user",
-                "content": user_prompt
-            }
-        ],
-        temperature=1,
-        max_tokens=10,
-        top_p=0.5)
+    response = GPT_HANDLER.generate(system=system_prompt, user=user_prompt)
+    GPT_HANDLER.reset_defaults()
 
-    target_trait = general.extract_target_word(response.choices[0].message.content)
+    target_trait = general.extract_target_word(response)
     return target_trait
 
 
@@ -168,25 +138,10 @@ def summarize_agent_facts(facts: str, model='gpt-4') -> str:
          "His love for dogs adds a playful and nurturing aspect to his personality, ",
          "creating a warm and inviting presence in both his professional and personal life."])
     
-    client = general.set_up_openai_client(org="Penn")
+    GPT_HANDLER.update_params(stop=".", max_tokens=100, presence_penalty=0.2)
+    response = GPT_HANDLER.generate(system=system_prompt, user=facts)
+    GPT_HANDLER.reset_defaults()
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": system_prompt
-            },
-            {
-                "role": "user",
-                "content": facts
-            }   
-        ],
-        stop=".",
-        max_tokens=100,
-        presence_penalty=0.2,
-        temperature=1
-    )
-    summary = response.choices[0].message.content.lower()
+    summary = response.lower()
     summary = re.sub("summary:?", "", summary)
     return summary

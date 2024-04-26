@@ -7,6 +7,7 @@ import time
 from typing import ClassVar
 import openai
 import tiktoken
+import httpx
 
 # local imports
 from ..utils.general import enumerate_dict_options
@@ -56,7 +57,9 @@ class ClientInitializer:
         if "api_key" not in params:
             raise ValueError("'api_key' must be included in your config.")
         if "timeout" not in params:
-            params["timeout"] = 60
+            # Limit connection to 15 seconds
+            # Limit read and write to 60 seconds 
+            params["timeout"] = httpx.Timeout(60, connect=15)
         for k, v in params.items():
             if k not in self.VALID_CLIENT_PARAMS:
                 print(f"{k} is not a valid argument to openai.OpenAI(). Removing {k}.")
@@ -89,6 +92,7 @@ class GptCallHandler:
     frequency_penalty: float = 0
     presence_penalty: float = 0
     max_retries: int = 5
+    stop = None
     openai_internal_errors: int = 0
     openai_rate_limits_hit: int = 0
     
@@ -170,7 +174,8 @@ class GptCallHandler:
                     max_tokens=self.max_tokens,
                     top_p=self.top_p,
                     frequency_penalty=self.frequency_penalty,
-                    presence_penalty=self.presence_penalty
+                    presence_penalty=self.presence_penalty,
+                    stop=self.stop
                 )
                 return response.choices[0].message.content
             except openai.APITimeoutError as e:
