@@ -55,6 +55,8 @@ class ClientInitializer:
         validated_params = {}
         if "api_key" not in params:
             raise ValueError("'api_key' must be included in your config.")
+        if "timeout" not in params:
+            params["timeout"] = 60
         for k, v in params.items():
             if k not in self.VALID_CLIENT_PARAMS:
                 print(f"{k} is not a valid argument to openai.OpenAI(). Removing {k}.")
@@ -87,9 +89,8 @@ class GptCallHandler:
     frequency_penalty: float = 0
     presence_penalty: float = 0
     max_retries: int = 5
-    # client: openai.types.Client = field(init=False)
-    # Include if context limit checks done within this class
-    # tokenizer: Any = field(default_factory=lambda: tiktoken.get_encoding("cl100k_base"))
+    openai_internal_errors: int = 0
+    openai_rate_limits_hit: int = 0
     
     def __post_init__(self):
         self.original_params = self._save_init_params()
@@ -158,14 +159,6 @@ class GptCallHandler:
             ]
         elif not messages or not isinstance(messages, list):
             raise ValueError("You must supply 'system' and 'user' strings or a list of ChatMessages in 'messages'.")
-        if system and user:
-            # Generate messages
-            messages = [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user}
-            ]
-        elif not messages or not isinstance(messages, list):
-            raise ValueError("You must supply 'system' and 'user' strings or a list of ChatMessages in 'messages'.")
 
         i = 0
         while i < self.max_retries:
@@ -180,32 +173,46 @@ class GptCallHandler:
                     presence_penalty=self.presence_penalty
                 )
                 return response.choices[0].message.content
+            except openai.APITimeoutError as e:
+                # The request took too long
+                self._handle_RateOrTimeoutErrors(e, attempt=i)
+                continue
             except openai.RateLimitError as e:
-                # use exponential backoff
-                # openai requests 0.6ms delay so a max of 2s should be plenty
-                duration = min(0.1**i, 2)
-                print(f"rate limit reached, sleeping {duration} seconds")
-                time.sleep(duration)
-                self._log_gpt_error(e)
+                # hit rate limit
+                self._handle_RateOrTimeoutErrors(e, attempt=i)
                 continue
             except openai.BadRequestError as e:
                 success, info = self._handle_BadRequestError(e)
                 self._log_gpt_error(e)
                 return success, info  # return to the module for redoing the message creation?
-            except openai.ServiceUnavailableError as e:
+            except openai.InternalServerError as e:
                 # This model or the servers may be down...so wait a while?
-                self._handle_ServiceUnavailableError(e)
+                self._handle_InternalServerError(e)
                 self._log_gpt_error(e)
                 continue
             except openai.APIConnectionError as e:
                 # Adding some helpful prints but will still raise the error
                 self._handle_APIConnectionError(e)
                 self._log_gpt_error(e)
+            except openai.AuthenticationError as e:
+                print("Your api credentials caused an error. Check your config file.")
+                raise e
             finally:
                 self.calls_made += 1
 
     def _log_gpt_error(self, e):
-        logger.error("GPT Error: {}".format(e))                 
+        logger.error("GPT Error: {}".format(e)) 
+
+    def _handle_RateOrTimeoutErrors(self, e, attempt):
+        self._log_gpt_error(e)
+        # use exponential backoff
+        # openai requests 0.6ms delay so a max of 2s should be plenty
+        if self.openai_rate_limits_hit > 1:
+            duration = 61
+        else:
+            duration = min(0.1**attempt, 2)
+        print(f"rate limit reached, sleeping {duration} seconds")
+        time.sleep(duration)
         
     def _handle_BadRequestError(self, e):
         if hasattr(e, 'response'):
@@ -229,12 +236,14 @@ class GptCallHandler:
         print("This could also be raised by a poor internet connection.")
         raise e
     
-    def _handle_ServiceUnavailableError(self, e):
+    def _handle_InternalServerError(self, e):
         print("OpenAI Service Error encountered:\n")
         print(e)
-        print("\nYou may want to stop the run and try later. Otherwise, waiting 2 minutes...")
 
-        total_wait_time = 120
+        self.openai_internal_errors += 1
+        total_wait_time = 15 * self.openai_internal_errors
+        print(f"\nYou may want to stop the run and try later. Otherwise, waiting {total_wait_time} seconds...")
+        
         interval = 1
 
         while total_wait_time > 0:
