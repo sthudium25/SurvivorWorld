@@ -14,7 +14,7 @@ import openai
 # local imports
 from . import retrieve
 from text_adventure_games.assets.prompts import vote_prompt as vp
-from text_adventure_games.utils.general import set_up_openai_client, get_logger_extras
+from text_adventure_games.utils.general import get_logger_extras
 from text_adventure_games.gpt.gpt_helpers import (limit_context_length,
                                                   get_prompt_token_count,
                                                   get_token_remainder,
@@ -240,6 +240,12 @@ class VotingSession:
     def _log_confessional(self, game: "Game", voter: "Character", message: str):
         extras = get_logger_extras(game, voter)
         extras["type"] = "Confessional"
+        message = f"Target: {self.voter_record.get(voter.name, 'None')}; {message}" 
+        game.logger.debug(msg=message, extra=extras)
+
+    def log_vote(self, game: "Game", exiled: "Character", message: str):
+        extras = get_logger_extras(game, exiled)
+        extras["type"] = "Vote"
         game.logger.debug(msg=message, extra=extras)
 
 class JuryVotingSession(VotingSession):

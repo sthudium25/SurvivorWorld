@@ -473,6 +473,7 @@ class SurvivorGame(Game):
         self.round = 0
         self.tick = 0
         self.total_ticks = 0
+        self.num_contestants = len(self.characters)
         
         # Store end state variables: 
         # Exiled players in jury cast the final vote
@@ -483,9 +484,9 @@ class SurvivorGame(Game):
 
     def update_world_info(self):
         params = {"contestant_count": len(self.characters),
-                  "contestant_names": ", ".join([f"{c.name} who is at {c.location.name}" 
-                                                 for c in self.characters.values() 
-                                                 if c.id != self.player.id]),
+                  "contestant_names_locs": ", ".join([f"{c.name} who is at {c.location.name}" 
+                                                      for c in self.characters.values() 
+                                                      if c.id != self.player.id]),
                   "n_finalists": self.num_finalists,
                   "rounds_until_finals": len(self.characters) - self.num_finalists,
                   "turns_left_this_round": self.max_ticks_per_round - (self.tick - 1)}
@@ -504,6 +505,9 @@ class SurvivorGame(Game):
                 # If this is the end of the round, vote
                 if self.tick == (self.max_ticks_per_round - 1):
                     self.handle_voting_sessions()
+                
+                # Set goals for all characters at beginning of round
+                self.goal_setting_handler()
 
                 for character in permutation(list(self.characters.values())):  # random permuted ordering, not based on character initiative
                     print(f"It is: {character.name}'s turn")
@@ -519,6 +523,14 @@ class SurvivorGame(Game):
 
             # Increment the rounds
             self.round += 1
+
+    def goal_setting_handler(self):
+        # if it is the beginning of a round, everyone should make goals
+        if self.tick == 0:
+            for character in self.characters.values():
+                # Update the world info with new tick, contestant counts, and non-player contestant names
+                self.update_world_info()
+                character.generate_goals(self)
 
     def turn_handler(self, character):
         # set the current player to the game's "player" for description purposes
@@ -589,7 +601,13 @@ class SurvivorGame(Game):
         self.update_voting_history(session=self.vote_session)
         self.update_exile_state(exiled)
         self.add_exiled_to_jury(exiled)
+        self._log_exiled_player(exiled)
         print(f"{exiled.name} was exiled from the group and now sits on the jury.")
+
+    def _log_exiled_player(self, exiled):
+        contestants_remaining = len(self.characters)
+        message = f"{exiled.name} was exiled. Position: {contestants_remaining + 1}"
+        self.vote_session.log_vote(self, exiled, message=message)
 
     def update_exile_state(self, exiled_agent):
         # Get the characters in the game
@@ -650,8 +668,18 @@ class SurvivorGame(Game):
         self.update_voting_history(session=self.final_vote)
         self.winner = winner
         self.winner_declared = True
+        self._log_finalists(winner=winner)
         self._add_winner_memory()
 
+    def _log_finalists(self, winner):
+        for char in self.characters.values():
+            if char == winner:
+                message = f"{char.name} won the game. Position: 1"
+            else:
+                # TODO: should eventually make this rank non-winners based on their votes received
+                message = f"{char.name} lost the game. Position: 2"
+            self.vote_session.log_vote(self, char, message=message)
+            
     def _add_winner_memory(self):
         
         vote_count = self.final_vote.tally.get(self.winner.name)
