@@ -490,7 +490,6 @@ class SurvivorGame(Game):
                   "rounds_until_finals": len(self.characters) - self.num_finalists,
                   "turns_left_this_round": self.max_ticks_per_round - (self.tick - 1)}
         self.world_info = world_info_prompt.world_info.format(**params)
-        print(self.world_info)
     
     # Override game loop 
     def game_loop(self):
