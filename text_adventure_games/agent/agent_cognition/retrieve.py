@@ -61,8 +61,6 @@ def retrieve(game: "Game", character: "Character", query: str = None, n: int = -
         ranked_memory_ids = ranked_memory_ids[-n:]
 
     # NOTE: currently a list of strings
-    game.logger.debug(f"{character.name} found {len(ranked_memory_ids)} relevant memories.", 
-                      extra={"round": game.round, "tick": game.tick})
     if not include_idx:
         return [f"{character.memory.observations[t[0]].node_description}\n" for t in ranked_memory_ids]
     else:

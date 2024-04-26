@@ -192,6 +192,12 @@ class GenerativeAgent(Character):
             if perceptions:
                 summary += f"Your current perceptions are:\n{perceptions}\n"
         return summary
+    
+    def generate_goals(self, game):
+        # if this is the start of a round, set up the goals:
+        if game.tick == 0 and self.use_goals: 
+            print(f"Setting goal for {self.name}")
+            self.goals.gpt_generate_goals(game)
 
     def engage(self, game) -> Union[str, int]:
         """
@@ -203,10 +209,6 @@ class GenerativeAgent(Character):
         Returns:
             Union[str, int]: An action string or int flag -999 to trigger skipped action
         """
-        # if this is the start of a round, set up the goals:
-        if game.tick == 0:
-            if self.use_goals:
-                self.goals.gpt_generate_goals(game)
 
         # If this is the end of a round, force reflection
         if game.tick == (game.max_ticks_per_round - 1):
