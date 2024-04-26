@@ -105,5 +105,31 @@ def get_output_logs_path():
     output_logs = get_root_dir(n=3)
     return output_logs
 
-# TODO: set up any global variables
-# TODO: I want a global list of the default archetype profiles we have access to in ../assets
+def validate_output_dir(fp, name, sim_id):
+    if os.path.exists(fp):
+        print()
+        decision = check_user_input(name, sim_id)
+        if not decision:
+            print("Incrementing id...")
+            new_log_path = os.path.join(get_output_logs_path(), f"logs/{name}-{sim_id+1}/")
+            return validate_output_dir(new_log_path, name, sim_id+1)
+        else:
+            print("Overwriting data...")
+            return fp, sim_id
+    else:
+        return fp, sim_id
+    
+def check_user_input(name, sim_id):
+    p1 = f"It appears you've already saved data using '{name}-{sim_id}. Do you want to overwrite the data?"
+    p2 = "Type 'y' or 'n'"
+    decision = input(prompt=f"{p1}\n{p2}")
+    if decision not in ["y", "n"]:
+        return check_user_input()
+    elif decision == "y":
+        decision = input(prompt="Are you like REALLY sure you want to do this??? y or n")
+        if decision == "y":
+            return True
+        else:
+            return False
+    else:
+        return False

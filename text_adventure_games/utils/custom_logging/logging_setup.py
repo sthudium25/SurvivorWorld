@@ -16,7 +16,8 @@ from datetime import datetime as dt
 # local imports
 from ..consts import (get_root_dir,
                       get_custom_logging_path, 
-                      get_output_logs_path)
+                      get_output_logs_path,
+                      validate_output_dir)
 
 def setup_logger(experiment_name: str, 
                  simulation_id: int, 
@@ -31,8 +32,11 @@ def setup_logger(experiment_name: str,
     with open(logger_config, 'r') as log_cfg:
         config = json.load(log_cfg)
 
+    new_log_path = os.path.join(get_output_logs_path(), f"logs/{experiment_name}-{simulation_id}/")
+    validated_path, validated_id = validate_output_dir(new_log_path, experiment_name, simulation_id)
+
     # TODO: update this as needed to maintain 1 log per run or 1 log per experiment
-    experiment_logfile_name = os.path.join(get_output_logs_path(), f"logs/sim_{experiment_name}-{simulation_id}.jsonl")
+    experiment_logfile_name = os.path.join(validated_path, f"sim_{experiment_name}-{validated_id}.jsonl")
     
     # NOTE: keeping this static
     global_warnings_logfile = os.path.join(get_output_logs_path(), "logs/warnings/project_warnings.jsonl")
@@ -42,7 +46,7 @@ def setup_logger(experiment_name: str,
     logging.config.dictConfig(config)
 
     logger = logging.getLogger("survivor_global_logger")
-    return logger
+    return logger, validated_id
 
 def set_logs_paths(logs_config, 
                    experiment_log_path: Union[str, PathLike], 
