@@ -238,3 +238,6 @@ def get_text_embedding(text, model="text-embedding-3-small", *args):
     client = set_up_openai_client(org="Penn")
     text_vector = client.embeddings.create(input=[text], model=model, *args).data[0].embedding
     return np.array(text_vector)
+
+def create_dirs(fp):
+    os.makedirs(os.path.dirname(fp), exist_ok=True)
