@@ -39,8 +39,10 @@ def get_logger_extras(game, character):
     extras = {}
     extras["character_name"] = character.name
     extras["character_id"] = character.id
+    extras["character_group"] = character.group
     extras["round"] = game.round
     extras["tick"] = game.tick
+    extras["total_ticks"] = game.total_ticks
 
     return extras
 
