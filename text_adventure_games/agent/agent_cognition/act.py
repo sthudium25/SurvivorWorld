@@ -20,7 +20,7 @@ from text_adventure_games.gpt.gpt_helpers import (limit_context_length,
                                                   get_token_remainder,
                                                   context_list_to_string,
                                                   GptCallHandler)
-from text_adventure_games.utils.general import enumerate_dict_options
+from text_adventure_games.utils.general import enumerate_dict_options, get_logger_extras
 from .retrieve import retrieve
 from text_adventure_games.assets.prompts import act_prompts as ap
 
@@ -48,6 +48,11 @@ class Act:
         }
 
         return GptCallHandler(**model_params) 
+    
+    def _log_action(self, game, character, message):
+        extras = get_logger_extras(game, character)
+        extras["type"] = "Act"
+        game.logger.debug(msg=message, extra=extras)
 
     def act(self):
         
@@ -58,7 +63,8 @@ class Act:
         # print("act user:", user_prompt, sep='\n')
 
         action_to_take = self.generate_action(system_prompt, user_prompt)
-        self.game.logger.debug(f"{self.character.name} chose to take action: {action_to_take}")
+        
+        self._log_action(self.game, self.character, action_to_take)
         print(f"{self.character.name} chose to take action: {action_to_take}")
         return action_to_take
 
@@ -73,6 +79,7 @@ class Act:
         if isinstance(response, tuple):
             # This occurs when there was a Bad Request Error cause for exceeding token limit
             success, token_difference = response
+            print(f"Action prompts exceeded token limit of model by {token_difference} tokens.")
             # Add this offset to the calculations of token limits and pad it 
             self.token_offset = token_difference + self.offset_pad
             self.offset_pad += 2 * self.offset_pad 
@@ -144,9 +151,9 @@ class Act:
         try:
             impressions = self.character.impressions.get_multiple_impressions(chars_in_view)
             impressions, tok_count = limit_context_length(history=impressions,
-                                                max_tokens=imp_limit,
-                                                tokenizer=self.game.parser.tokenizer,
-                                                return_count=True)
+                                                          max_tokens=imp_limit,
+                                                          tokenizer=self.game.parser.tokenizer,
+                                                          return_count=True)
             # Add the impressions to the user prompt
             user_messages += context_list_to_string(impressions)
         except AttributeError:
