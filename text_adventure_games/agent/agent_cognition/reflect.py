@@ -234,9 +234,8 @@ def generalize(game, character):
                 continue
             else:
                 success = True
-            finally:
                 # add the new generalizations to the character's memory
-                add_generalizations_to_memory(game, character, new_generalizations)
+                add_generalizations_to_memory(game, character, new_generalizations)               
 
         # reset relevant memories to exclude all from the previous reflection
         # (this also removes the relevant memories primer string)
