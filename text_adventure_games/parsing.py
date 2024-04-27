@@ -15,8 +15,6 @@ import json
 import tiktoken
 import spacy
 from jellyfish import jaro_winkler_similarity, levenshtein_distance
-# from openai import OpenAI
-# import numpy as np
 
 from .things import Character
 if TYPE_CHECKING:
@@ -24,6 +22,7 @@ if TYPE_CHECKING:
     from text_adventure_games.things.base import Thing
 from . import actions
 from .utils.general import normalize_name
+from text_adventure_games.actions.base import ActionSequence
 # from .gpt.parser_kani import DescriptorKani
 from .gpt.gpt_helpers import (GptCallHandler,
                               limit_context_length,
@@ -201,9 +200,12 @@ class Parser:
         if not action:
             self.fail(command, "No action could be matched from command", character)
             return False
+        elif isinstance(action, ActionSequence):
+            self.fail(command, 
+                      "Command parsed to multiple actions. Try simpler command that attempts ony 1 action.", 
+                      character)
         else:
-            action()
-            return True
+            return action()
         
     def command_repeated(self, command: str) -> bool:
         if len(self.command_history) == 0:
@@ -583,7 +585,10 @@ class GptParser(Parser):
             [
                 "You are the narrator for a text adventure game. ",
                 f"{thing.name} entered a command that failed in the game. ",
-                f"Try to help {thing.name} understand why the command failed."
+                f"Try to help {thing.name} understand why the command failed. ",
+                f"Do you will see the last few commands given. {thing.name} attempted the last one and failed. ",
+                "Summarize why they failed using only the information provided. ",
+                "Do not make up rules of the game that you don't know explicitly."
             ]
         )
 
