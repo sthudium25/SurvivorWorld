@@ -125,6 +125,12 @@ class Character(Thing):
         item.owner = None
         self.inventory.pop(item.name)
 
+    def get_item_by_name(self, item_name):
+        """
+        Get an item using its name.
+        """
+        return self.inventory.get(item_name, None)
+
 
 class GenerativeAgent(Character):
     
