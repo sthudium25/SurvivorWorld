@@ -10,7 +10,6 @@ from .preconditions import (
 from .consume import Eat, Drink, Light
 from .fight import Attack
 from .fish import Catch_Fish
-from .rose import Pick_Rose, Smell_Rose
 from .locations import Go
 from .things import Get, Drop, Inventory, Examine, Give
 from .talk import Talk
@@ -34,8 +33,6 @@ __all__ = [
     Light,
     Attack,
     Catch_Fish,
-    Pick_Rose,
-    Smell_Rose,
     Talk,
     Search_Idol
 ]
