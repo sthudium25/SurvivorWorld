@@ -130,6 +130,7 @@ class Act:
         always_included = [
             "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n",
             f"In this location, you see: {', '.join([c.name for c in chars_in_view])}\n",
+            ap.action_incentivize_exploration,
             "Given the above information and others present here, what would you like to do?"]
         always_included_tokens = get_prompt_token_count(content=always_included,
                                                         role="user",
@@ -170,9 +171,8 @@ class Act:
         
         user_messages += always_included[0]
         user_messages += context_list_to_string(context=memories_list, sep="\n")
-        # user_messages += context_list_to_string(context=memories_list)
-        user_messages += '\n'+always_included[1]
-        user_messages += '\n'+always_included[2]
+        
+        user_messages += '\n'.join(always_included[1:])
         return user_messages
 
     def get_user_token_limits(self, remainder, props):
