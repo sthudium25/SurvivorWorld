@@ -43,7 +43,7 @@ class VotingSession:
         model_params = {
             "api_key_org": "Helicone",
             "model": "gpt-4",
-            "max_tokens": 100,
+            "max_tokens": 250,
             "temperature": 1,
             "top_p": 1,
             "max_retries": 5
