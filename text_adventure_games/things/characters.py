@@ -158,6 +158,20 @@ class GenerativeAgent(Character):
         self.memory = MemoryStream(self)
         self.last_location_observations = None
 
+        # Track last conversation participant
+        self.last_talked_to = None
+
+    def set_dialogue_participant(self, talked_to):
+        if not talked_to:
+            self.last_talked_to = None
+        elif isinstance(talked_to, Character):    
+            self.last_talked_to = talked_to
+        else:
+            raise ValueError(f"{talked_to} is invalid.")
+    
+    def get_last_dialogue_target(self):
+        return self.last_talked_to
+
     def _parse_perceptions(self):
         perception_descriptions = []
         for ptype, percept in self.last_location_observations.items():
