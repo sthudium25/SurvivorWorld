@@ -640,6 +640,8 @@ class SurvivorGame(Game):
                 self.add_exile_memory(self.characters[name],
                                       exiled_name=exiled_agent.name, 
                                       to_jury=True)
+                # Make sure they do one final reflection and goal evaluation
+                exiled_agent.engage(self)
                 # remove the agent that was exiled
                 _ = self.characters.pop(name)
             else:
