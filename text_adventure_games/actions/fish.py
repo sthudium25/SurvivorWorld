@@ -57,11 +57,12 @@ class Catch_Fish(base.Action):
             no_pole = "".join(
                 [
                     f"{self.character.name} reaches into the pond and tries to ",
-                    "catch a fish with their hands, but the fish are too fast.",
+                    "catch a fish with their hands, but the fish are too fast. ",
+                    "Try to specify that you want to catch fish with the fishing pole."
                 ]
             )
             self.parser.fail(self.command, no_pole, self.character)
-            return None
+            return False
 
         fish = self.pond.get_item("fish")
         if fish:
@@ -78,3 +79,4 @@ class Catch_Fish(base.Action):
         description = d.format(character_name=self.character.name)
         # self.parser.ok(description)
         self.parser.ok(self.command, description, self.character)
+        return True

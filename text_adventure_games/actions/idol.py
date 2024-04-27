@@ -14,7 +14,7 @@ class Search_Idol(base.Action):
         super().__init__(game)
         self.command = command
         self.character = character
-        self.jungle = game.locations["jungle"]
+        self.jungle = game.locations.get("Jungle", None)
         self.machete = False
         if " machete" in command:
             self.machete = self.parser.match_item(
@@ -31,12 +31,18 @@ class Search_Idol(base.Action):
         * The character must be at the jungle
         * The character must have a machete in their inventory
         """
+        if not self.jungle:
+            return False
         if not self.at(self.character, self.jungle, f"{self.character.name} isn't at the right location to search for the idol."):
             return False
         if not self.jungle.get_property("has_idol"):
             self.parser.fail(self.command, "The jungle has no idol.", self.character)
             return False
         if not self.character.is_in_inventory(self.machete):
+            meessage = "The jungle is too thick to search without a machete. You must have a machete to successfully search for an idol."
+            self.parser.fail(self.command,
+                             meessage,
+                             self.character)
             return False
         return True
 
@@ -53,11 +59,11 @@ class Search_Idol(base.Action):
             no_machete = "".join(
                 [
                     f"{self.character.name} looks around the jungle ",
-                    "but the vines get in the way and it becomes impossible without the right tool.",
+                    "but the vines get in the way and it becomes impossible without the right tool (a machete!).",
                 ]
             )
             self.parser.fail(self.command, no_machete, self.character)
-            return None
+            return False
 
         idol = self.jungle.get_item("idol")
         if idol:
@@ -69,9 +75,9 @@ class Search_Idol(base.Action):
                 self.character.set_property("immune", True)
             else:
                 description = """You look around for an idol but found nothing.
-                You sense it should be nearby and you can keep on trying!"""
+                You sense it should be nearby and you can keep on trying! You might have better luck next time!"""
                 self.parser.fail(self.command, no_machete, self.character)
-                return None
+                return True
         d = "".join(
             [
                 "{character_name} hacks their way into the deep jungle and ",
@@ -81,3 +87,4 @@ class Search_Idol(base.Action):
         description = d.format(character_name=self.character.name)
 
         self.parser.ok(self.command, description, self.character)
+        return True

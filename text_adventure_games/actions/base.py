@@ -42,6 +42,8 @@ class Action:
     def __call__(self):
         if self.check_preconditions():
             return self.apply_effects()
+        else:
+            return False
 
     @classmethod
     def action_name(cls):

@@ -125,3 +125,4 @@ class Attack(base.Action):
                 drop = Drop(self.game, command)
                 if drop.check_preconditions():
                     drop.apply_effects()
+        return True
