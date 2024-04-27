@@ -25,18 +25,18 @@ class ExperimentGame(games.SurvivorGame):
             num_finalists=2,
             experiment_name="exp1",
             experiment_id=1
-        ):
-            super().__init__(start_at,
-                            player, 
-                            characters, 
-                            custom_actions, 
-                            max_ticks=max_ticks, 
-                            num_finalists=num_finalists,
-                            experiment_name=experiment_name,
-                            experiment_id=experiment_id)
+    ):
+        super().__init__(start_at,
+                         player, 
+                         characters, 
+                         custom_actions, 
+                         max_ticks=max_ticks, 
+                         num_finalists=num_finalists,
+                         experiment_name=experiment_name,
+                         experiment_id=experiment_id)
             
 def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=2) -> games.Game:
-      # Locations
+    # Locations
     camp = things.Location(
         "Camp",
         "the tribe's base camp."
@@ -64,7 +64,7 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
     )
     jungle = things.Location(
         "Jungle",
-        "the deep jungle. There could be treasures lurking nearby.",
+        "the deep jungle. There could be treasures hiding nearby.",
     )
 
     camp.add_connection("out", beach)
@@ -88,12 +88,26 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
     )
     ocean.add_item(fishing_pole)
 
-    machete = things.Item(
-        "machete",
+    machete1 = things.Item(
+        "machete1",
         "a sharp machete",
         "A SHARP MACHETE USED FOR CUTTING VINES.",
     )
-    camp.add_item(machete)
+    camp.add_item(machete1)
+
+    machete2 = things.Item(
+        "machete2",
+        "a sharp machete",
+        "A SHARP MACHETE USED FOR CUTTING VINES.",
+    )
+    well.add_item(machete2)
+
+    machete3 = things.Item(
+        "machete3",
+        "a sharp machete",
+        "A SHARP MACHETE USED FOR CUTTING VINES.",
+    )
+    beach.add_item(machete3)
 
     # Characters
     characters = []
@@ -116,12 +130,12 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
 
     # The Game
     game = ExperimentGame(start_at, 
-                            player, 
-                            characters, 
-                            custom_actions=None,
-                            max_ticks=max_ticks,
-                            num_finalists=num_finalists,
-                            experiment_name=experiment_name,
-                            experiment_id=experiment_id)
+                          player, 
+                          characters, 
+                          custom_actions=None,
+                          max_ticks=max_ticks,
+                          num_finalists=num_finalists,
+                          experiment_name=experiment_name,
+                          experiment_id=experiment_id)
 
     return game
