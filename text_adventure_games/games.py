@@ -187,11 +187,12 @@ class Game:
                 description += item.description 
                 if self.give_hints:
                     special_commands = item.get_command_hints()
-                    description += "(hint "
-                    for cmd in special_commands:
-                        description += cmd + ", "
-                    description += ")"
-                description += "; "
+                    if special_commands:
+                        description += "(hint "
+                        for cmd in special_commands:
+                            description += cmd + ", "
+                        description += ")"
+                    description += "; "
         return description
 
     def describe_characters(self) -> str:
@@ -518,6 +519,8 @@ class SurvivorGame(Game):
                 # Set goals for all characters at beginning of round
                 self.goal_setting_handler()
 
+                self.reset_character_dialogue()
+
                 for character in permutation(list(self.characters.values())):  # random permuted ordering, not based on character initiative
                     print(f"It is: {character.name}'s turn")
                     self.turn_handler(character)
@@ -532,6 +535,10 @@ class SurvivorGame(Game):
 
             # Increment the rounds
             self.round += 1
+
+    def reset_character_dialogue(self):
+        for c in self.characters.values():
+            c.set_dialogue_participant(talked_to=None)
 
     def goal_setting_handler(self):
         # if it is the beginning of a round, everyone should make goals
@@ -550,7 +557,8 @@ class SurvivorGame(Game):
 
         success = False
         # Only move on to the next character when current takes a successful action
-        while not success:
+        # But agent only gets three tries
+        for _ in range(3):
             if character.id == self.original_player_id:
                 # TODO: How do we integrate the ability for a human player to engage?
                 command = character.engage(self)
@@ -561,6 +569,8 @@ class SurvivorGame(Game):
                 success = self.parser.parse_command(command, character)
             else:
                 success = True
+            if success:
+                break
 
     def is_game_over(self) -> bool:
         if self.game_over:
@@ -604,8 +614,9 @@ class SurvivorGame(Game):
             self.voting_history[self.round].update({char.name: record})
 
     def run_voting_session(self):
-        self.vote_session = VotingSession(self.characters.values())
-        self.vote_session.run(self)
+        self.vote_session = VotingSession(game=self, 
+                                          participants=self.characters.values())
+        self.vote_session.run()
         exiled = self.vote_session.read_votes()
         self.update_voting_history(session=self.vote_session)
         self.update_exile_state(exiled)
@@ -616,7 +627,7 @@ class SurvivorGame(Game):
     def _log_exiled_player(self, exiled):
         contestants_remaining = len(self.characters)
         message = f"{exiled.name} was exiled. Position: {contestants_remaining + 1}"
-        self.vote_session.log_vote(self, exiled, message=message)
+        self.vote_session.log_vote(exiled, message=message)
 
     def update_exile_state(self, exiled_agent):
         # Get the characters in the game
@@ -670,9 +681,10 @@ class SurvivorGame(Game):
                                     actor_id=character.id)
         
     def run_jury_session(self):
-        self.final_vote = JuryVotingSession(jury_members=list(self.jury.values()), 
+        self.final_vote = JuryVotingSession(game=self,
+                                            jury_members=list(self.jury.values()), 
                                             finalists=list(self.characters.values()))
-        self.final_vote.run(self)
+        self.final_vote.run()
         winner = self.final_vote.determine_winner()
         self.update_voting_history(session=self.final_vote)
         self.winner = winner
@@ -687,10 +699,9 @@ class SurvivorGame(Game):
             else:
                 # TODO: should eventually make this rank non-winners based on their votes received
                 message = f"{char.name} lost the game. Position: 2"
-            self.vote_session.log_vote(self, char, message=message)
+            self.vote_session.log_vote(char, message=message)
             
-    def _add_winner_memory(self):
-        
+    def _add_winner_memory(self):      
         vote_count = self.final_vote.tally.get(self.winner.name)
         vote_total = self.final_vote.tally.total()
         description = vote_prompt.winner_memory_description.format(winner=self.winner.name,

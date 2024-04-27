@@ -38,7 +38,10 @@ class Talk(base.Action):
         * They must be in the same location
         * Talked-to character must be available to talk (TODO)
         """
-
+        if self.talked_to == self.starter.get_last_dialogue_target():
+            description = f"{self.starter.name} just spoke with {self.talked_to.name} last turn. You must wait a while to talk to them again."
+            self.parser.fail(self.command, description, self.starter)
+            return False
         if not self.was_matched(self.starter, self.starter):
             description = "The character starting the dialogue couldn't be found."
             self.parser.fail(self.command, description, self.starter)
@@ -62,7 +65,12 @@ class Talk(base.Action):
         Effects:
         ** Starts a dialogue
         """
-        #character.chars_in_view
         dialogue = Dialogue(self.game, self.participants, self.command)
         dialogue_history = dialogue.dialogue_loop()
+
+        # Add the target of the dialogue to the starter
+        self.starter.set_dialogue_participant(self.talked_to)
+        self.talked_to.set_dialogue_participant(self.starter)
+
         self.parser.ok(self.command, dialogue_history, self.starter)
+        return True

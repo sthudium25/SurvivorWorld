@@ -31,7 +31,8 @@
         "class": "logging.FileHandler",
         "level": "DEBUG",
         "formatter": "json",
-        "filename": "logs/tmp.jsonl"
+        "filename": "logs/tmp.jsonl",
+        "mode": "w"
       },
       "queue_handler": {
         "()": "SurvivorWorld.text_adventure_games.utils.custom_logging.custom_logging_handlers.QueueListenerHandler",

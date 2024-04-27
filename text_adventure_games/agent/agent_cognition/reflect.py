@@ -276,7 +276,7 @@ def add_new_generalization_helper(game: "Game", character: "Character", generali
                                     game.tick,
                                     desc,
                                     ref_kwds,
-                                    character.location,
+                                    character.location.name,
                                     success_status=True,
                                     memory_importance=ref_importance,
                                     memory_type=MemoryType.REFLECTION.value,

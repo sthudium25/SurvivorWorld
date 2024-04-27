@@ -12,4 +12,5 @@ You may only talk to characters in your same location. If they are not here, the
 When {n_finalists} contestants remain, a jury of the contestants you have voted off will vote for a winner! 
 This means there are {rounds_until_finals} rounds until the finals.
 You have {turns_left_this_round} more turns this round before you will vote.
+There could be an idol hiding somewhere in the game that grants you immunity from a vote when you have it in your possession. Explore to find it!!
 """

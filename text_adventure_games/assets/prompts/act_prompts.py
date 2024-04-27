@@ -18,3 +18,7 @@ Actions should be atomic, not general, and should interact with your immediate e
 Aim to keep action statements to 10 words or less. 
 Here is list of valid action verbs to use:
 """
+
+action_incentivize_exploration = """
+"Remember, there is an idol hiding somewhere in the game that grants you immunity from a vote when you have it in your possession. You need to explore if you want to find it!!"
+"""

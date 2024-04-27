@@ -774,6 +774,7 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
         player_persona
     )
     player.set_property("character_type", "human")
+    player.set_property("immune", True)
 
     # Player's lamp
     lamp = things.Item("lamp", "a lamp", "A LAMP.")

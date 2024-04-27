@@ -225,8 +225,13 @@ def minmax_normalize(lst, target_min: int, target_max: int):
         min_val = min(lst)
         max_val = max(lst)
     except TypeError:
-        min_val = np.nanmin(lst)
-        max_val = np.nanmax(lst)
+        try:
+            min_val = np.nanmin(lst)
+            max_val = np.nanmax(lst)
+        except TypeError:
+            fixed_list = [x if x else 0 for x in lst]
+            min_val = np.nanmin(fixed_list)
+            max_val = np.nanmax(fixed_list)
     range_val = max_val - min_val
     # If there is no variance in the values, they will not contribute to the score
     if range_val == 0:

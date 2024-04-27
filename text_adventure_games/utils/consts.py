@@ -114,7 +114,8 @@ def validate_output_dir(fp, name, sim_id):
             new_log_path = os.path.join(get_output_logs_path(), f"logs/{name}-{sim_id+1}/")
             return validate_output_dir(new_log_path, name, sim_id+1)
         else:
-            print("Overwriting data...")
+            print("Overwriting log file is data...")
+            print("The game data will be overwritten when you run `game.save_simulation_data()`")
             return fp, sim_id
     else:
         return fp, sim_id

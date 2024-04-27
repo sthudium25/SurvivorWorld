@@ -61,6 +61,7 @@ class Eat(base.Action):
             )
         # self.parser.ok(description)
         self.parser.ok(self.command, description, self.character)
+        return True
 
 
 class Drink(base.Action):
@@ -134,6 +135,7 @@ class Drink(base.Action):
             )
             # self.parser.ok(description)
             self.parser.ok(self.command, description, self.character)
+        return True
 
 
 class Light(base.Action):
@@ -181,3 +183,4 @@ class Light(base.Action):
         )
         # self.parser.ok(description)
         self.parser.ok(self.command, description, self.character)
+        return True

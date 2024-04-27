@@ -29,8 +29,9 @@ if TYPE_CHECKING:
 VOTING_MAX_OUTPUT = 100
 
 class VotingSession:
-    def __init__(self, participants: List["Character"]):
-        self.participants = list(set(participants))
+    def __init__(self, game: "Game", participants: List["Character"]):
+        self.game = game
+        self.participants = self._set_participants(participants)
         self.tally = Counter()
         self.voter_record = defaultdict(str)
 
@@ -38,7 +39,33 @@ class VotingSession:
         self.gpt_handler = self._set_up_gpt()
         self.token_offset = 0
         self.offset_pad = 5
- 
+
+    def _set_participants(self, participants):
+        immune = []
+        for p in participants:
+            if p.get_property("immune"):
+                # This character possesses a hidden immunity idol
+                immune.append(p)
+        if len(immune) > 0:
+            print(f"{immune[0].name} is safe from the vote")
+            self._add_idol_possession_to_memory(immune, participants)
+        self.immune = immune
+        return list(set(participants))
+
+    def _add_idol_possession_to_memory(self, immune_players, participants):
+        immune_desc = vp.immunity_memory_prompt.format(immune_players=", ".join([ip.name for ip in immune_players]))
+        immunity_kwds = self.game.parser.extract_keywords(immune_desc)
+        for p in participants:
+            p.memory.add_memory(self.game.round,
+                                self.game.tick,
+                                immune_desc,
+                                keywords=immunity_kwds,
+                                location=None,
+                                success_status=True,
+                                memory_importance=10,
+                                memory_type=MemoryType.ACTION.value,
+                                actor_id=p.id)
+
     def _set_up_gpt(self):
         model_params = {
             "api_key_org": "Helicone",
@@ -61,41 +88,45 @@ class VotingSession:
         Returns:
             list: valid characters to vote for
         """
+        predicate = lambda p: (p != current_voter) and (p not in self.immune)
         if names_only:
-            return [p.name for p in self.participants if p != current_voter]
+            return [p.name for p in self.participants if predicate]
         else:
-            return [p for p in self.participants if p != current_voter]
+            return [p for p in self.participants if predicate]
 
-    def run(self, game):
+    def run(self):
         for voter in self.participants: 
             # print(f"Voter: {voter.name}")
             # 1. Gather context for voter
             # 2. have them cast vote:
-            system_prompt, user_prompt = self._gather_voter_context(game, voter)
+            system_prompt, user_prompt = self._gather_voter_context(voter)
 
             success = False
             for i in range(5):
-                vote = self.gpt_cast_vote(game, system_prompt, user_prompt)
-                vote_name, vote_confessional, success = self._validate_vote(game, vote, voter)
+                vote = self.gpt_cast_vote(system_prompt, user_prompt)
+                vote_name, vote_confessional, success = self._validate_vote(vote, voter)
                 success = success
                 if success:
-                    self._record_vote(game, voter, vote_name, vote_confessional)
+                    self._record_vote(voter, vote_name, vote_confessional)
                     break
                 elif i == 4:
                     # This vote has failed too many times so get a random vote
                     print(f"{voter.name} is failed to vote properly. Making a random choice.")
                     valid_options = self.get_vote_options(voter, names_only=True)
                     random_vote = choice(valid_options)
-                    self._record_vote(game, voter, random_vote, "This was a randomized vote because GPT failed to vote properly.")
+                    self._record_vote(voter, random_vote, "This was a randomized vote because GPT failed to vote properly.")
                     break
+        
+        # Clean up / reset any idols used in this round
+        self._cleanup()
 
-    def _record_vote(self, game, voter, vote_name, vote_confessional):
+    def _record_vote(self, voter, vote_name, vote_confessional):
         self.tally[vote_name] += 1
-        self._add_vote_to_memory(game, voter, vote_name)
+        self._add_vote_to_memory(voter, vote_name)
         self.voter_record[voter.name] = vote_name
-        self._log_confessional(game, voter, vote_confessional)
+        self._log_confessional(voter, vote_confessional)
 
-    def _validate_vote(self, game, vote_text, voter):
+    def _validate_vote(self, vote_text, voter):
         try:
             vote_dict = json.loads(vote_text)
             vote_target = vote_dict["target"]
@@ -104,7 +135,7 @@ class VotingSession:
                 KeyError):
             return None, None, False
         else:
-            vote_kwds = game.parser.extract_keywords(vote_target)
+            vote_kwds = self.game.parser.extract_keywords(vote_target)
             if "characters" not in vote_kwds:
                 return None, None, False
             elif len(vote_kwds["characters"]) > 0:
@@ -115,12 +146,12 @@ class VotingSession:
                 else:
                     return target_name, vote_reason, True
             
-    def _add_vote_to_memory(self, game: "Game", voter: "Character", vote_target: str) -> None:
+    def _add_vote_to_memory(self, voter: "Character", vote_target: str) -> None:
         vote_desc = f"During the end of round session, {voter.name} voted for {vote_target} in secret."
         print(vote_desc)
-        vote_kwds = game.parser.extract_keywords(vote_desc)
-        voter.memory.add_memory(game.round,
-                                game.tick,
+        vote_kwds = self.game.parser.extract_keywords(vote_desc)
+        voter.memory.add_memory(self.game.round,
+                                self.game.tick,
                                 vote_desc,
                                 keywords=vote_kwds,
                                 location=None,
@@ -156,8 +187,8 @@ class VotingSession:
                   {"is_safe": voter.name not in self.exiled}]
         return record
 
-    def _gather_voter_context(self, game: "Game", voter: "Character"):
-        voter_std_info = voter.get_standard_info(game)
+    def _gather_voter_context(self, voter: "Character"):
+        voter_std_info = voter.get_standard_info(self.game)
         valid_options = self.get_vote_options(voter)
         try:
             impressions = voter.impressions.get_multiple_impressions(valid_options)
@@ -167,14 +198,14 @@ class VotingSession:
             f"Before the vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
             "have done to influence my position in the game."
         ])
-        hyperrelevant_memories = retrieve.retrieve(game, voter, n=50, query=query)
+        hyperrelevant_memories = retrieve.retrieve(self.game, voter, n=50, query=query)
 
         system = self._build_system_prompt(voter_std_info,
                                            prompt_ending=vp.vote_system_ending)
         
         system_token_count = get_prompt_token_count(content=system,
                                                     role="system",
-                                                    tokenizer=game.parser.tokenizer)
+                                                    tokenizer=self.game.parser.tokenizer)
         tokens_consumed = system_token_count + self.token_offset
         
         user = self._build_user_prompt(voter=voter,
@@ -231,7 +262,7 @@ class VotingSession:
         user_prompt += user_prompt_end
         return user_prompt
   
-    def gpt_cast_vote(self, game, system_prompt, user_prompt):
+    def gpt_cast_vote(self, system_prompt, user_prompt):
         # This method constructs a call to GPT, passing the context as part of a system prompt
         # The user prompt should contain info about recent memories, 
         # the fact that the model must reason about who to vote for,
@@ -244,23 +275,33 @@ class VotingSession:
             # Add this offset to the calculations of token limits and pad it 
             self.token_offset = token_difference + self.offset_pad
             self.offset_pad += 2 * self.offset_pad 
-            return self.run(game)
+            return self.run(self.game)
         return vote
 
-    def _log_confessional(self, game: "Game", voter: "Character", message: str):
-        extras = get_logger_extras(game, voter)
+    def _log_confessional(self, voter: "Character", message: str):
+        extras = get_logger_extras(self.game, voter)
         extras["type"] = "Confessional"
         message = f"Target: {self.voter_record.get(voter.name, 'None')}; {message}" 
-        game.logger.debug(msg=message, extra=extras)
+        self.game.logger.debug(msg=message, extra=extras)
 
-    def log_vote(self, game: "Game", exiled: "Character", message: str):
-        extras = get_logger_extras(game, exiled)
+    def log_vote(self, exiled: "Character", message: str):
+        extras = get_logger_extras(self.game, exiled)
         extras["type"] = "Vote"
-        game.logger.debug(msg=message, extra=extras)
+        self.game.logger.debug(msg=message, extra=extras)
+
+    def _cleanup(self):
+        if not self.immune:
+            return True
+        for character in self.immune:
+            idol = character.get_item_by_name("idol")
+            if idol:
+                character.remove_from_inventory(idol)
+            character.set_property("immune", False)
+        return True
 
 class JuryVotingSession(VotingSession):
-    def __init__(self, jury_members: List["Character"], finalists: List["Character"]):
-        super().__init__(participants=jury_members)
+    def __init__(self, game: "Game", jury_members: List["Character"], finalists: List["Character"]):
+        super().__init__(game=game, participants=jury_members)
         self.finalists = finalists
 
     def get_vote_options(self, current_voter: "Character", names_only=False):
@@ -280,23 +321,23 @@ class JuryVotingSession(VotingSession):
         else:
             return self.finalists
 
-    def _gather_voter_context(self, game, voter):
+    def _gather_voter_context(self, voter):
         # Adjust to focus on the finalists and the criteria for selecting the winner
-        voter_std_info = voter.get_standard_info(game, include_goals=False)
+        voter_std_info = voter.get_standard_info(self.game, include_goals=False)
         impressions = voter.impressions.get_multiple_impressions(self.finalists)
         
         query = "".join([
             f"Before the final vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
             "have done over the course of their game, focusing on their strategy, critical moves made, and strength as a player."
         ])
-        hyperrelevant_memories = retrieve.retrieve(game, voter, n=50, query=query)
+        hyperrelevant_memories = retrieve.retrieve(self.game, voter, n=50, query=query)
         
         system = self._build_system_prompt(voter_std_info,
                                            prompt_ending=vp.jury_system_ending)
         
         system_token_count = get_prompt_token_count(content=system,
                                                     role="system",
-                                                    tokenizer=game.parser.tokenizer)
+                                                    tokenizer=self.game.parser.tokenizer)
         tokens_consumed = system_token_count + self.token_offset
         
         user = self._build_user_prompt(voter=voter,

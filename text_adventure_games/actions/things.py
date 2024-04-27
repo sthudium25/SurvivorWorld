@@ -2,7 +2,6 @@
 from . import base
 from . import preconditions as P
 from .consume import Drink, Eat
-from .rose import Smell_Rose
 from ..things import Character
 
 
@@ -59,6 +58,7 @@ class Get(base.Action):
         )
         # self.parser.ok(description)
         self.parser.ok(self.command, description, self.character)
+        return True
 
 
 class Drop(base.Action):
@@ -111,6 +111,7 @@ class Drop(base.Action):
         )
         # self.parser.ok(description)
         self.parser.ok(self.command, description, self.character)
+        return True
 
 
 class Inventory(base.Action):
@@ -146,6 +147,7 @@ class Inventory(base.Action):
                 description += "* {item}\n".format(item=item.description)
             # self.parser.ok(description)
             self.parser.ok(self.command, description, self.character)
+        return True
 
 
 class Examine(base.Action):
@@ -176,14 +178,12 @@ class Examine(base.Action):
         """The player wants to examine an item"""
         if self.matched_item:
             if self.matched_item.examine_text:
-                # self.parser.ok(self.matched_item.examine_text)
                 self.parser.ok(self.command, self.matched_item.examine_text, self.character)
             else:
-                # self.parser.ok(self.matched_item.description)
                 self.parser.ok(self.command, self.matched_item.description, self.character)
         else:
-            # self.parser.ok("You don't see anything special.")
             self.parser.ok(self.command, "You don't see anything special.", self.character)
+        return True
 
 
 class Give(base.Action):
@@ -263,12 +263,7 @@ class Give(base.Action):
             drink = Drink(self.game, command, self.recipient)
             drink()
 
-        if self.item.get_property("scent"):
-            command = "{name} smell {thing}".format(
-                name=self.recipient.name, thing=self.item.name
-            )
-            smell = Smell_Rose(self.game, command, self.recipient)
-            smell()
+        return True
 
 
 class Unlock_Door(base.Action):
@@ -297,3 +292,4 @@ class Unlock_Door(base.Action):
         self.door.set_property("is_locked", False)
         # self.parser.ok("Door is unlocked")
         self.parser.ok(self.command, "Door is unlocked", self.character)
+        return True
