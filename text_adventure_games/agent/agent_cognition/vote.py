@@ -188,7 +188,7 @@ class VotingSession:
         return record
 
     def _gather_voter_context(self, voter: "Character"):
-        voter_std_info = voter.get_standard_info(self.game)
+        voter_std_info = voter.get_standard_info(self.game, include_perceptions=False)
         valid_options = self.get_vote_options(voter)
         try:
             impressions = voter.impressions.get_multiple_impressions(valid_options)
@@ -323,8 +323,11 @@ class JuryVotingSession(VotingSession):
 
     def _gather_voter_context(self, voter):
         # Adjust to focus on the finalists and the criteria for selecting the winner
-        voter_std_info = voter.get_standard_info(self.game, include_goals=False)
-        impressions = voter.impressions.get_multiple_impressions(self.finalists)
+        voter_std_info = voter.get_standard_info(self.game, include_goals=False, include_perceptions=False)
+        try:
+            impressions = voter.impressions.get_multiple_impressions(self.finalists)
+        except AttributeError:
+            impressions = None
         
         query = "".join([
             f"Before the final vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
