@@ -74,16 +74,26 @@ class VotingSession:
             system_prompt, user_prompt = self._gather_voter_context(game, voter)
 
             success = False
-            while not success:
+            for i in range(5):
                 vote = self.gpt_cast_vote(game, system_prompt, user_prompt)
                 vote_name, vote_confessional, success = self._validate_vote(game, vote, voter)
                 success = success
                 if success:
-                    self.tally[vote_name] += 1
-                    self._add_vote_to_memory(game, voter, vote_name)
-                    self.voter_record[voter.name] = vote_name
-                    self._log_confessional(game, voter, vote_confessional)
+                    self._record_vote(game, voter, vote_name, vote_confessional)
                     break
+                elif i == 4:
+                    # This vote has failed too many times so get a random vote
+                    print(f"{voter.name} is failed to vote properly. Making a random choice.")
+                    valid_options = self.get_vote_options(voter, names_only=True)
+                    random_vote = choice(valid_options)
+                    self._record_vote(game, voter, random_vote, "This was a randomized vote because GPT failed to vote properly.")
+                    break
+
+    def _record_vote(self, game, voter, vote_name, vote_confessional):
+        self.tally[vote_name] += 1
+        self._add_vote_to_memory(game, voter, vote_name)
+        self.voter_record[voter.name] = vote_name
+        self._log_confessional(game, voter, vote_confessional)
 
     def _validate_vote(self, game, vote_text, voter):
         try:
