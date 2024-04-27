@@ -29,16 +29,44 @@ if TYPE_CHECKING:
 VOTING_MAX_OUTPUT = 100
 
 class VotingSession:
-    def __init__(self, participants: List["Character"]):
-        self.participants = list(set(participants))
+    def __init__(self, game: "Game", participants: List["Character"]):
+        self.participants = self._set_participants(participants)
         self.tally = Counter()
         self.voter_record = defaultdict(str)
+        self.game = game
 
         # gpt call attrs
         self.gpt_handler = self._set_up_gpt()
         self.token_offset = 0
         self.offset_pad = 5
- 
+
+    def _set_participants(self, participants):
+        immune, valid = [], []
+        for p in participants:
+            if p.get_property("immune"):
+                # This character possesses a hidden immunity idol
+                immune.append(p)
+            else:
+                valid.append(p)
+        if len(immune) > 0:
+            self._add_idol_possession_to_memory(immune, participants)
+        self.immune = immune
+        return list(set(valid))
+
+    def _add_idol_possession_to_memory(self, immune_players, participants):
+        immune_desc = vp.immunity_memory_prompt.format(immune_players=" ".join(immune_players))
+        immunity_kwds = self.game.parser.extract_keywords(immune_desc)
+        for p in participants:
+            p.memory.add_memory(self.game.round,
+                                self.game.tick,
+                                immune_desc,
+                                keywords=immunity_kwds,
+                                location=None,
+                                success_status=True,
+                                memory_importance=10,
+                                memory_type=MemoryType.ACTION.value,
+                                actor_id=p.id)
+
     def _set_up_gpt(self):
         model_params = {
             "api_key_org": "Helicone",
@@ -61,10 +89,11 @@ class VotingSession:
         Returns:
             list: valid characters to vote for
         """
+        predicate = lambda p: (p != current_voter) and (p not in self.immune)
         if names_only:
-            return [p.name for p in self.participants if p != current_voter]
+            return [p.name for p in self.participants if predicate]
         else:
-            return [p for p in self.participants if p != current_voter]
+            return [p for p in self.participants if predicate]
 
     def run(self, game):
         for voter in self.participants: 
@@ -88,6 +117,9 @@ class VotingSession:
                     random_vote = choice(valid_options)
                     self._record_vote(game, voter, random_vote, "This was a randomized vote because GPT failed to vote properly.")
                     break
+        
+        # Clean up / reset any idols used in this round
+        self._cleanup()
 
     def _record_vote(self, game, voter, vote_name, vote_confessional):
         self.tally[vote_name] += 1
@@ -257,6 +289,16 @@ class VotingSession:
         extras = get_logger_extras(game, exiled)
         extras["type"] = "Vote"
         game.logger.debug(msg=message, extra=extras)
+
+    def _cleanup(self):
+        if not self.immune:
+            return True
+        for character in self.immune:
+            idol = character.get_item_by_name("idol")
+            if idol:
+                character.remove_from_inventory(idol)
+            character.set_property("immune", False)
+        return True
 
 class JuryVotingSession(VotingSession):
     def __init__(self, jury_members: List["Character"], finalists: List["Character"]):

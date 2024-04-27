@@ -54,3 +54,5 @@ Who will you vote for and why did you choose to vote for them? Remember to use J
 winner_memory_description = """
 {winner} won the game by recieving {for_votes} out of {total_votes}!!!
 """
+
+immunity_memory_prompt = "The following players found a hidden immunity idol, making them safe from the vote this round: {immune_players}"
