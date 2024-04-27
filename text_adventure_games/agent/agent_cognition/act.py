@@ -130,7 +130,7 @@ class Act:
         always_included = [
             "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n",
             f"In this location, you see: {', '.join([c.name for c in chars_in_view])}\n",
-            ap.action_incentivize_exploration,
+            # ap.action_incentivize_exploration,
             "Given the above information and others present here, what would you like to do?"]
         always_included_tokens = get_prompt_token_count(content=always_included,
                                                         role="user",
