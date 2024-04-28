@@ -536,6 +536,9 @@ class SurvivorGame(Game):
             # Increment the rounds
             self.round += 1
 
+            # save game results so far
+            self.save_simulation_data()
+
     def reset_character_dialogue(self):
         for c in self.characters.values():
             c.set_dialogue_participant(talked_to=None)
@@ -647,9 +650,17 @@ class SurvivorGame(Game):
                                       to_jury=False)
         
         for character in list(self.jury.values()):
-            self.add_exile_memory(self.jury[character.name],
-                                  exiled_name=exiled_agent.name,
-                                  to_jury=False)
+            description = f"{exiled_agent.name} was exiled and joins you on the jury to help decide the eventual game winner."
+            desc_kwds = self.parser.extract_keywords(description)
+            character.memory.add_memory(self.round,
+                                        tick=self.tick, 
+                                        description=description, 
+                                        keywords=desc_kwds, 
+                                        location=None, 
+                                        success_status=True,
+                                        memory_importance=10, 
+                                        memory_type=MemoryType.ACTION.value,
+                                        actor_id=character.id)
         
     def add_exiled_to_jury(self, exiled):
         # exile_key = f"{exiled.name}_{exiled.id}".replace(" ", "")
