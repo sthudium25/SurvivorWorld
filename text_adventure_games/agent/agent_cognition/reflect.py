@@ -148,13 +148,18 @@ def generalize(game, character):
         relevant_memories.extend(memories)
     
     relevant_memories = list(set(relevant_memories))
+    # sort the memories from shortest to longest
+    relevant_memories.sort(key=lambda x: len(x))
     # relevant_memories = [memory+'\n' for memory in relevant_memories]
 
     # get the relevant memories token count (role=None and pad_reply=False because we've already accounted for these)
     relevant_memories_token_count = get_prompt_token_count(content=relevant_memories, role=None, pad_reply=False)
 
-    # get the relevant memories primer messsage token count
-    # I'm inlcuding None here just for the token calculation, in case we need to supply this in the prompt
+    # print("ALL MEMORIES:", relevant_memories_token_count)
+    # print(relevant_memories)
+
+    # get the relevant memories primer message token count
+    # I'm including None here just for the token calculation, in case we need to supply this in the prompt
     #  if there are no relevant reflections
     relevant_memories_primer = ['\nRelevant Reflections:\n', '\nRelevant Memories:\n', 'None\n']
     rel_mem_primer_token_count = get_prompt_token_count(content=relevant_memories_primer, role=None, pad_reply=False)
@@ -169,6 +174,7 @@ def generalize(game, character):
     # get the insight prompt token count
     insight_q_token_count = get_prompt_token_count(content=insight_q_prompt, role=None, pad_reply=False)
 
+
     # Calculate 
     available_tokens = get_token_remainder(gpt_handler.model_context_limit,  # Max input for requested model
                                            gpt_handler.max_tokens,  # GPT's response limit, set by user
@@ -182,11 +188,19 @@ def generalize(game, character):
     while relevant_memories_token_count > 0:
 
         # limit the user prompt items to fit in GPT's context size
-        # (keep_most_recent=False allows us to keep ealier/older observations)
+        # (keep_most_recent=False allows us to get smaller observations first)
         relevant_memories_limited = limit_context_length(relevant_memories,
                                                          max_tokens=available_tokens,  # insight message tokens
                                                          tokenizer=game.parser.tokenizer,
                                                          keep_most_recent=False)
+        
+
+        # print("LIMITED MEMORIES:", get_prompt_token_count(content=relevant_memories_limited, role=None, pad_reply=False))
+        # print(relevant_memories_limited)
+
+        # if there are no memories small enough to be processed, break the loop
+        if len(relevant_memories_limited) <= 0:
+            break
         
         # print('-'*100)
         # print("TRIMMED MEMORIES:", relevant_memories_limited)
@@ -197,7 +211,7 @@ def generalize(game, character):
         for full_memory in relevant_memories_limited:
             idx, memory_desc = full_memory.split('.', 1)
             idx = int(idx)
-            memory_desc = memory_desc[1:]
+            memory_desc = memory_desc.strip()
             memory_type = character.memory.get_observation_type(idx)
             if memory_type.value == MemoryType.REFLECTION.value:
                 reflections_lmtd.append(full_memory)
@@ -240,8 +254,13 @@ def generalize(game, character):
         # reset relevant memories to exclude all from the previous reflection
         # (this also removes the relevant memories primer string)
         relevant_memories = list(OrderedSet(relevant_memories) - OrderedSet(relevant_memories_limited))
+        # relevant_memories.sort(key=lambda x: len(x)) #redundant?
         # get the updated new observations token count
         relevant_memories_token_count = get_prompt_token_count(content=relevant_memories, role=None, pad_reply=False)
+
+        # print("REDUCED MEMORIES:", get_prompt_token_count(content=relevant_memories, role=None, pad_reply=False))
+        # print(relevant_memories)
+        # print(relevant_memories_token_count > 0)
 
 
 def add_generalizations_to_memory(game: "Game", character: "Character", generalizations: Dict, ):
