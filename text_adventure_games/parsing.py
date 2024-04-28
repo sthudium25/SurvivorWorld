@@ -204,6 +204,7 @@ class Parser:
             self.fail(command, 
                       "Command parsed to multiple actions. Try simpler command that attempts ony 1 action.", 
                       character)
+            return False
         else:
             return action()
         

@@ -257,7 +257,7 @@ class ActionSequence(Action):
         for cmd in self.command.split(","):
             cmd = cmd.strip()
             responses.append(self.parser.parse_command(cmd, self.character))
-        return responses
+        return all(responses)
 
 
 class Quit(Action):
@@ -283,9 +283,11 @@ class Quit(Action):
             self.game.game_over = True
             if not self.game.game_over_description:
                 self.game.game_over_description = "The End"
-            # return self.parser.ok(self.game.game_over_description)    
-            return self.parser.ok(self.command, self.game.game_over_description, self.character)
-        return self.parser.fail(self.command, "Game already ended.", self.character)
+            # return self.parser.ok(self.game.game_over_description)   
+            self.parser.ok(self.command, self.game.game_over_description, self.character) 
+            return True
+        self.parser.fail(self.command, "Game already ended.", self.character)
+        return False
 
 
 class Describe(Action):
@@ -308,3 +310,4 @@ class Describe(Action):
 
     def apply_effects(self):
         self.parser.ok(self.command, self.game.describe(), self.character)
+        return True
