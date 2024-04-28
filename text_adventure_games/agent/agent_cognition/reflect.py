@@ -258,7 +258,7 @@ def generalize(game, character):
         # get the updated new observations token count
         relevant_memories_token_count = get_prompt_token_count(content=relevant_memories, role=None, pad_reply=False)
 
-        print("REDUCED MEMORIES:", get_prompt_token_count(content=relevant_memories, role=None, pad_reply=False))
+        # print("REDUCED MEMORIES:", get_prompt_token_count(content=relevant_memories, role=None, pad_reply=False))
         # print(relevant_memories)
         # print(relevant_memories_token_count > 0)
 
