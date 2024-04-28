@@ -38,16 +38,16 @@ class Talk(base.Action):
         * They must be in the same location
         * Talked-to character must be available to talk (TODO)
         """
+        if self.talked_to is None:
+            description = f"The character {self.starter.name} tried talking to couldn't be found."
+            self.parser.fail(self.command, description, self.starter)
+            return False
         if self.talked_to == self.starter.get_last_dialogue_target():
             description = f"{self.starter.name} just spoke with {self.talked_to.name} last turn. You must wait a while to talk to them again."
             self.parser.fail(self.command, description, self.starter)
             return False
         if not self.was_matched(self.starter, self.starter):
             description = "The character starting the dialogue couldn't be found."
-            self.parser.fail(self.command, description, self.starter)
-            return False
-        if self.talked_to is None:
-            description = f"The character {self.starter.name} tried talking to couldn't be found."
             self.parser.fail(self.command, description, self.starter)
             return False
         if not self.was_matched(self.starter, self.talked_to):
