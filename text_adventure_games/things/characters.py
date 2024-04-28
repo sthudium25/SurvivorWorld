@@ -289,3 +289,14 @@ class GenerativeAgent(Character):
         """
         for target in self.get_characters_in_view(game):
             self.impressions.update_impression(game, self, target)
+
+    def to_primitive(self):
+        thing_data = super().to_primitive()
+
+        thing_data['memory_stream'] = self.memory.get_observations_after_round(0,True)
+
+        if self.goals:
+            thing_data['goals'] = self.goals.get_goals()
+
+        if self.impressions:
+            thing_data['impressions'] = self.impressions.impressions
