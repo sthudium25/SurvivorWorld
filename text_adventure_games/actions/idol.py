@@ -32,8 +32,10 @@ class Search_Idol(base.Action):
         * The character must have a machete in their inventory
         """
         if not self.jungle:
+            self.parser.fail(self.command, "You get the feeling there won't be an idol at this location", self.character)
             return False
-        if not self.at(self.character, self.jungle, f"{self.character.name} isn't at the right location to search for the idol."):
+        if not self.jungle.here(self.character):
+            self.parser.fail(self.command, "You get the feeling there won't be an idol at this location", self.character)
             return False
         if not self.jungle.get_property("has_idol"):
             self.parser.fail(self.command, "The jungle has no idol.", self.character)
