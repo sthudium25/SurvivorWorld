@@ -357,6 +357,7 @@ class GptParser(Parser):
         self.nlp = spacy.load('en_core_web_sm')
         self.gpt_handler = self._set_up_gpt()
         self.max_input_tokens = self.gpt_handler.model_context_limit
+        self.narrator_turn_limit = 5
 
     def _set_up_gpt(self):
         model_params = {
@@ -379,7 +380,8 @@ class GptParser(Parser):
 
     def gpt_describe(self, 
                      system_instructions, 
-                     command_history
+                     command_history,
+                     extra_description=None
                      ):
         """
         TODO: should the context for each description be more limited to focus on recent actions?
@@ -393,6 +395,7 @@ class GptParser(Parser):
         which use the ChatGPT format with commands being assigned role: user,
         and descriptions being assigned role: assistant.
         """
+        
         try:
             messages = [{
                 "role": "system",
@@ -408,7 +411,19 @@ class GptParser(Parser):
                                                    self.gpt_handler.max_tokens)
             
             # Limit the context for the narrator to the last few turns
-            context = limit_context_length(command_history, available_tokens, max_turns=20)
+            narrator_context = command_history[-self.narrator_turn_limit:]
+            if extra_description:
+                user_description = "".join([
+                    "Use the following description as additional context to fulfill your system function. ",
+                    "And if the description describes a failed action, provide a helpful embellishment to a user ",
+                    "that helps them to learn why their action led to an error. ",
+                    f"Description: {extra_description}."
+                ])
+                narrator_context.append({
+                    "role": "user",
+                    "content": user_description
+                })
+            context = limit_context_length(narrator_context, available_tokens)
             messages.extend(context)
             if self.verbose:
                 print(json.dumps(messages, indent=2))
@@ -592,7 +607,7 @@ class GptParser(Parser):
             ]
         )
 
-        response = self.gpt_describe(system_instructions, self.command_history)
+        response = self.gpt_describe(system_instructions, self.command_history, extra_description=description)
 
         # FIRST: we add summarize the FAILED action and send it as a memory to the appropriate characters
         if isinstance(thing, Character):
