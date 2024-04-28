@@ -20,5 +20,5 @@ Here is list of valid action verbs to use:
 """
 
 action_incentivize_exploration = """
-"Remember, there is an idol hiding somewhere in the game that grants you immunity from a vote when you have it in your possession. You need to explore if you want to find it!!"
+"Remember, exploring the island could help you find important items! "
 """
