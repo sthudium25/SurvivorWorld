@@ -629,12 +629,9 @@ class SurvivorGame(Game):
         message = f"{exiled.name} was exiled. Position: {contestants_remaining + 1}"
         self.vote_session.log_vote(exiled, message=message)
 
-    def update_exile_state(self, exiled_agent):
-        # Pass this memory to all characters
-        everyone = list(self.characters.values()) + list(self.jury.values())
-        
+    def update_exile_state(self, exiled_agent):        
         # Loop over them
-        for character in everyone:
+        for character in list(self.characters.values()):
             # Pass appropriate memories to each agent
             if character == exiled_agent:
                 self.add_exile_memory(self.characters[character.name],
@@ -648,6 +645,11 @@ class SurvivorGame(Game):
                 self.add_exile_memory(self.characters[character.name],
                                       exiled_name=exiled_agent.name,
                                       to_jury=False)
+        
+        for character in list(self.jury.values()):
+            self.add_exile_memory(self.jury[character.name],
+                                  exiled_name=exiled_agent.name,
+                                  to_jury=False)
         
     def add_exiled_to_jury(self, exiled):
         # exile_key = f"{exiled.name}_{exiled.id}".replace(" ", "")
@@ -694,10 +696,6 @@ class SurvivorGame(Game):
         self.winner_declared = True
         self._log_finalists(winner=winner)
         self._add_winner_memory()
-
-        # Give finalists their last reflection and goal evaluation
-        for f in finalists:
-            f.engage(self)
 
     def _log_finalists(self, winner):
         for char in self.characters.values():
