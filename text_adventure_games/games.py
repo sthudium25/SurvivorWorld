@@ -630,22 +630,22 @@ class SurvivorGame(Game):
         self.vote_session.log_vote(exiled, message=message)
 
     def update_exile_state(self, exiled_agent):
-        # Get the characters in the game
-        game_chars = self.characters.copy().items()
+        # Pass this memory to all characters
+        everyone = list(self.characters.values()) + list(self.jury.values())
         
         # Loop over them
-        for name, agent in game_chars:
+        for character in everyone:
             # Pass appropriate memories to each agent
-            if agent == exiled_agent:
-                self.add_exile_memory(self.characters[name],
+            if character == exiled_agent:
+                self.add_exile_memory(self.characters[character.name],
                                       exiled_name=exiled_agent.name, 
                                       to_jury=True)
                 # Make sure they do one final reflection and goal evaluation
                 exiled_agent.engage(self)
                 # remove the agent that was exiled
-                _ = self.characters.pop(name)
+                _ = self.characters.pop(character.name)
             else:
-                self.add_exile_memory(self.characters[name],
+                self.add_exile_memory(self.characters[character.name],
                                       exiled_name=exiled_agent.name,
                                       to_jury=False)
         
@@ -683,9 +683,10 @@ class SurvivorGame(Game):
                                     actor_id=character.id)
         
     def run_jury_session(self):
+        finalists = list(self.characters.values())
         self.final_vote = JuryVotingSession(game=self,
                                             jury_members=list(self.jury.values()), 
-                                            finalists=list(self.characters.values()))
+                                            finalists=finalists)
         self.final_vote.run()
         winner = self.final_vote.determine_winner()
         self.update_voting_history(session=self.final_vote)
@@ -693,6 +694,10 @@ class SurvivorGame(Game):
         self.winner_declared = True
         self._log_finalists(winner=winner)
         self._add_winner_memory()
+
+        # Give finalists their last reflection and goal evaluation
+        for f in finalists:
+            f.engage(self)
 
     def _log_finalists(self, winner):
         for char in self.characters.values():
