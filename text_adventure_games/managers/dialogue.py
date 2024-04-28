@@ -27,7 +27,11 @@ class Dialogue:
         self.characters_system = {}
         self.characters_user = {}
         self.participants_number = len(participants)
-        self.dialogue_history = [f'{self.participants[0].name} wants to {command}. The dialogue just started.']
+        self.command = command
+        self.dialogue_history = [f'{self.participants[0].name} wants to {self.command}. The dialogue just started.']
+        self.dialogue_history_token_count = get_prompt_token_count(content=self.dialogue_history, role=None, pad_reply=False)
+        # get a list of all characters in the conversation
+        self.characters_mentioned = [character.name for character in self.participants]  # Characters mentioned so far in the dialogue
 
         # for every participant
         for participant in self.participants:
@@ -44,9 +48,6 @@ class Dialogue:
                                          update_impressions=True,
                                          update_memories=True,
                                          system_instruction_token_count=self.get_system_instruction(participant)[0])
-
-        # get a list of all characters in the conversation
-        self.characters_mentioned = [character.name for character in self.participants]  # Characters mentioned so far in the dialogue
 
     def _set_up_gpt(self):
         model_params = {
@@ -122,14 +123,8 @@ class Dialogue:
         # if updating the memories
         if update_memories:
 
-            # make a memory retrieval query based on characters partaking/mentioned in this conversation
-            query = ''.join(["You are in dialogue with: ",
-                            ', '.join([x.name for x in self.participants if x.name != character.name])+'.\n'])
-            try:
-                query += f"Your goals are: {character.goals.get_goals(round=(self.game.round-1), as_str=True)}\n"
-            except AttributeError:
-                pass
-            query += self.dialogue_history[-1]
+            query = self.command
+            query += ', '.join(self.characters_mentioned)
 
             # get the 25 most recent/relevant/important memories
             context_list = retrieve(self.game, character, query, n=25)
@@ -138,13 +133,17 @@ class Dialogue:
             if context_list:
 
                 # include primer message at 0th index in list
-                context_list = ["These are select MEMORIES in ORDER from MOST to LEAST RELEVANT:\n"] + list(reversed(context_list))
+                context_list = ["These are select MEMORIES in ORDER from MOST to LEAST RELEVANT:\n"] + [m+"\n" for m in list(context_list)]
 
                 impressions_token_count = self.characters_user[character.name]['impressions'][0]
 
                 # limit memories to fit in GPT's context by trimming less recent/relevant/important memories
                 memories_limited = limit_context_length(history=context_list,
-                                                        max_tokens=self.model_context_limit - impressions_token_count,
+                                                        max_tokens=self.model_context_limit - \
+                                                        self.characters_user[character.name]['impressions'][0] - \
+                                                        system_instruction_token_count - \
+                                                        self.dialogue_history_token_count - 5 - \
+                                                        self.gpt_handler.max_tokens,
                                                         keep_most_recent=False)
 
                 # convert the list of limited memories into a single string
@@ -162,7 +161,11 @@ class Dialogue:
         # update dialogue history
         # limit the number of dialogue messages (if necessary, trimming from the start) to fit into GPT's context
         limited_dialog = limit_context_length(history=self.get_dialogue_history_list(),
-                                              max_tokens=self.model_context_limit-system_instruction_token_count-self.gpt_handler.max_tokens)
+                                              max_tokens=self.model_context_limit - \
+                                              system_instruction_token_count - \
+                                              self.characters_user[character.name]['impressions'][0] - \
+                                              self.characters_user[character.name]['memories'][0] - \
+                                              self.gpt_handler.max_tokens)
 
         # get the limited dialogue as a string
         dialog_str = '\n'.join(limited_dialog)
@@ -291,6 +294,7 @@ class Dialogue:
                     for k in keywords:
                         if k not in self.characters_mentioned:
                             update_memories = True
+                            self.characters_mentioned.append(k)
 
                 self.update_user_instruction(character,
                                              update_impressions=False,

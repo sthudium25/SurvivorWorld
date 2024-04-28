@@ -11,6 +11,7 @@ When it's your turn to speak, you can say something or walk away form the conver
 Respond strategically. If it is not advantageous to agree with the person you're talking to, then don't.
 
 If you say something, just say what you would say if you were replying directly to the dialogue.
+Don't add your name before the line of dialogue. Only output the line of dialogue.
 
 If you walk away, say only: 'I leave the conversation.'.
 
