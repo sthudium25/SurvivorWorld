@@ -338,7 +338,7 @@ def update_existing_generalizations(game: "Game", character: "Character", genera
         pass
     else:
         for ref in updated_gens:
-            memory_type = character.memory.get_observation_type(ref['index'])
+            memory_type = character.memory.get_observation_type(int(ref['index']))
             if memory_type.value != MemoryType.REFLECTION.value:
                 # print(f"{character.name} tried to update the following memory type: {memory_type}. It is being stored as a new memory.")
                 add_new_generalization_helper(game=game, character=character, generalization=ref)

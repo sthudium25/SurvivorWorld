@@ -542,7 +542,7 @@ class SurvivorGame(Game):
 
             # save game results so far
             self.save_simulation_data()
-            self.save_game()
+            self.save_game("test_file.json")
 
     def reset_character_dialogue(self):
         for c in self.characters.values():
