@@ -522,9 +522,6 @@ class SurvivorGame(Game):
 
                 self.reset_character_dialogue()
 
-                self.save_game("test_file.json")
-                print("Test save done")
-
                 for character in permutation(list(self.characters.values())):  # random permuted ordering, not based on character initiative
                     print(f"It is: {character.name}'s turn")
                     self.turn_handler(character)
