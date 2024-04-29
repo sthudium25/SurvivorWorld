@@ -176,6 +176,7 @@ config.*
 
 # testing notebooks:
 test/*.ipynb
+test_file.json
 
 # log data files
 logs/*

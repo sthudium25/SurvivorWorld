@@ -289,7 +289,9 @@ class MemoryStream:
     
     def get_observation_type(self, node_id):
         node = self.get_observation(node_id)
-        return node.node_type
+        if node:
+            return node.node_type
+        return None
     
     def get_enumerated_description_list(self, 
                                         node_id_list, 
@@ -410,7 +412,7 @@ class MemoryStream:
         cached_queries = {}
         try:
             current_goal_embed = character.goals.get_goal_embedding(round=round)
-        except:
+        except AttributeError:
             current_goal_embed = None
         persona_embed = get_text_embedding(character.persona.summary)
         if persona_embed is not None:

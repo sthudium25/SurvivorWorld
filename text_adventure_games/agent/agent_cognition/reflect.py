@@ -338,23 +338,24 @@ def update_existing_generalizations(game: "Game", character: "Character", genera
         pass
     else:
         for ref in updated_gens:
-            memory_type = character.memory.get_observation_type(int(ref['index']))
-            if memory_type.value != MemoryType.REFLECTION.value:
-                # print(f"{character.name} tried to update the following memory type: {memory_type}. It is being stored as a new memory.")
+            try:
+                prev_idx = int(ref["index"])
+                statement = ref["statement"]
+            except (KeyError, ValueError, TypeError):
+                # GPT didn't give a correct index value
+                # Attempt to make a new reflection
                 add_new_generalization_helper(game=game, character=character, generalization=ref)
-            
+                continue
             else:
-                # print(f"Updating generalization: {ref} for {character.name}")
-                try:
-                    prev_idx = int(ref["index"])
-                    desc = ref["statement"]
-                except (KeyError, ValueError, TypeError):
-                    # again, this is malformed, so skip
-                    continue
+                #
+                memory_type = character.memory.get_observation_type(prev_idx)
+                if memory_type and memory_type.value != MemoryType.REFLECTION.value:
+                    # if this memory is not a reflection, create a new reflection
+                    add_new_generalization_helper(game=game, character=character, generalization=ref)
                 else:
                     _ = character.memory.update_node(node_id=prev_idx, 
                                                      node_round=game.round, 
                                                      node_tick=game.tick,
-                                                     node_description=desc)
+                                                     node_description=statement)
                     _ = character.memory.update_node_embedding(node_id=prev_idx,
-                                                               new_description=desc)
+                                                               new_description=statement)

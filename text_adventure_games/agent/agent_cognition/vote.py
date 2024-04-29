@@ -135,16 +135,16 @@ class VotingSession:
                 KeyError):
             return None, None, False
         else:
-            vote_kwds = self.game.parser.extract_keywords(vote_target)
-            if "characters" not in vote_kwds:
+            if vote_target not in list(self.game.characters.keys()) and vote_target not in list(self.game.jury.keys()):
                 return None, None, False
-            elif len(vote_kwds["characters"]) > 0:
-                target_name = vote_kwds["characters"][0]
+            elif vote_target == voter.name:
+                return None, None, False
+            else:
                 valid_names = self.get_vote_options(voter, names_only=True)
-                if target_name not in valid_names:
+                if vote_target not in valid_names:
                     return None, None, False
                 else:
-                    return target_name, vote_reason, True
+                    return vote_target, vote_reason, True
             
     def _add_vote_to_memory(self, voter: "Character", vote_target: str) -> None:
         vote_desc = f"During the end of round session, {voter.name} voted for {vote_target} in secret."
@@ -267,7 +267,6 @@ class VotingSession:
         # The user prompt should contain info about recent memories, 
         # the fact that the model must reason about who to vote for,
         # and the list of the valid people to choose to vote for.
-        
         vote = self.gpt_handler.generate(system_prompt, user_prompt)
         if isinstance(vote, tuple):
             # This occurs when there was a Bad Request Error cause for exceeding token limit
@@ -275,7 +274,7 @@ class VotingSession:
             # Add this offset to the calculations of token limits and pad it 
             self.token_offset = token_difference + self.offset_pad
             self.offset_pad += 2 * self.offset_pad 
-            return self.run(self.game)
+            return self.run()
         return vote
 
     def _log_confessional(self, voter: "Character", message: str):

@@ -1,12 +1,12 @@
 
 vote_system_ending = """
-You are currently in a voting round so you must vote for another contestant. 
+You are currently in a voting round so you must vote for another contestant you want to take out of the game. 
 Use the provided information about yourself, your position in the game, and your goals. 
 You will also see information about your relationships and memories.
 Use this context to cast a vote that you believe will do the most to improve your position in the game. 
 Weight or interpret the memories based on their influence of the voting decision you need to make.
 This could mean sticking with an alliance or being deceitful, the choice is up to you. 
-Respond with the name of the contestant you are voting for and give an explanation why you've chosen them as the target of your vote.
+Respond with the name of the contestant you are voting to kick out and give an explanation why you've chosen them as the target of your vote.
 
 Example response in JSON format.
 
