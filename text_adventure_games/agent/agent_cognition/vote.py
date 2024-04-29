@@ -274,7 +274,7 @@ class VotingSession:
             # Add this offset to the calculations of token limits and pad it 
             self.token_offset = token_difference + self.offset_pad
             self.offset_pad += 2 * self.offset_pad 
-            return self.run(self.game)
+            return self.run()
         return vote
 
     def _log_confessional(self, voter: "Character", message: str):
