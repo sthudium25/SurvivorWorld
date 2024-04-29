@@ -28,7 +28,7 @@ class Dialogue:
         self.characters_user = {}
         self.participants_number = len(participants)
         self.command = command
-        self.dialogue_history = [f'{self.participants[0].name} wants to {self.command}. The dialogue just started.']
+        self.dialogue_history = [f'{self.participants[0].name} wants to {self.command} The dialogue just started.']
         self.dialogue_history_token_count = get_prompt_token_count(content=self.dialogue_history, role=None, pad_reply=False)
         # get a list of all characters in the conversation
         self.characters_mentioned = [character.name for character in self.participants]  # Characters mentioned so far in the dialogue
@@ -133,7 +133,11 @@ class Dialogue:
             if context_list:
 
                 # include primer message at 0th index in list
-                context_list = ["These are select MEMORIES in ORDER from MOST to LEAST RELEVANT:\n"] + [m+"\n" for m in list(context_list)]
+                memories_primer = ["These are select MEMORIES in ORDER from MOST to LEAST RELEVANT:\n"]
+                memories_primer_tok_count = get_prompt_token_count(content=memories_primer, role=None, pad_reply=False, tokenizer=None)
+
+                # include primer message at 0th index in list
+                context_list = [m+"\n" for m in list(context_list)]
 
                 impressions_token_count = self.characters_user[character.name]['impressions'][0]
 
@@ -143,11 +147,12 @@ class Dialogue:
                                                         self.characters_user[character.name]['impressions'][0] - \
                                                         system_instruction_token_count - \
                                                         self.dialogue_history_token_count - 5 - \
+                                                        memories_primer_tok_count - \
                                                         self.gpt_handler.max_tokens,
                                                         keep_most_recent=False)
 
                 # convert the list of limited memories into a single string
-                memories_limited_str = "".join([f"{m}\n" for m in memories_limited])
+                memories_limited_str = "".join(memories_primer + memories_limited)
 
                 # get the limited memories token count
                 memories_limited_token_count = get_prompt_token_count(content=memories_limited_str, role=None, pad_reply=False)
@@ -160,7 +165,7 @@ class Dialogue:
 
         # update dialogue history
         # limit the number of dialogue messages (if necessary, trimming from the start) to fit into GPT's context
-        limited_dialog = limit_context_length(history=self.get_dialogue_history_list(),
+        limited_dialog = limit_context_length(history=[d+"\n" for d in self.get_dialogue_history_list()],
                                               max_tokens=self.model_context_limit - \
                                               system_instruction_token_count - \
                                               self.characters_user[character.name]['impressions'][0] - \
@@ -168,7 +173,7 @@ class Dialogue:
                                               self.gpt_handler.max_tokens)
 
         # get the limited dialogue as a string
-        dialog_str = '\n'.join(limited_dialog)
+        dialog_str = ''.join(limited_dialog)
 
         # update the dialog history with the current token count being passed to GPT
         dialogue_history_token_count = get_prompt_token_count(content=dialog_str, role=None, pad_reply=False)
@@ -176,7 +181,7 @@ class Dialogue:
         dialogue_history_prompt = dp.gpt_dialogue_user_prompt.format(character=character.name,
                                                                      dialogue_history=dialog_str)
         
-        self.characters_user[character.name]['dialogue_history'] = (dialogue_history_token_count, dialogue_history_prompt)
+        self.characters_user[character.name]['dialogue_history'] = (dialogue_history_token_count+5, dialogue_history_prompt)
 
     def update_system_instruction(self, character):
         """
@@ -222,13 +227,29 @@ class Dialogue:
 
     def get_dialogue_history(self):
         return '\n'.join(self.dialogue_history)
+    
+
+    def update_players_dialogue(self):
+          # update the dialogues in each character's dictionary
+          for character in self.participants:
+              dialog_str = self.get_dialogue_history()
+              dialogue_history_token_count = get_prompt_token_count(content=dialog_str, role=None, pad_reply=False)
+
+              dialogue_history_prompt = dp.gpt_dialogue_user_prompt.format(character=character.name,
+                                                                     dialogue_history=dialog_str)
+              
+              self.characters_user[character.name]['dialogue_history'] = (dialogue_history_token_count+5, dialogue_history_prompt)
+
 
 
     def add_to_dialogue_history(self, message):
+        response_token_count = get_prompt_token_count(content=message, role=None, pad_reply=False)
+        self.dialogue_history_token_count += response_token_count + 1
         self.dialogue_history.append(message)
+        self.update_players_dialogue()
 
 
-    def get_gpt_response(self, character):
+    def get_gpt_response(self, character, new_char_bool):
         """
         This method makes the call to GPT to get a character's dialog response
         based on their stored system prompt in characters system as well as
@@ -248,16 +269,20 @@ class Dialogue:
         user_instruction_token_count, user_instruction_str = self.get_user_instruction(character=character)
 
         # if the sum of the system prompt and dialogue history token counts exceeds the max tokens
-        if system_instruction_token_count + user_instruction_token_count >= self.model_context_limit:
+        # if system_instruction_token_count + user_instruction_token_count >= self.model_context_limit-self.gpt_handler.max_tokens or new_char_bool:
+        #     update_memories = True
+        # else:
+        #     update_memories = False
 
-            # reduce the max token count by the dialogue count, and reduce the number of memories included in the prompt
-            self.model_context_limit = self.model_context_limit - user_instruction_token_count
+        if system_instruction_token_count + user_instruction_token_count >= self.model_context_limit-self.gpt_handler.max_tokens or new_char_bool:
+
             self.update_user_instruction(character,
-                                         update_impressions=False,
-                                         update_memories=True,
-                                         system_instruction_token_count=system_instruction_token_count)
-            system_instruction_token_count, system_instruction_str = self.get_system_instruction(character=character,
-                                                                                                 memories=True)
+                                            update_impressions=False,
+                                            update_memories= True, # update_memories,
+                                            system_instruction_token_count=system_instruction_token_count)
+            system_instruction_token_count, system_instruction_str = self.get_system_instruction(character=character)
+
+        print(user_instruction_str)
 
         # get GPT's response
         response = self.gpt_handler.generate(
@@ -286,22 +311,24 @@ class Dialogue:
         print("Dialogue started succesfully")
         while i > 0:
             for character in self.participants:
+                print("-"*100)
                 # Get last line of dialogue and if any new characters are mentioned update system prompts
                 last_line = self.dialogue_history[-1]
                 keywords = self.game.parser.extract_keywords(last_line).get("characters", None)
-                update_memories = False
+                new_char_bool = False
                 if keywords:
                     for k in keywords:
                         if k not in self.characters_mentioned:
-                            update_memories = True
+                            new_char_bool = True
                             self.characters_mentioned.append(k)
 
-                self.update_user_instruction(character,
-                                             update_impressions=False,
-                                             update_memories=update_memories,
-                                             system_instruction_token_count=self.get_system_instruction(character)[0])
+                # self.update_user_instruction(character,
+                #                              update_impressions=False,
+                #                              update_memories=update_memories,
+                #                              system_instruction_token_count=self.get_system_instruction(character)[0])
+                
                 # Get GPT response
-                response = self.get_gpt_response(character)
+                response = self.get_gpt_response(character, new_char_bool=new_char_bool)
                 response = f"{character.name} said: " + response
                 print(response)
                 self.add_to_dialogue_history(response)
