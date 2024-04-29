@@ -268,7 +268,6 @@ class VotingSession:
         # the fact that the model must reason about who to vote for,
         # and the list of the valid people to choose to vote for.
         vote = self.gpt_handler.generate(system_prompt, user_prompt)
-        print("OUTPUT: ", vote)
         if isinstance(vote, tuple):
             # This occurs when there was a Bad Request Error cause for exceeding token limit
             success, token_difference = vote
