@@ -289,7 +289,9 @@ class MemoryStream:
     
     def get_observation_type(self, node_id):
         node = self.get_observation(node_id)
-        return node.node_type
+        if node:
+            return node.node_type
+        return None
     
     def get_enumerated_description_list(self, 
                                         node_id_list, 
