@@ -40,12 +40,6 @@ class Search_Idol(base.Action):
         if not self.jungle.get_property("has_idol"):
             self.parser.fail(self.command, "The jungle has no idol.", self.character)
             return False
-        if not self.character.is_in_inventory(self.machete):
-            meessage = "The jungle is too thick to search without a machete. You must have a machete to successfully search for an idol."
-            self.parser.fail(self.command,
-                             meessage,
-                             self.character)
-            return False
         return True
 
     def apply_effects(self):
