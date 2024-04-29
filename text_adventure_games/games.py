@@ -750,7 +750,7 @@ class SurvivorGame(Game):
     def save_simulation_data(self):
         output_path = get_output_logs_path()
         experiment_dir = f"logs/{self.experiment_name}-{self.experiment_id}/"
-        fp = os.path.join(output_path, experiment_dir, "voting_history.json")
+        fp = os.path.join(output_path, experiment_dir, f"voting_history_{self.experiment_name}-{self.experiment_id}.json")
         create_dirs(fp)
 
         # Save voting history
