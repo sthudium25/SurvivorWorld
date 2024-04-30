@@ -66,6 +66,7 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
         "Jungle",
         "the deep jungle. There could be treasures hiding nearby.",
     )
+    jungle.set_property("has_idol", True)
 
     camp.add_connection("out", beach)
     beach.add_connection("north", jungle_path)
