@@ -130,7 +130,7 @@ class Persona():
         if self.speaking_style:
             return self.speaking_style
         
-        style = f"{self.facts["Name"]} speaks in the style of a {self.facts['Age']} year old {self.facts['Occupation']} from {self.facts.get('Home city', 'no place in particular')}. "
+        style = f"{self.facts['Name']} speaks in the style of a {self.facts['Age']} year old {self.facts['Occupation']} from {self.facts.get('Home city', 'no place in particular')}. "
         
         # Get 'outlook' and 'stress' traits to include in their speaking style.
         outlook = self.get_trait_score('outlook')
