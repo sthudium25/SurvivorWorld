@@ -32,7 +32,7 @@
         "level": "DEBUG",
         "formatter": "json",
         "filename": "logs/tmp.jsonl",
-        "mode": "w"
+        "mode": "a"
       },
       "queue_handler": {
         "()": "SurvivorWorld.text_adventure_games.utils.custom_logging.custom_logging_handlers.QueueListenerHandler",
@@ -46,7 +46,7 @@
         "class": "logging.handlers.RotatingFileHandler",
         "level": "WARNING",
         "formatter": "json",
-        "filename": "logs/tmp.jsonl",
+        "filename": "logs/warnings.jsonl",
         "maxBytes": 2000000,
         "backupCount": 3
       }
