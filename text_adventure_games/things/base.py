@@ -81,6 +81,15 @@ class Thing:
         Gets the value of this property for this item (defaults to False)
         """
         return self.properties.get(property_name, None)
+    
+    def has_property(self, property_name: str):
+        """
+        Checks that the thing has a property
+
+        Args:
+            property_name (str): _description_
+        """
+        return property_name in self.properties
 
     def add_command_hint(self, command: str):
         """

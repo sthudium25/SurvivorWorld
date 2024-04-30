@@ -239,18 +239,19 @@ class GptCallHandler:
         print(e)
         print("Did you set your API key or organization base URL incorrectly?")
         print("This could also be raised by a poor internet connection.")
-        raise e
+        self._wait_an_interval(total_wait_time=120)
     
     def _handle_InternalServerError(self, e):
         print("OpenAI Service Error encountered:\n")
         print(e)
-
+        
         self.openai_internal_errors += 1
         total_wait_time = 15 * self.openai_internal_errors
         print(f"\nYou may want to stop the run and try later. Otherwise, waiting {total_wait_time} seconds...")
-        
+        self._wait_an_interval(total_wait_time, interval=1)
+    
+    def _wait_an_interval(self, total_wait_time=15, interval=1):
         interval = 1
-
         while total_wait_time > 0:
             # Clear the last printed line
             print(f"Resuming in {total_wait_time} seconds...", end='\r')

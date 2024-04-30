@@ -645,7 +645,10 @@ class SurvivorGame(Game):
                 # Make sure they do one final reflection and goal evaluation
                 exiled_agent.engage(self)
                 # remove the agent that was exiled
+                character.location.remove_character(character)
+                character.location = None
                 _ = self.characters.pop(character.name)
+
             else:
                 self.add_exile_memory(self.characters[character.name],
                                       exiled_name=exiled_agent.name,

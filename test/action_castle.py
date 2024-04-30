@@ -795,6 +795,56 @@ def build_mini_game(experiment_name, sim_id, make_new_characters=False, max_tick
 
     return game
 
+def build_ac_mini_game(experiment_name, sim_id, make_new_characters=False, max_ticks=2) -> games.Game:
+    fishing_pond = things.Location(
+        "Fishing Pond", "You are at the edge of a small fishing pond."
+    )
+
+    # Gettable Items
+    fishing_pole = things.Item(
+        "pole",
+        "a fishing pole",
+        "A SIMPLE FISHING POLE.",
+    )
+    fishing_pond.add_item(fishing_pole)
+    fishing_pond.set_property("has_fish", True)
+
+    # Characters
+    # Mother
+    # mother_persona = build_agent(agent_description="A homely mother who with a powerful spirit",
+    #                              facts_new=make_new_characters,
+    #                              archetype="Mother")
+    # mother = GenerativeAgent(
+    #     mother_persona
+    # )
+    # mother.set_property("emotional_state", "happy")
+    # mother.set_property("is_married", True)
+    # mother.set_property("character_type", "human")
+    # fishing_pond.add_character(mother)
+
+    # Player
+    player_persona = build_agent(agent_description="A young person destined for greatness, but darkness lurks within them",
+                                 facts_new=make_new_characters,
+                                 archetype="Villain")
+    player = GenerativeAgent(
+        player_persona
+    )
+    player.set_property("character_type", "human")
+    player.set_property("immune", True)
+
+    # The Game
+    # characters = [troll, mother, fourth, fifth]
+    # characters = [mother]
+    # custom_actions = [Unlock_Door, Read_Runes, Propose, Wear_Crown, Sit_On_Throne]
+    game = ActionCastleSurvivor(fishing_pond, 
+                                player, 
+                                # characters, 
+                                custom_actions=None,
+                                max_ticks=max_ticks)
+
+    return game
+
+
 def test_logging_setup(experiment_name, sim_id):
     # Logging data
     print("Creating custom logger")

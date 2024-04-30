@@ -17,7 +17,7 @@ class Catch_Fish(base.Action):
         self.character = character
         self.pond = self.character.location
         self.pole = False
-        if " with pole" in command:
+        if " pole" in command or " rod" in command:
             self.pole = self.parser.match_item(
                 "pole", self.parser.get_items_in_scope(self.character)
             )
@@ -27,8 +27,9 @@ class Catch_Fish(base.Action):
         fish.set_property(
             "taste", "disgusting! It's raw! And definitely not sashimi-grade!"
         )
-        self.pond.set_property("has_fish", True)
-        self.pond.add_item(fish)
+        if self.pond and self.pond.has_property("has_fish"):
+            self.pond.set_property("has_fish", True)
+            self.pond.add_item(fish)
 
     def check_preconditions(self) -> bool:
         """
@@ -37,10 +38,14 @@ class Catch_Fish(base.Action):
         * The character must be at the pond
         * The character must have a fishing pole in their inventory
         """
-        if not self.was_matched(self.character, self.pond, "There's no pond here."):
+        if self.pond and not self.pond.has_property("has_fish"):
+            self.parser.fail(self.command, f"{self.character.name} tried to fish in {self.pond.name}. Fish are not found here.", self.character)
+            return False
+        if not self.was_matched(self.character, self.pond, "There's no body of water here."):
+            self.parser.fail(self.command, f"{self.character.name} tried to fish in {self.pond.name}, which might not be a body of water", self.character)
             return False
         if not self.pond.get_property("has_fish"):
-            self.parser.fail(self.command, "The pond has no fish.", self.character)
+            self.parser.fail(self.command, "The body of water has no fish.", self.character)
             return False
         # if not self.character.is_in_inventory(self.pole):
         #     return False
@@ -73,7 +78,7 @@ class Catch_Fish(base.Action):
         d = "".join(
             [
                 f"{self.character.name} dips their hook into the pond and ",
-                "catches a fish",
+                "catches a fish. It might be good to eat!",
             ]
         )
         description = d.format(character_name=self.character.name)
