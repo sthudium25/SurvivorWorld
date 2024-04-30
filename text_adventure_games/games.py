@@ -758,7 +758,7 @@ class SurvivorGame(Game):
             json.dump(self.voting_history, f, indent=4)
 
         # Save goal scores and goals
-        fp = os.path.join(output_path, experiment_dir, "character_goals.json")
+        fp = os.path.join(output_path, experiment_dir, f"character_goals_{self.experiment_name}-{self.experiment_id}.json")
         create_dirs(fp)
         
         with open(fp, mode="w") as f:
@@ -770,7 +770,7 @@ class SurvivorGame(Game):
                 output[name] = c.get_goals() or "None"
             json.dump(output, f, indent=4)
 
-        fp = os.path.join(output_path, experiment_dir, "character_goal_scores.json")
+        fp = os.path.join(output_path, experiment_dir, f"character_goal_scores_{self.experiment_name}-{self.experiment_id}.json")
         create_dirs(fp)
 
         with open(fp, mode="w") as f:
