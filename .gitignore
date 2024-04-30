@@ -180,3 +180,6 @@ test_file.json
 
 # log data files
 logs/*
+
+# evaluation
+evaluation/*
