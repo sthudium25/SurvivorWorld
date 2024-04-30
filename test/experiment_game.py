@@ -87,6 +87,7 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
         "A SIMPLE FISHING POLE.",
     )
     ocean.add_item(fishing_pole)
+    ocean.set_property("has_fish", True)
 
     machete1 = things.Item(
         "machete1",
