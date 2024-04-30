@@ -43,7 +43,8 @@ def get_logger_extras(game, character):
     extras["round"] = game.round
     extras["tick"] = game.tick
     extras["total_ticks"] = game.total_ticks
-
+    extras["experiment_name"] = game.experiment_name
+    extras["experiment_id"] = game.experiment_id
     return extras
 
 def normalize_name(name):
