@@ -37,7 +37,7 @@ class VotingSession:
 
         # gpt call attrs
         self.gpt_handler = self._set_up_gpt()
-        self.token_offset = 0
+        self.token_offset = 10
         self.offset_pad = 5
 
     def _set_participants(self, participants):
@@ -99,23 +99,26 @@ class VotingSession:
             # print(f"Voter: {voter.name}")
             # 1. Gather context for voter
             # 2. have them cast vote:
-            system_prompt, user_prompt = self._gather_voter_context(voter)
+            self._run_character_vote(voter)
 
-            success = False
-            for i in range(5):
-                vote = self.gpt_cast_vote(system_prompt, user_prompt)
-                vote_name, vote_confessional, success = self._validate_vote(vote, voter)
-                success = success
-                if success:
-                    self._record_vote(voter, vote_name, vote_confessional)
-                    break
-                elif i == 4:
-                    # This vote has failed too many times so get a random vote
-                    print(f"{voter.name} is failed to vote properly. Making a random choice.")
-                    valid_options = self.get_vote_options(voter, names_only=True)
-                    random_vote = choice(valid_options)
-                    self._record_vote(voter, random_vote, "This was a randomized vote because GPT failed to vote properly.")
-                    break
+    def _run_character_vote(self, voter):
+        system_prompt, user_prompt = self._gather_voter_context(voter)
+
+        success = False
+        for i in range(5):
+            vote = self.gpt_cast_vote(system_prompt, user_prompt, voter)
+            vote_name, vote_confessional, success = self._validate_vote(vote, voter)
+            success = success
+            if success:
+                self._record_vote(voter, vote_name, vote_confessional)
+                break
+            elif i == 4:
+                # This vote has failed too many times so get a random vote
+                print(f"{voter.name} is failed to vote properly. Making a random choice.")
+                valid_options = self.get_vote_options(voter, names_only=True)
+                random_vote = choice(valid_options)
+                self._record_vote(voter, random_vote, "This was a randomized vote because GPT failed to vote properly.")
+                break
         
         # Clean up / reset any idols used in this round
         self._cleanup()
@@ -132,7 +135,8 @@ class VotingSession:
             vote_target = vote_dict["target"]
             vote_reason = vote_dict["reason"]
         except (json.JSONDecodeError,
-                KeyError):
+                KeyError,
+                TypeError):
             return None, None, False
         else:
             if vote_target not in list(self.game.characters.keys()) and vote_target not in list(self.game.jury.keys()):
@@ -262,7 +266,7 @@ class VotingSession:
         user_prompt += user_prompt_end
         return user_prompt
   
-    def gpt_cast_vote(self, system_prompt, user_prompt):
+    def gpt_cast_vote(self, system_prompt, user_prompt, voter):
         # This method constructs a call to GPT, passing the context as part of a system prompt
         # The user prompt should contain info about recent memories, 
         # the fact that the model must reason about who to vote for,
@@ -272,9 +276,9 @@ class VotingSession:
             # This occurs when there was a Bad Request Error cause for exceeding token limit
             success, token_difference = vote
             # Add this offset to the calculations of token limits and pad it 
-            self.token_offset = token_difference + self.offset_pad
+            self.token_offset = token_difference + self.offset_pad + self.token_offset
             self.offset_pad += 2 * self.offset_pad 
-            return self.run()
+            return self._run_character_vote(voter)
         return vote
 
     def _log_confessional(self, voter: "Character", message: str):
