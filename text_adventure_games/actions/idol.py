@@ -68,7 +68,7 @@ class Search_Idol(base.Action):
         else:
             description = """You look around for an idol but found nothing.
             You sense it should be nearby and you can keep on trying! You might have better luck next time!"""
-            self.parser.fail(self.command, no_machete, self.character)
+            self.parser.fail(self.command, description, self.character)
             return True
         d = "".join(
             [
