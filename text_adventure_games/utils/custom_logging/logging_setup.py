@@ -33,7 +33,7 @@ def setup_logger(experiment_name: str,
         config = json.load(log_cfg)
 
     new_log_path = os.path.join(get_output_logs_path(), f"logs/{experiment_name}-{simulation_id}/")
-    validated_path, validated_id = validate_output_dir(new_log_path, experiment_name, simulation_id)
+    overwrite, validated_path, validated_id = validate_output_dir(new_log_path, experiment_name, simulation_id)
 
     # TODO: update this as needed to maintain 1 log per run or 1 log per experiment
     experiment_logfile_name = os.path.join(validated_path, f"sim_{experiment_name}-{validated_id}.jsonl")
@@ -41,7 +41,7 @@ def setup_logger(experiment_name: str,
     # NOTE: keeping this static
     global_warnings_logfile = os.path.join(get_output_logs_path(), "logs/warnings/project_warnings.jsonl")
 
-    set_logs_paths(config, experiment_logfile_name, global_warnings_logfile)
+    set_logs_paths(config, experiment_logfile_name, global_warnings_logfile, overwrite)
     
     logging.config.dictConfig(config)
 
@@ -50,7 +50,8 @@ def setup_logger(experiment_name: str,
 
 def set_logs_paths(logs_config, 
                    experiment_log_path: Union[str, PathLike], 
-                   global_warnings_logfile: Union[str, PathLike]) -> None:
+                   global_warnings_logfile: Union[str, PathLike],
+                   overwrite: bool = False) -> None:
     """
     Set the log paths in the dictConfig file.
     Ensures log directories exist, else creates them.
@@ -75,3 +76,16 @@ def set_logs_paths(logs_config,
         if not os.path.exists(log_dir):
             # print("couldn't find path: ", dir_path)
             os.makedirs(log_dir)
+
+    # Check if the user wants to overwrite the existing log file
+    if overwrite and os.path.exists(experiment_log_path):
+        # Overwrite the file by clearing its contents
+        open(experiment_log_path, 'w').close()
+    else:
+        # Check if file exists, and if not, create it to avoid file not found errors
+        if not os.path.exists(experiment_log_path):
+            open(experiment_log_path, 'a').close()
+    
+    
+    
+    
