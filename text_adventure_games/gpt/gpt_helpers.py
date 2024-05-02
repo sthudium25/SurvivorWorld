@@ -180,11 +180,15 @@ class GptCallHandler:
                 return response.choices[0].message.content
             except openai.APITimeoutError as e:
                 # The request took too long
-                self._handle_RateOrTimeoutErrors(e, attempt=i)
+                self._log_gpt_error(e)
+                self._handle_TimeoutError(e, attempt=i)
                 continue
             except openai.RateLimitError as e:
                 # hit rate limit
-                self._handle_RateOrTimeoutErrors(e, attempt=i)
+                self._log_gpt_error(e)
+                wait_time = self._handle_RateLimitError(e, attempt=i)
+                print(f"Rate limit exceeded, waiting {wait_time} seconds.")
+                time.sleep(wait_time)
                 continue
             except openai.BadRequestError as e:
                 success, info = self._handle_BadRequestError(e)
@@ -208,7 +212,7 @@ class GptCallHandler:
     def _log_gpt_error(self, e):
         logger.error("GPT Error: {}".format(e)) 
 
-    def _handle_RateOrTimeoutErrors(self, e, attempt):
+    def _handle_TimeoutError(self, e, attempt):
         self._log_gpt_error(e)
         # use exponential backoff
         # openai requests 0.6ms delay so a max of 2s should be plenty
@@ -218,6 +222,45 @@ class GptCallHandler:
             duration = min(0.1**attempt, 2)
         print(f"rate limit reached, sleeping {duration} seconds")
         time.sleep(duration)
+
+    def _handle_RateLimitError(self, e, attempt):
+        pad = 0.5
+        default_seconds = min(attempt * 1, 2)
+        if hasattr(e, 'response'):
+            error_response = e.response.json()
+    
+            if "error" not in error_response:
+                return default_seconds
+            
+            error = error_response.get("error")
+            code = error.get("code", None) 
+            if code != "rate_limit_exceeded":
+                return default_seconds
+            msg = error.get("message", None)
+            if msg and isinstance(msg, str):
+                pattern = r"Please try again in \d+(\.\d+)?(ms|s)\b"
+                sleep_request = re.search(pattern, msg)
+                if sleep_request:
+                    sleep_request = sleep_request.group(0)
+                unit_pattern = r"(?:\d+)(ms|s)"
+                duration_pattern = r"\d+(\.\d+)?(?=\s*(ms|s))"
+                units = re.findall(unit_pattern, sleep_request)
+                unit = units[0] if units else None
+                duration = re.search(duration_pattern, sleep_request)
+
+                if not unit:
+                    unit = "s" if "." in duration else "ms"
+                if not duration:
+                    return 2
+                else:
+                    duration = duration.group(0)
+                if unit == "s":
+                    wait_time = float(duration)
+                elif unit == "ms":
+                    wait_time = float(duration) / 1000.0
+                return wait_time + pad
+            return default_seconds
+        return default_seconds
         
     def _handle_BadRequestError(self, e):
         if hasattr(e, 'response'):
