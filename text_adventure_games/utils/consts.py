@@ -106,6 +106,7 @@ def get_output_logs_path():
     return output_logs
 
 def validate_output_dir(fp, name, sim_id):
+    overwrite = False
     if os.path.exists(fp):
         print()
         decision = check_user_input(name, sim_id)
@@ -116,9 +117,10 @@ def validate_output_dir(fp, name, sim_id):
         else:
             print("Overwriting log file is data...")
             print("The game data will be overwritten when you run `game.save_simulation_data()`")
-            return fp, sim_id
+            overwrite = True
+            return overwrite, fp, sim_id
     else:
-        return fp, sim_id
+        return overwrite, fp, sim_id
     
 def check_user_input(name, sim_id):
     p1 = f"It appears you've already saved data using '{name}-{sim_id}. Do you want to overwrite the data?"
