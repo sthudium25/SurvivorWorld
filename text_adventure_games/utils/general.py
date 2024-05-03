@@ -242,3 +242,19 @@ def get_text_embedding(text, model="text-embedding-3-small", *args):
 
 def create_dirs(fp):
     os.makedirs(os.path.dirname(fp), exist_ok=True)
+
+def write_to_json(fp, data: dict):
+    if os.path.isfile(fp) and os.path.getsize(fp) > 0:
+        with open(fp, "r+") as f:
+            # Load existing data into a dictionary
+            existing_data = json.load(f)
+            # Update dictionary with new data
+            existing_data.update(data)
+            # Write back to file
+            f.seek(0)  # Reset file position to the beginning.
+            json.dump(existing_data, f, indent=4)
+            f.truncate()  # Remove remaining part of old data
+    else:
+        # Create new file and write data
+        with open(fp, "w") as f:
+            json.dump(data, f, indent=4)

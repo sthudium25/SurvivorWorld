@@ -5,11 +5,14 @@ File: agent_cognition/goals.py
 Description: defines how agents reflect upon their past experiences
 """
 from __future__ import annotations
+import json
+import os
 from typing import TYPE_CHECKING
 from collections import defaultdict
 
 import numpy as np
-from text_adventure_games.utils.general import set_up_openai_client, get_text_embedding
+from text_adventure_games.utils.consts import get_output_logs_path
+from text_adventure_games.utils.general import create_dirs, set_up_openai_client, get_text_embedding, get_logger_extras, write_to_json
 from text_adventure_games.assets.prompts import goal_prompt as gp
 from text_adventure_games.gpt.gpt_helpers import (GptCallHandler,
                                                   limit_context_length,
@@ -88,6 +91,8 @@ class Goals:
             self.offset_pad += 2 * self.offset_pad 
             return self.gpt_generate_goals(self.game)
         
+        self._log_goal_prompts(game, system, user, goal)
+
         # get embedding of goal
         goal_embed = self._create_goal_embedding(goal)
         # for experimentation purposes
@@ -247,6 +252,21 @@ class Goals:
         curr_embedding = self.get_goal_embedding(round)
         if curr_embedding is not None:
             self.character.memory.set_goal_query(curr_embedding)
+
+    def _log_goal_prompts(self, game, system_prompt, user_prompt, new_goals):
+        # output path info
+        output_path = get_output_logs_path()
+        experiment_dir = f"logs/{game.experiment_name}-{game.experiment_id}/"
+        fp = os.path.join(output_path, experiment_dir, f"goal_prompts_{game.experiment_name}-{game.experiment_id}.json")
+        create_dirs(fp)
+
+        extras = get_logger_extras(game, self.character)
+        extras["system"] = system_prompt
+        extras["user"] = user_prompt
+        extras["goals"] = new_goals
+        data = {f"{self.character.name}_{game.round}": extras}
+
+        write_to_json(fp, data)   
 
     # ----------- EVALUATION -----------
     def evaluate_goals(self, game: "Game"):
