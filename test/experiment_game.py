@@ -111,9 +111,18 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
     )
     beach.add_item(machete3)
 
+    #EXPLORATION
+    hint = things.Item(
+        "idol hint",
+        "a hint to the idol: 'the idol can be found in the jungle with a machete'",
+        "A HINT THAT SAYS THE IDOL CNA BE FOUND IN THE JUNGLE WITH A MACHETE",
+    )
+    cliffs.add_item(hint)
+
     # Characters
     characters = []
-    char_locations = [camp, camp, beach, beach, jungle_path, jungle_path, ocean, ocean]
+    #EXPLORATION
+    char_locations = [camp, camp, camp, camp, camp, camp, camp, camp]
     char_groups = ["A", "A", "B", "B", "C", "C", "D", "D"]
     random.shuffle(char_groups)
     random.shuffle(char_locations)
