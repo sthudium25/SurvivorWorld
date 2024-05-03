@@ -12,6 +12,8 @@ Description: defines how agents store interpersonal impressions and theory-of-mi
 
 """
 from collections import defaultdict
+import json
+import os
 from typing import TYPE_CHECKING
 
 # local imports
@@ -22,6 +24,8 @@ from text_adventure_games.gpt.gpt_helpers import (limit_context_length,
                                                   context_list_to_string, 
                                                   GptCallHandler)
 from text_adventure_games.agent.agent_cognition import retrieve
+from text_adventure_games.utils.consts import get_output_logs_path
+from text_adventure_games.utils.general import create_dirs, get_logger_extras, write_to_json
 
 if TYPE_CHECKING:
     from text_adventure_games.games import Game
@@ -149,7 +153,8 @@ class Impressions:
         system, user = self.build_impression_prompts(game, character, target)
 
         impression = self.gpt_generate_impression(system, user)
-        # print(f"{character.name} impression of {target.name}: {impression}")
+        
+        self._log_impression_prompts(game, character, system, user, impression)
 
         self.impressions.update({f"{target.name}_{target.id}": {"impression": impression,
                                                                 "round": game.round,
@@ -232,7 +237,7 @@ class Impressions:
             # Relevant memories: least to most 
             context_list = retrieve.retrieve(game, 
                                              character, 
-                                             n=-1, 
+                                             n=30, 
                                              query=f"I want to remember everything I know about {target.name}")
             self.chronological = False
             target_impression_tkns = 0
@@ -262,3 +267,19 @@ class Impressions:
                                                                                                   m=memory_str)
         
         return message
+    
+    def _log_impression_prompts(self, game, character, system_prompt, user_prompt, impression):
+        # output path info
+        output_path = get_output_logs_path()
+        experiment_dir = f"logs/{game.experiment_name}-{game.experiment_id}/"
+        fp = os.path.join(output_path, experiment_dir, f"impression_prompts_{game.experiment_name}-{game.experiment_id}.json")
+        create_dirs(fp)
+
+        extras = get_logger_extras(game, character)
+        extras["system"] = system_prompt
+        extras["user"] = user_prompt
+        extras["new_impression"] = impression
+
+        data = {f"{character.name}_{game.round}": extras}
+
+        write_to_json(fp, data)

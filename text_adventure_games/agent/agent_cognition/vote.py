@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from text_adventure_games.things import Character
     from text_adventure_games.games import Game
 
-VOTING_MAX_OUTPUT = 100
 
 class VotingSession:
     def __init__(self, game: "Game", participants: List["Character"]):

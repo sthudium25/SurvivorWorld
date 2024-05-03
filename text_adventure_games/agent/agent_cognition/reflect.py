@@ -113,7 +113,7 @@ def generalize(game, character):
     gpt_handler = GptCallHandler(**model_params)
     
     # how many memories to get during retrieval, which is called 4 times (once per passed question)
-    memories_per_retrieval = 50
+    memories_per_retrieval = 30
 
     # Get Static Components (System Prompt and Impressions don't update during Reflection) #
 
