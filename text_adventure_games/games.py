@@ -526,8 +526,16 @@ class SurvivorGame(Game):
                     print(f"It is: {character.name}'s turn")
                     self.turn_handler(character)
 
+                    # EXPLORATION: check if game ended
+                    if self.is_game_over():
+                        break
+
                 # Update the total ticks that have occurred in the game.
                 self.total_ticks += 1
+
+                # EXPLORATION: check if game ended
+                if self.is_game_over():
+                    break
             
             # NOTE: this placement allows agents to reflect prior to voting.
             
@@ -587,6 +595,11 @@ class SurvivorGame(Game):
         Checks whether the game has been won. For SurvivorWorld, the game is won
         once any has been voted the victor.
         """
+        # EXPLORATION GAME
+        for character in self.characters:
+            if character.has_property("immune", True):
+                return True
+        
         if self.winner_declared:
             print(f"Congratulations!! {self.winner.name} won the game! They're the ultimate Survivor. Jeff is so proud of u")
             return True
