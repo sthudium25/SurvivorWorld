@@ -113,8 +113,8 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
 
     # Characters
     characters = []
-    char_locations = [camp, camp, beach, beach, jungle_path, jungle_path, ocean, ocean]
-    char_groups = ["A", "A", "B", "B", "C", "C", "D", "D"]
+    char_locations = [camp, camp, camp, camp, camp, camp]
+    char_groups = ["D", "D", "D", "D", "D", "D"]
     random.shuffle(char_groups)
     random.shuffle(char_locations)
     start_at = char_locations[0]
