@@ -15,7 +15,7 @@ from spacy import load as spacyload
 # from uuid import uuid4
 
 # Local imports
-from ..utils.general import set_up_openai_client, get_text_embedding
+from ..utils.general import get_text_embedding
 if TYPE_CHECKING:
     from ..things.characters import Character
 
@@ -90,9 +90,6 @@ class MemoryStream:
         self.importance_alpha = 1
         self.recency_alpha = 1
         self.relevance_alpha = 1
-
-        # Set up a client for this instance
-        self.client = set_up_openai_client(org="Penn")
 
         # Initialize stopwords
         self.stopwords = self._generate_stopwords()
@@ -378,7 +375,9 @@ class MemoryStream:
             return self.memory_embeddings[index]
         
     def get_query_embeddings(self):
-        return np.array(list([q for q in self.query_embeddings.values() if q.all()]))
+        defualt_embeddings = list([q for q in self.query_embeddings.values() if q.all()])
+        defualt_embeddings.extend([self.get_embedding(m.node_id) for m in self.observations[-self.lookback:]])
+        return np.array(defualt_embeddings)
         
     def get_relationships_summary(self):
         raise NotImplementedError
