@@ -120,6 +120,7 @@ class Read_Clue(base.Action):
                 "{character_name} reads the idol clue out loud: ",
                 "'The idol can be found by searching the jungle with a machete.' ",
                 "'You can fail this action but keep trying as long as you have a machete and are in the jungle!'",
+                "'If you pick up and hold this clue while searching, you'll have higher chances.'"
             ]
         )
         description = d.format(character_name=self.character.name)
