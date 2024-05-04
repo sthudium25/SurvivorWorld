@@ -68,11 +68,11 @@ Only return a JSON object, using the following structure:
 Remember, make generalized statements that are rooted in the facts you're been provided, and only update past reflections if they no longer seem accurate.
 """
 
-
+# EXPLORATION
 memory_query_questions = [
-    "What were my key partnerships in this round?",
-    "How have my recent decisions influenced my alliances and what changes should I make to strengthen or repair relationships with other players?",
-    "How effectively did I handle major threats this round, and what alliances or betrayals should I anticipate for the next round based on these actions?",
+    "What have I been doing to achieve the goal of the game?",
+    "Which locations, actions or items seem important or helpful to the goal of the game?",
+    "Which locations, actions or items seem unimportant or detrimental to the goal of the game?",
     "Which strategies have been effective so far, and how should I adjust my overall game plan to align with the evolving dynamics of the game?"
 ]
 
