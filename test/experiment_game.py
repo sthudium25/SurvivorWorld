@@ -127,12 +127,12 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
 
 
     #EXPLORATION
-    hint = things.Item(
-        "idol hint",
-        "a hint to the idol",
-        "A HINT THAT SAYS THE IDOL CAN BE FOUND IN THE JUNGLE WITH A MACHETE",
+    clue = things.Item(
+        "idol clue",
+        "a clue to the idol",
+        "A CLUE THAT SAYS THE IDOL CAN BE FOUND IN THE JUNGLE WITH A MACHETE",
     )
-    cliffs.add_item(hint)
+    cliffs.add_item(clue)
 
     # Characters
     characters = []

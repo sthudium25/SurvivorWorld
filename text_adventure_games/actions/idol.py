@@ -21,8 +21,8 @@ class Search_Idol(base.Action):
                 "machete", self.parser.get_items_in_scope(self.character)
             )
         # EXPLORATION
-        self.hint = self.parser.match_item(
-                "idol hint", self.parser.get_items_in_scope(self.character)
+        self.clue = self.parser.match_item(
+                "idol clue", self.parser.get_items_in_scope(self.character)
             )
         
 
@@ -63,7 +63,7 @@ class Search_Idol(base.Action):
             return False
 
         random_number = random.random()
-        if random_number < 0.3 or (random_number < 0.5 and self.hint):
+        if random_number < 0.3 or (random_number < 0.5 and self.clue):
             idol = Item("idol", "an immunity idol", "THIS IDOL GRANTS YOU IMMUNITY AT THE NEXT VOTE.")
             idol.add_command_hint("keep it a secret from your enemies!")
             self.character.add_to_inventory(idol)
@@ -78,6 +78,47 @@ class Search_Idol(base.Action):
             [
                 "{character_name} hacks their way into the deep jungle and ",
                 "finds an idol near a large tree! You are immune next round.",
+            ]
+        )
+        description = d.format(character_name=self.character.name)
+
+        self.parser.ok(self.command, description, self.character)
+        return True
+
+class Read_Clue(base.Action):
+    ACTION_NAME = "read clue"
+    ACTION_DESCRIPTION = "Examine the clue for details on the idol's location."
+    ACTION_ALIASES = ["examine clue", "read clue", "read idol clue"]
+
+    def __init__(self, game, command: str, character: Character):
+        super().__init__(game)
+        self.command = command
+        self.character = character
+        self.clue = self.parser.match_item(
+                "idol clue", self.parser.get_items_in_scope(self.character)
+            )
+        
+
+    def check_preconditions(self) -> bool:
+        """
+        Preconditions:
+        * The character must have the clue nearby
+        """
+        if not self.clue:
+            self.parser.fail(self.command, "There is no idol clue at this location", self.character)
+            return False
+        return True
+
+    def apply_effects(self):
+        """
+        Effects:
+        * Let agent know details about the idol
+        """
+        d = "".join(
+            [
+                "{character_name} reads the idol clue out loud: ",
+                "'The idol can be found by searching the jungle with a machete.' ",
+                "'You can fail this action but keep trying as long as you have a machete and are in the jungle!'",
             ]
         )
         description = d.format(character_name=self.character.name)
