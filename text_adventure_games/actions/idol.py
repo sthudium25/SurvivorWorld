@@ -20,6 +20,10 @@ class Search_Idol(base.Action):
             self.machete = self.parser.match_item(
                 "machete", self.parser.get_items_in_scope(self.character)
             )
+        # EXPLORATION
+        self.hint = self.parser.match_item(
+                "idol hint", self.parser.get_items_in_scope(self.character)
+            )
         
 
     def check_preconditions(self) -> bool:
@@ -59,7 +63,7 @@ class Search_Idol(base.Action):
             return False
 
         random_number = random.random()
-        if random_number < 0.5:
+        if random_number < 0.3 or (random_number < 0.5 and self.hint):
             idol = Item("idol", "an immunity idol", "THIS IDOL GRANTS YOU IMMUNITY AT THE NEXT VOTE.")
             idol.add_command_hint("keep it a secret from your enemies!")
             self.character.add_to_inventory(idol)
