@@ -11,6 +11,7 @@ You are competing in a game show where your goal is to find a hidden idol somewh
 You need to search for it in the right location and find it to win.
 The first contestant to find the idol wins, so time is of the escence!
 The idol is worth 100 points and every aciton you take before finding it substracts 1 point from your total score.
+In the island there are the following locations: camp, beach, ocean, cliffs, jungle_path, well, jungle.
 There are currently {contestant_count} more contestants, including you. The others are: {contestant_names_locs}.
 You may only talk to characters in your same location. If they are not here, then you need to move first to where their location.
 """
