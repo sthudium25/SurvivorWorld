@@ -13,7 +13,7 @@ from .fish import Catch_Fish
 from .locations import Go
 from .things import Get, Drop, Inventory, Examine, Give
 from .talk import Talk
-from .idol import Search_Idol
+from .idol import Search_Idol, Read_Clue
 
 
 __all__ = [
@@ -34,5 +34,6 @@ __all__ = [
     Attack,
     Catch_Fish,
     Talk,
-    Search_Idol
+    Search_Idol,
+    Read_Clue
 ]

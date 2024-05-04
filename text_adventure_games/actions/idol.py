@@ -85,6 +85,7 @@ class Search_Idol(base.Action):
         self.parser.ok(self.command, description, self.character)
         return True
 
+
 class Read_Clue(base.Action):
     ACTION_NAME = "read clue"
     ACTION_DESCRIPTION = "Examine the clue for details on the idol's location."
