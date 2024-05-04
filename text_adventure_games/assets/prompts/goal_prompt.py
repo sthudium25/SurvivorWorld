@@ -3,7 +3,7 @@ gpt_goals_prompt = """
 create high level goals at several priority levels for the next round. You can keep the previous goal, update the previous goal or create a new one based on your strategy.
 
 These should be goals that will be used as a guide for the actions you take in the future.
-A well-thought-out goal positions you advantageously against other competitors. Remember your overarching objective is to not get voted out this round.
+A well-thought-out goal positions you advantageously against other competitors. Remember your overarching objective is to find the idol.
 Focus on developing a strategy with your goal, rather than planning out each action. Keep the goals concise. 
 
 You may see your previous goals as well as an accompanying Goal Completion Score, which is on a scale of 1 to 5.
