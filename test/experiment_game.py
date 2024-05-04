@@ -111,6 +111,21 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
     )
     beach.add_item(machete3)
 
+    machete4 = things.Item(
+        "machete2",
+        "a sharp machete",
+        "A SHARP MACHETE USED FOR CUTTING VINES.",
+    )
+    ocean.add_item(machete4)
+
+    machete5 = things.Item(
+        "machete3",
+        "a sharp machete",
+        "A SHARP MACHETE USED FOR CUTTING VINES.",
+    )
+    jungle_path.add_item(machete5)
+
+
     #EXPLORATION
     hint = things.Item(
         "idol hint",
