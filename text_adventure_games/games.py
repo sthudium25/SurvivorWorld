@@ -514,8 +514,8 @@ class SurvivorGame(Game):
                 print(f"ROUND: {self.round}.{self.tick}")
                 
                 # If this is the end of the round, vote
-                if self.tick == (self.max_ticks_per_round - 1):
-                    self.handle_voting_sessions()
+                # if self.tick == (self.max_ticks_per_round - 1):
+                #     self.handle_voting_sessions()
                 
                 # Set goals for all characters at beginning of round
                 self.goal_setting_handler()
@@ -598,6 +598,7 @@ class SurvivorGame(Game):
         # EXPLORATION GAME
         for character in self.characters:
             if character.has_property("immune", True):
+                print("Someone found the idol! Game is over")
                 return True
         
         if self.winner_declared:
