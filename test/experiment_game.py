@@ -114,8 +114,8 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
     #EXPLORATION
     hint = things.Item(
         "idol hint",
-        "a hint to the idol: 'the idol can be found in the jungle with a machete'",
-        "A HINT THAT SAYS THE IDOL CNA BE FOUND IN THE JUNGLE WITH A MACHETE",
+        "a hint to the idol",
+        "A HINT THAT SAYS THE IDOL CAN BE FOUND IN THE JUNGLE WITH A MACHETE",
     )
     cliffs.add_item(hint)
 
