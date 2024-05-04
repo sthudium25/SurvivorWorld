@@ -43,8 +43,7 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
     )
     cliffs = things.Location(
         "Cliffs",
-        """the front of some steep cliffs.
-            Climb them carefully so you don't fall.""",
+        "the front of some steep cliffs.",
     )
     beach = things.Location(
         "Beach",
