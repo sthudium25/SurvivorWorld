@@ -596,7 +596,7 @@ class SurvivorGame(Game):
         once any has been voted the victor.
         """
         # EXPLORATION GAME
-        for character in self.characters:
+        for character in list(self.characters.values()):
             if character.has_property("immune", True):
                 print("Someone found the idol! Game is over")
                 return True
