@@ -131,5 +131,5 @@ class Read_Clue(base.Action):
         description = d.format(character_name=self.character.name)
 
         self.parser.ok(self.command, description, self.character)
-        self._log_action(self.game, self.character, f"{self.character.name} read the clue.")
+        self._log_clue(self.game, self.character, f"{self.character.name} read the clue.")
         return True
