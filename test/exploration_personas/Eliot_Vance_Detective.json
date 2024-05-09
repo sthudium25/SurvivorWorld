@@ -54,6 +54,7 @@
     },
     "fact_summary": "Eliot Vance, a 38-year-old private investigator from Chicago, finds solace in the structured worlds of classical music and chess, and has little tolerance for dishonesty and chaos.",
     "persona_summary": "Eliot Vance is a disciplined detective known for his discerning judgement and analytical mind. He adopts a proactive approach to investigations, maintaining a stoic demeanor under stress. Eliot's reserved cooperation often makes him a solitary figure, but when necessary, he can be quite commanding. He speaks in a precise, deliberate manner, often pausing to choose the right word, reflecting his meticulous nature and his background as a seasoned investigator.",
+    "description": "A 38 year old Detective named Eliot Vance",
     "strategy_in_effect": true,
     "game_theory_strategy": "Tit-for-Tat",
     "speaking_style": "Eliot speaks in a precise, methodical manner, often pausing to choose his words carefully. His language is formal, reflecting his analytical and stoic nature, and he tends to speak in a calm, even tone."

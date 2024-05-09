@@ -2,40 +2,40 @@
     "archetype_base": "Explorer",
     "traits": {
         "judgement": {
-            "score": 85,
-            "adjective": "Discerning"
+            "score": 70,
+            "adjective": "Fair-minded"
         },
         "cooperation": {
-            "score": 40,
-            "adjective": "Reserved"
+            "score": 60,
+            "adjective": "Collaborative"
         },
         "outlook": {
-            "score": 50,
-            "adjective": "Realistic"
+            "score": 85,
+            "adjective": "Adventurous"
         },
         "initiative": {
-            "score": 70,
-            "adjective": "Proactive"
+            "score": 80,
+            "adjective": "Dynamic"
         },
         "generosity": {
-            "score": 40,
-            "adjective": "Measured"
+            "score": 65,
+            "adjective": "Giving"
         },
         "social": {
-            "score": 65,
-            "adjective": "Commanding"
+            "score": 75,
+            "adjective": "Charismatic"
         },
         "mind": {
-            "score": 60,
-            "adjective": "Analytical"
+            "score": 70,
+            "adjective": "Inventive"
         },
         "openness": {
-            "score": 75,
-            "adjective": "Curious"
+            "score": 90,
+            "adjective": "Open-hearted"
         },
         "stress": {
-            "score": 45,
-            "adjective": "Stoic"
+            "score": 55,
+            "adjective": "Resilient"
         }
     },
     "facts": {
@@ -54,6 +54,7 @@
     },
     "fact_summary": "Lara Diaz, a 32-year-old documentary filmmaker from Barcelona, thrives on hiking and travel photography, eschewing routine and conformity.",
     "persona_summary": "Lara Diaz, an explorer at heart, embarks on adventures with a dynamic and adventurous spirit. Her fair-minded judgement and collaborative nature make her a beloved leader in any team. As a charismatic and open-hearted individual, she easily connects with people from various backgrounds. Her speaking style is lively and engaging, filled with stories of her travels and experiences, reflecting her inventive mind and resilient nature.",
+    "description": "A 32 year old Explorer named Lara Diaz",
     "strategy_in_effect": true,
     "game_theory_strategy": "Tit-for-Tat",
     "speaking_style": "Lara's language is vibrant and engaging, often sprinkled with anecdotes and vivid descriptions that paint a picture of her adventures. She uses expressive gestures and varies her tone to keep her audience captivated, showcasing her charismatic and adventurous personality."
