@@ -2,6 +2,7 @@
 from text_adventure_games.things.characters import Character
 from . import base
 from ..things import Item
+from text_adventure_games.utils.general import enumerate_dict_options, get_logger_extras
 import random
 
 
@@ -99,6 +100,10 @@ class Read_Clue(base.Action):
                 "idol clue", self.parser.get_items_in_scope(self.character)
             )
         
+    def _log_clue(self, game, character, message):
+        extras = get_logger_extras(game, character)
+        extras["type"] = "Clue"
+        game.logger.debug(msg=message, extra=extras)
 
     def check_preconditions(self) -> bool:
         """
@@ -126,4 +131,5 @@ class Read_Clue(base.Action):
         description = d.format(character_name=self.character.name)
 
         self.parser.ok(self.command, description, self.character)
+        self._log_action(self.game, self.character, f"{self.character.name} read the clue.")
         return True
