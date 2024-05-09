@@ -35,7 +35,7 @@ class ExperimentGame(games.SurvivorGame):
                          experiment_name=experiment_name,
                          experiment_id=experiment_id)
             
-def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=2) -> games.Game:
+def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=2, architecture="A") -> games.Game:
     # Locations
     camp = things.Location(
         "Camp",
@@ -136,21 +136,17 @@ def build_experiment(experiment_name, experiment_id, max_ticks=6, num_finalists=
 
     # Characters
     characters = []
-    #EXPLORATION
-    char_locations = [camp, camp, camp, camp, camp, camp, camp, camp]
-    char_groups = ["A", "A", "B", "B", "C", "C", "D", "D"]
-    random.shuffle(char_groups)
-    random.shuffle(char_locations)
-    start_at = char_locations[0]
+    # EXPLORATION
+    start_at = camp
 
-    for i, filename in enumerate(os.listdir("game_personas")):
+    for i, filename in enumerate(os.listdir("exploration_personas")):
         if filename.endswith(".json"):
-            persona = Persona.import_persona("game_personas/" + filename)
-            character = GenerativeAgent(persona, char_groups[i])
-            location = char_locations[i]
+            persona = Persona.import_persona("exploration_personas/" + filename)
+            character = GenerativeAgent(persona, architecture)
+            location = camp
             location.add_character(character)
             characters.append(character)
-            print(f"Character {character.name} starts at {location.name} and belongs to Group {char_groups[i]}")
+            print(f"Character {character.name} starts at {location.name} and belongs to Group {architecture}")
     
     player = characters.pop(0)
 
