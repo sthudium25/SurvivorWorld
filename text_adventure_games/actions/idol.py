@@ -23,10 +23,9 @@ class Search_Idol(base.Action):
             )
         # EXPLORATION
         self.clue = self.parser.match_item(
-                "idol clue", self.parser.get_items_in_scope(self.character)
-            )
+            "idol clue", self.parser.get_items_in_scope(self.character)
+        )
         
-
     def check_preconditions(self) -> bool:
         """
         Preconditions:
@@ -64,7 +63,8 @@ class Search_Idol(base.Action):
             return False
 
         random_number = random.random()
-        if random_number < 0.3 or (random_number < 0.5 and self.clue):
+        threshold_pad = self.character.get_idol_searches() * 0.1
+        if random_number < (0.3 + threshold_pad) or (random_number < (0.5 + threshold_pad) and self.clue):
             idol = Item("idol", "an immunity idol", "THIS IDOL GRANTS YOU IMMUNITY AT THE NEXT VOTE.")
             idol.add_command_hint("keep it a secret from your enemies!")
             self.character.add_to_inventory(idol)
@@ -97,8 +97,8 @@ class Read_Clue(base.Action):
         self.command = command
         self.character = character
         self.clue = self.parser.match_item(
-                "idol clue", self.parser.get_items_in_scope(self.character)
-            )
+            "idol clue", self.parser.get_items_in_scope(self.character)
+        )
         
     def _log_clue(self, game, character, message):
         extras = get_logger_extras(game, character)
@@ -131,5 +131,5 @@ class Read_Clue(base.Action):
         description = d.format(character_name=self.character.name)
 
         self.parser.ok(self.command, description, self.character)
-        self._log_action(self.game, self.character, f"{self.character.name} read the clue.")
+        self._log_clue(self.game, self.character, f"{self.character.name} read the clue.")
         return True

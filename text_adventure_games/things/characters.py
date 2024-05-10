@@ -161,6 +161,9 @@ class GenerativeAgent(Character):
         # Track last conversation participant
         self.last_talked_to = None
 
+        # Track proper idol searches
+        self.idol_search_count = 0
+
     def set_dialogue_participant(self, talked_to):
         if not talked_to:
             self.last_talked_to = None
@@ -293,10 +296,13 @@ class GenerativeAgent(Character):
     def to_primitive(self):
         thing_data = super().to_primitive()
 
-        thing_data['memory_stream'] = self.memory.get_observations_after_round(0,True)
+        thing_data['memory_stream'] = self.memory.get_observations_after_round(0, True)
 
         if self.goals:
             thing_data['goals'] = self.goals.get_goals()
 
         if self.impressions:
             thing_data['impressions'] = self.impressions.impressions
+
+    def get_idol_searches(self):
+        return self.idol_search_count
