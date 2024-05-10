@@ -183,3 +183,6 @@ logs/*
 
 # evaluation
 evaluation/*
+
+# bash scrips
+*.sh
