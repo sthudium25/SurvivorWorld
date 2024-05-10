@@ -2,7 +2,7 @@ import json
 import inspect
 from collections import defaultdict, namedtuple
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 from numpy.random import permutation
 import dill as pickle
 
@@ -467,7 +467,8 @@ class SurvivorGame(Game):
                  max_ticks: int = 10, 
                  num_finalists: int = 2,
                  experiment_name: str = "exp1",
-                 experiment_id: int = 1):
+                 experiment_id: int = 1,
+                 end_state_check: Literal["on_round", "on_tick", "on_action"] = "on_round"):
         super().__init__(start_at, player, characters, custom_actions)
         game_logger = logger.CustomLogger(experiment_name=experiment_name, sim_id=experiment_id)
         self.logger = game_logger.get_logger()
@@ -482,6 +483,7 @@ class SurvivorGame(Game):
         self.tick = 0
         self.total_ticks = 0
         self.num_contestants = len(self.characters)
+        self.end_state_check = end_state_check
         
         # Store end state variables: 
         # Exiled players in jury cast the final vote
@@ -527,19 +529,19 @@ class SurvivorGame(Game):
                     self.turn_handler(character)
 
                     # EXPLORATION: check if game ended
-                    if self.is_game_over():
-                        break
+                    if self.end_state_check == "on_action" and self.is_game_over():
+                        return 
 
                 # Update the total ticks that have occurred in the game.
                 self.total_ticks += 1
 
                 # EXPLORATION: check if game ended
-                if self.is_game_over():
+                if self.end_state_check == "on_tick" and self.is_game_over():
                     break
             
             # NOTE: this placement allows agents to reflect prior to voting.
             
-            if self.is_game_over():
+            if self.end_state_check == "on_round" and self.is_game_over():
                 break
 
             # Increment the rounds
@@ -595,12 +597,6 @@ class SurvivorGame(Game):
         Checks whether the game has been won. For SurvivorWorld, the game is won
         once any has been voted the victor.
         """
-        # EXPLORATION GAME
-        for character in list(self.characters.values()):
-            if character.get_property("immune"):
-                print("Someone found the idol! Game is over")
-                return True
-        
         if self.winner_declared:
             print(f"Congratulations!! {self.winner.name} won the game! They're the ultimate Survivor. Jeff is so proud of u")
             return True
