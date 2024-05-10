@@ -125,11 +125,11 @@ def validate_output_dir(fp, name, sim_id):
 def check_user_input(name, sim_id):
     p1 = f"It appears you've already saved data using '{name}-{sim_id}. Do you want to overwrite the data?"
     p2 = "Type 'y' or 'n'"
-    decision = input(prompt=f"{p1}\n{p2}")
+    decision = input(f"{p1}\n{p2}")
     if decision not in ["y", "n"]:
         return check_user_input()
     elif decision == "y":
-        decision = input(prompt="Are you like REALLY sure you want to do this??? y or n")
+        decision = input("Are you like REALLY sure you want to do this??? y or n")
         if decision == "y":
             return True
         else:
