@@ -22,6 +22,7 @@ from text_adventure_games.gpt.gpt_helpers import (limit_context_length,
                                                   context_list_to_string, 
                                                   GptCallHandler)
 from text_adventure_games.agent.agent_cognition import retrieve
+from text_adventure_games.utils.general import get_logger_extras
 
 if TYPE_CHECKING:
     from text_adventure_games.games import Game
@@ -67,6 +68,11 @@ class Impressions:
         }
 
         return GptCallHandler(**model_params)
+    
+    def _log_impression(self, game, character, message):
+        extras = get_logger_extras(game, character)
+        extras["type"] = "Impression"
+        game.logger.debug(msg=message, extra=extras)
 
     def _get_impression(self, target: "Character", str_only=True):
         """
@@ -150,6 +156,8 @@ class Impressions:
 
         impression = self.gpt_generate_impression(system, user)
         # print(f"{character.name} impression of {target.name}: {impression}")
+
+        self._log_impression(game, character, impression)
 
         self.impressions.update({f"{target.name}_{target.id}": {"impression": impression,
                                                                 "round": game.round,
