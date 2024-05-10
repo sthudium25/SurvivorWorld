@@ -8,6 +8,7 @@ Description: helper methods for agent setup
 import os
 import json
 from importlib.resources import files, as_file
+import random
 from typing import Dict, List, Literal
 import numpy as np
 import openai
@@ -118,7 +119,7 @@ def create_persona(facts: Dict,
 
     # If Filepath given, load persona from file.
     if file_path is not None:
-        if not os.path.isfile(file_path): # check that filepath exists
+        if not os.path.isfile(file_path):  # check that filepath exists
             raise FileNotFoundError(f"No file found at {file_path}")
     
         return Persona.import_persona(file_path)
@@ -127,7 +128,8 @@ def create_persona(facts: Dict,
     p = Persona(facts)
 
     # TODO: Property of Character (Troll, etc.)
-
+    if not trait_scores and not archetype:
+        archetype = random.choice(list(archetype_game_theory_mapping.keys()))
     if trait_scores:
         scores = validate_trait_scores(trait_scores)
         monitored_traits = TraitScale.get_monitored_traits()
@@ -152,7 +154,7 @@ def create_persona(facts: Dict,
             # TODO: would be more cost/time effective to ask this to GPT once
             trait.set_adjective(model=model)
             p.add_trait(trait)
-        p.set_game_theory_strategy(archetype_game_theory_mapping[archetype]) # Sets default strategy based on archetype
+        p.set_game_theory_strategy(archetype_game_theory_mapping[archetype])  # Sets default strategy based on archetype
         p.set_archetype(archetype)
     else:
         raise ValueError("One of either trait_scores or archetype must be specified.")
