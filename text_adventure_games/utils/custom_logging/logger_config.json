@@ -7,7 +7,7 @@
         "datefmt": "%Y-%m-%dT%H:%M:%S%z"
       },
       "json": {
-        "()": "SurvivorWorld.text_adventure_games.utils.custom_logging.custom_logging_formatters.CustomJSONFormatter", 
+        "()": "text_adventure_games.utils.custom_logging.custom_logging_formatters.CustomJSONFormatter", 
         "fmt_keys": {
           "level": "levelname",
           "message": "message",
@@ -35,7 +35,7 @@
         "mode": "a"
       },
       "queue_handler": {
-        "()": "SurvivorWorld.text_adventure_games.utils.custom_logging.custom_logging_handlers.QueueListenerHandler",
+        "()": "text_adventure_games.utils.custom_logging.custom_logging_handlers.QueueListenerHandler",
         "handlers": [
           "cfg://handlers.err_std",
           "cfg://handlers.file_json"

@@ -43,9 +43,24 @@ def setup_logger(experiment_name: str,
 
     set_logs_paths(config, experiment_logfile_name, global_warnings_logfile, overwrite)
     
-    logging.config.dictConfig(config)
-
-    logger = logging.getLogger("survivor_global_logger")
+    try:
+        logging.config.dictConfig(config)
+    except ValueError:
+        # Likely that the module couldn't be found, so try to amend the paths
+        # The default is just to look for text adventure games, so try to add "SurvivorWorld"
+        try:
+            config["formatters"]["json"]["()"] = "SurvivorWorld." + config["formatters"]["json"]["()"]
+            config["handlers"]["queue_handler"]["()"] = "SurvivorWorld." + config["handlers"]["queue_handler"]["()"]
+            logging.config.dictConfig(config)
+        except KeyError as e:
+            print("Your logging config file is likely not structured properly")
+            raise e
+        except ValueError as e:
+            print("Flexible path could not find components of your logger. Are you running from a Jupyter notebook or run_experiment.py?")
+            print("You should run this package by following the quickstart guidelines on github: www.github.com/sthudium25/SurvivorWorld")
+            raise e
+    finally:
+        logger = logging.getLogger("survivor_global_logger")
     return logger, validated_id
 
 def set_logs_paths(logs_config, 
