@@ -161,7 +161,7 @@ class Act:
             pass
 
         # Retrieve ALL relevant memories to the situation
-        memories_list = retrieve(self.game, self.character, query=None, n=-1)  # Should we limit this too or just let it fill up?
+        memories_list = retrieve(self.game, self.character, query=None, n=40)  # Should we limit this too or just let it fill up?
 
         # This is the token count still available to fill with memories
         memory_available_tokens = get_token_remainder(user_available_tokens, tok_count)

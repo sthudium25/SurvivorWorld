@@ -113,7 +113,7 @@ def generalize(game, character):
     gpt_handler = GptCallHandler(**model_params)
     
     # how many memories to get during retrieval, which is called 4 times (once per passed question)
-    memories_per_retrieval = 50
+    memories_per_retrieval = 25
 
     # Get Static Components (System Prompt and Impressions don't update during Reflection) #
 
@@ -174,7 +174,6 @@ def generalize(game, character):
     # get the insight prompt token count
     insight_q_token_count = get_prompt_token_count(content=insight_q_prompt, role=None, pad_reply=False)
 
-
     # Calculate 
     available_tokens = get_token_remainder(gpt_handler.model_context_limit,  # Max input for requested model
                                            gpt_handler.max_tokens,  # GPT's response limit, set by user
@@ -194,7 +193,6 @@ def generalize(game, character):
                                                          tokenizer=game.parser.tokenizer,
                                                          keep_most_recent=False)
         
-
         # print("LIMITED MEMORIES:", get_prompt_token_count(content=relevant_memories_limited, role=None, pad_reply=False))
         # print(relevant_memories_limited)
 

@@ -202,7 +202,7 @@ class VotingSession:
             f"Before the vote, I need to remember what {' '.join(self.get_vote_options(voter, names_only=True))} ",
             "have done to influence my position in the game."
         ])
-        hyperrelevant_memories = retrieve.retrieve(self.game, voter, n=50, query=query)
+        hyperrelevant_memories = retrieve.retrieve(self.game, voter, n=40, query=query)
 
         system = self._build_system_prompt(voter_std_info,
                                            prompt_ending=vp.vote_system_ending)
