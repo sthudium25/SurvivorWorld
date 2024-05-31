@@ -37,9 +37,10 @@ def set_up_kani_engine(org="Penn", model='gpt-4', **kwargs):
 
 def get_logger_extras(game, character):
     extras = {}
-    extras["character_name"] = character.name
-    extras["character_id"] = character.id
-    extras["character_group"] = character.group
+    extras["character_name"] = character.name if character else "none"
+    extras["character_id"] = character.id if character else "none"
+    extras["character_group"] = character.group if character else "none"
+    extras["action_location"] = character.location.name if character else "none"
     extras["round"] = game.round
     extras["tick"] = game.tick
     extras["total_ticks"] = game.total_ticks
