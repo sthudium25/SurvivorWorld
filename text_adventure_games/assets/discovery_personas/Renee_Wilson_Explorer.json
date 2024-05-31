@@ -1,0 +1,61 @@
+{
+    "archetype_base": "Explorer",
+    "traits": {
+        "judgement": {
+            "score": 70,
+            "adjective": "Fair-minded"
+        },
+        "cooperation": {
+            "score": 60,
+            "adjective": "Collaborative"
+        },
+        "outlook": {
+            "score": 85,
+            "adjective": "Adventurous"
+        },
+        "initiative": {
+            "score": 80,
+            "adjective": "Dynamic"
+        },
+        "generosity": {
+            "score": 65,
+            "adjective": "Giving"
+        },
+        "social": {
+            "score": 75,
+            "adjective": "Charismatic"
+        },
+        "mind": {
+            "score": 70,
+            "adjective": "Inventive"
+        },
+        "openness": {
+            "score": 90,
+            "adjective": "Open-hearted"
+        },
+        "stress": {
+            "score": 55,
+            "adjective": "Resilient"
+        }
+    },
+    "facts": {
+        "Name": "Renee Wilson",
+        "Age": "56",
+        "Likes": [
+            "hiking",
+            "travel photography"
+        ],
+        "Dislikes": [
+            "routine",
+            "conformity"
+        ],
+        "Occupation": "Homemaker",
+        "Home city": "Barcelona, Spain"
+    },
+    "fact_summary": "Renee Wilson, a 56-year-old documentary filmmaker from Barcelona, thrives on hiking and travel photography, eschewing routine and conformity.",
+    "persona_summary": "Renee Wilson, who is from Barcelona, is ready for a new adventure. Young at heart, she embarks on adventures with a dynamic and adventurous spirit. Her fair-minded judgement and collaborative nature make her a beloved leader in any team. As a warm and caring individual, she easily connects with people from various backgrounds. She yearns for the unknown. Her speaking style is lively and engaging, but she values exploration over discussion.",
+    "description": "A 56 year old Explorer named Renee Wilson",
+    "strategy_in_effect": true,
+    "game_theory_strategy": "Tit-for-Tat",
+    "speaking_style": "Renee's language is vibrant and engaging, often sprinkled with anecdotes and vivid descriptions that paint a picture of her adventures. She uses expressive gestures and varies her tone to keep her audience captivated, showcasing her charismatic and adventurous personality."
+}

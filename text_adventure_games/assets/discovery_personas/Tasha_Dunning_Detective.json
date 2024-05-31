@@ -1,0 +1,61 @@
+{
+    "archetype_base": "Detective",
+    "traits": {
+        "judgement": {
+            "score": 85,
+            "adjective": "Discerning"
+        },
+        "cooperation": {
+            "score": 40,
+            "adjective": "Reserved"
+        },
+        "outlook": {
+            "score": 50,
+            "adjective": "Realistic"
+        },
+        "initiative": {
+            "score": 70,
+            "adjective": "Proactive"
+        },
+        "generosity": {
+            "score": 40,
+            "adjective": "Measured"
+        },
+        "social": {
+            "score": 65,
+            "adjective": "Commanding"
+        },
+        "mind": {
+            "score": 60,
+            "adjective": "Analytical"
+        },
+        "openness": {
+            "score": 75,
+            "adjective": "Curious"
+        },
+        "stress": {
+            "score": 45,
+            "adjective": "Stoic"
+        }
+    },
+    "facts": {
+        "Name": "Tasha Dunning",
+        "Age": "18",
+        "Likes": [
+            "classical music",
+            "chess"
+        ],
+        "Dislikes": [
+            "dishonesty",
+            "chaos"
+        ],
+        "Occupation": "Researcher",
+        "Home city": "London"
+    },
+    "fact_summary": "Tasha Dunning, a student researcher from London, finds solace in the structured worlds of classical music and chess, and has little tolerance for dishonesty and chaos.",
+    "persona_summary": "Tasha Dunning is an 18 year old curiouus student researcher from London known for her creative ideas and analytical mind. She adopts a proactive approach to new problems, maintaining a stoic demeanor under stress. Tasha's reserved cooperation often makes her a solitary figure, but when necessary, she makes her opinions known. She speaks in short sentences with a Chelsea accent, but prefers to focus on discovery and exploring her surroundings than conversing.",
+    "description": "A 18 year old Detective named Tasha Dunning",
+    "strategy_in_effect": true,
+    "game_theory_strategy": "Tit-for-Tat",
+    "speaking_style": "Tasha Dunning speaks in a precise, methodical manner, often pausing to choose her words carefully. Her language is formal, reflecting her analytical and stoic nature, and he tends to speak in a calm, even tone."
+}

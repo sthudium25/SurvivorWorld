@@ -1,0 +1,61 @@
+{
+    "archetype_base": "Detective",
+    "traits": {
+        "judgement": {
+            "score": 85,
+            "adjective": "Discerning"
+        },
+        "cooperation": {
+            "score": 40,
+            "adjective": "Reserved"
+        },
+        "outlook": {
+            "score": 50,
+            "adjective": "Realistic"
+        },
+        "initiative": {
+            "score": 70,
+            "adjective": "Proactive"
+        },
+        "generosity": {
+            "score": 40,
+            "adjective": "Measured"
+        },
+        "social": {
+            "score": 65,
+            "adjective": "Commanding"
+        },
+        "mind": {
+            "score": 60,
+            "adjective": "Analytical"
+        },
+        "openness": {
+            "score": 75,
+            "adjective": "Curious"
+        },
+        "stress": {
+            "score": 45,
+            "adjective": "Stoic"
+        }
+    },
+    "facts": {
+        "Name": "Ellie Green",
+        "Age": "27",
+        "Likes": [
+            "classical music",
+            "chess"
+        ],
+        "Dislikes": [
+            "dishonesty",
+            "chaos"
+        ],
+        "Occupation": "Puzzler",
+        "Home city": "Cairo"
+    },
+    "fact_summary": "Ellie Green, a puzzle solver from Cairo, who finds solace in the structured worlds of classical music and chess, and has little tolerance for dishonesty and chaos.",
+    "persona_summary": "Ellie Green is an 27 year old career puzzle solver from Cairo known for her discerning and analytical mind. She adopts a proactive approach to new problems and keeps her wits about her even under stress. Ellie can come off as bouncy and manic, but when necessary, she composes herself. She would rather explore her surroundings than converse, but when she does she speaks in a quick, goofy manner, but with high intelligence. ",
+    "description": "A 27 year old Detective named Ellie Green",
+    "strategy_in_effect": true,
+    "game_theory_strategy": "Tit-for-Tat",
+    "speaking_style": "Ellie Green speaks in a precise, methodical manner, often pausing to choose her words carefully. Her language is formal, reflecting her analytical and stoic nature, and he tends to speak in a calm, even tone."
+}
