@@ -1,7 +1,7 @@
 from .base import (
     Action,
-    ActionSequence,
-    Quit,
+    # ActionSequence,
+    # Quit,
     Describe,
 )
 from .preconditions import (
@@ -18,8 +18,8 @@ from .idol import Search_Idol, Read_Clue
 
 __all__ = [
     Action,
-    ActionSequence,
-    Quit,
+    # ActionSequence,
+    # Quit,
     Describe,
     was_matched,
     Go,
