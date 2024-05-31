@@ -1,5 +1,5 @@
 import os
-from typing import Union
+from typing import List, Union
 
 # local imports
 from .base import Thing
@@ -16,7 +16,8 @@ from ..gpt.gpt_helpers import context_list_to_string
 GROUP_MAPPING = {"A": (False, False),
                  "B": (True, False),
                  "C": (False, True),
-                 "D": (True, True)}
+                 "D": (True, True),
+                 "E": (False, False)}
 
 
 class Character(Thing):
@@ -306,3 +307,57 @@ class GenerativeAgent(Character):
 
     def get_idol_searches(self):
         return self.idol_search_count
+
+    def increment_idol_search(self):
+        self.idol_search_count += 1
+
+
+class DiscoveryAgent(GenerativeAgent):
+    def __init__(self, 
+                 persona,
+                 group: str = "D"):
+        super().__init__(persona, group)
+        self.score = 0
+
+    def set_teammates(self, members: List[GenerativeAgent]):
+        self.teammates = [m for m in members if isinstance(m, GenerativeAgent) and m.id != self.id]
+
+    def get_teammates(self, names_only=False, as_str=False):
+        if names_only:
+            if as_str:
+                return ", ".join([agent.name for agent in self.teammates])
+            else:
+                return [agent.name for agent in self.teammates]
+        else:
+            return self.teammates
+        
+    def update_score(self, add_on: int):
+        self.score += add_on
+
+    def engage(self, game) -> Union[str, int]:
+        """
+        wrapper method for all agent cognition: perceive, retrieve, act, reflect, set goals
+
+        Args:
+            game (Game): the current game object
+
+        Returns:
+            Union[str, int]: An action string or int flag -999 to trigger skipped action
+        """
+
+        # If this is the end of a round, force reflection
+        if game.tick == (game.max_ticks_per_round - 1) and self.group != "E":
+            reflect(game, self) 
+            if self.use_goals:
+                self.goals.evaluate_goals(game)
+            return -999
+
+        # Percieve the agent's surroundings 
+        self.perceive(game)
+
+        # Update this agent's impressions of characters in the same location
+        if self.use_impressions:
+            self.update_character_impressions(game)
+
+        # act accordingly
+        return Act(game, self).act()
