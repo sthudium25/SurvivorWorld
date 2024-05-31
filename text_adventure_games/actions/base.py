@@ -221,7 +221,7 @@ class Action:
         """
         if thing is None:
             if not error_message:
-                error_message = "Something was not matched by the self.parser."
+                error_message = "Something was not matched by the game's parser."
             if describe_error:
                 self.parser.fail("Unknown command", error_message, character)
             return False
