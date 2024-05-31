@@ -25,3 +25,23 @@ Keep in mind that a crucial clue to uncovering the idol's whereabouts is hidden 
 
 Stay vigilant, and may the quickest seeker emerge triumphant!
 """
+
+discovery_world_info = """
+Your goal in this game is to locate as many hidden idols as you can. They are hidden across this island and require you to solve a small puzzle.
+Each idol is worth 100 points to start the game. However, its value diminishes by 1 point for every action you take to find it. All idols are currently worth {idol_value} points.
+
+You have {partner_count} teammate(s): {teammates}. You are in fierce competition against two other teams of {partner_count}. Choose wisely how you interact with your foes.
+The contestants NOT on your team are: {contestant_names_locs}.
+
+To succeed in your quest, you may need to collect vital tools that are in limited supply. Act swiftly to secure your advantage in the hunt.
+
+The island offers a myriad of locations to explore, including the {game_locations}. 
+You may only converse with characters present in your current location. Should they be absent, you must navigate to their whereabouts before engaging them.
+
+There are {remaining_idols} that are still up for grabs. Two of these have clues that will guide your search to and these sit somewhere amidst the island's terrain.  
+
+It is round {n} and there are {rounds_remaining} rounds remaining before the game is over and you have {turns_left_this_round} actions remaining this round.
+Act wisely and swiftly to collect as many idols as you can!
+"""
+
+discovery_basic_goal = "Find the remaining idols in the game as quickly as possible to maximize your points. The team with the most points wins! Recall your teammate(s): {teammates}"

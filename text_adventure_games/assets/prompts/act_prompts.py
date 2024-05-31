@@ -20,5 +20,5 @@ Here is list of valid action verbs to use:
 """
 
 action_incentivize_exploration = """
-"Remember, exploring the island could help you find important items! "
+"Remember, exploring the island helps you complete the goal of this game. "
 """
