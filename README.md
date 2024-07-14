@@ -9,14 +9,13 @@
 2. [Game Environment](#game-environment)
 3. [Installation](#requirements-and-installation)
 4. [Quickstart](#quickstart)
-5. [Results](#results)
-6. [Repo Directory](#repo-directory)
+5. [Repo Directory](#repo-directory)
 
 -------------
 
 ## Project Summary
 
-This repository accompanies our work, "[WORKING TITLE] A Framework for Designing Generative Agents in Competitive Environments". This work builds upon the great work of Joon Sung Park, Bodhisattwa Prasad Majumder, and others who have led the exploration of using LMs as generative agents. We develop a framework to extend prior works to new environments, namely competitive game environments that require agent collaboration, deception, and strategic planning. We hope to answer the following questions that fall into two categories: 
+This repository accompanies our work, "Outwit, Outplay, Out-Generate: A Framework for Designing Strategic Generative Agents in Competitive Environments". This project builds upon the great work of Joon Sung Park, Bodhisattwa Prasad Majumder, and others who have led the exploration of using LMs as generative agents. We expand the congitive architecture driving the generative agents, providing new modules that tailor the agents to perform in competitive game environments requiring agent collaboration, deception, and strategic planning. We hope to answer the following questions that fall into two categories: 
 
 1. Agent Persona:
   * Performance and behaviour depending on agent’s persona
@@ -151,18 +150,12 @@ finally:
 
 -------------
 
-## Results
-
-* TBA
-
--------------
-
 ## Repo Directory
 
 To assist with navigation and readability of the code in this project, below is an breif description of the major components. Look within the `text_adventure_games` folder.
 
 ### Top-level interaction 
-1. Game setup files...
+1. `run_game.py` and `test/game_setup.py`: These files enables the user to set up game(s) via a CLI.
 
 ### Environment and Game Engine
 1. `games.py`: The Game class keeps track of the state of the world, and describes what the player sees as they move through different locations.
@@ -171,5 +164,14 @@ To assist with navigation and readability of the code in this project, below is 
 
 2. `parsing.py`: The parser is the module that handles the natural language understanding in the game.
    * Several `GptParser`s allow mapping of a wide range of natural language statements onto the valid action space.
+  
+3. `actions/`: defines base actions that are interpreted by the game engine. Agents supply natural language descriptions of actions which are then parsed into valid game actions if possible.
+
+4. `blocks/` and `things/`: define game state objects such as locations, items, and characters.
+
+5. `utils/`: contains various utility functions. Importantly, defines a **custom logging module** that was used to collect data from agent simulations.
 
 ### Agent
+1. `agent/`: defines agent congition modules including: **persona**, **impressions**, and **goals**.
+   
+2. `charaters.py`: defines a base Character class and extended GenerativeAgent class. The latter was used to power the agents described in the accompying manuscript. A third class, DiscoveryAgent, was also created, but not used in the experiments described here.
