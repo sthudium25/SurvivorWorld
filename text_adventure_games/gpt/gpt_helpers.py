@@ -1,3 +1,7 @@
+"""
+Author: Samuel Thudium (sam.thudium1@gmail.com)
+"""
+
 from dataclasses import asdict, dataclass, field
 import json
 import logging
