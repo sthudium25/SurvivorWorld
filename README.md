@@ -56,7 +56,7 @@ python3.10 -m venv "venv-name"  # optionally hide the environment by naming it "
 source venv-name/bin/activate
 ```
 
-### Clone repo and install package [CHANGE git link if necessary]
+### Clone repo and install package
 
 Next, clone the repo, assuming you're in `<my_folder>`. The install line puts the package in "editable" mode, but you can omit that if you don't intend to develop the code further.
 
