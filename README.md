@@ -1,5 +1,9 @@
-[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/release/python-310/)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/cb2e4941-2f8b-4fa6-912d-122bdb7bd2f2" width="325" />
+</p>
 
+
+[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/release/python-310/)
 # A Framework for Designing Generative Agents in Competitive Environments
 
 ------------
