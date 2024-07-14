@@ -75,7 +75,7 @@ Save this file as `config.json` or `.config.json` at the package root.
 ```json
 {
     "organizations": {
-        "Penn": {
+        "My University": {
             "api_key": "sk-..."
         },
         "Helicone": {
