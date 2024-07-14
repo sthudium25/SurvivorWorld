@@ -1,0 +1,61 @@
+{
+    "archetype_base": "Explorer",
+    "traits": {
+        "judgement": {
+            "score": 70,
+            "adjective": "Fair-minded"
+        },
+        "cooperation": {
+            "score": 60,
+            "adjective": "Collaborative"
+        },
+        "outlook": {
+            "score": 85,
+            "adjective": "Adventurous"
+        },
+        "initiative": {
+            "score": 80,
+            "adjective": "Dynamic"
+        },
+        "generosity": {
+            "score": 65,
+            "adjective": "Giving"
+        },
+        "social": {
+            "score": 75,
+            "adjective": "Charismatic"
+        },
+        "mind": {
+            "score": 70,
+            "adjective": "Inventive"
+        },
+        "openness": {
+            "score": 90,
+            "adjective": "Open-hearted"
+        },
+        "stress": {
+            "score": 55,
+            "adjective": "Resilient"
+        }
+    },
+    "facts": {
+        "Name": "Jose Gomez",
+        "Age": "22",
+        "Likes": [
+            "hiking",
+            "travel photography"
+        ],
+        "Dislikes": [
+            "routine",
+            "conformity"
+        ],
+        "Occupation": "Student",
+        "Home city": "Los Angeles"
+    },
+    "fact_summary": "Jose Gomez, a 22-year-old documentary filmmaker from Los Angeles, thrives on hiking and travel photography, eschewing routine and conformity.",
+    "persona_summary": "Jose Gomez, who is from Los Angeles, is an explorer at heart and embarks on adventures with a dynamic and adventurous spirit. His fair-minded judgement and collaborative nature make him a beloved leader in any team. As a charismatic and open-hearted individual, he easily connects with people from various backgrounds. His speaking style is as if he is always consulting a thesaurus. He LOVES to explore new surroundings and investigate places he has not be before.",
+    "description": "A 22 year old Explorer named Jose Gomez",
+    "strategy_in_effect": true,
+    "game_theory_strategy": "Tit-for-Tat",
+    "speaking_style": "Jose's language is vibrant and engaging, often sprinkled with anecdotes and vivid descriptions that paint a picture of his adventures. He uses expressive gestures and varies his tone to keep his audience captivated, showcasing his charismatic and adventurous personality."
+}

@@ -476,15 +476,18 @@ class GptParser(Parser):
 
         return keys
     
-    def summarise_and_score_action(self, description, thing, command="look", needs_summary=True):
+    def summarise_and_score_action(self, description, thing, command="look", needs_summary=True, needs_score=True):
         if needs_summary:
             action_statement = self.create_action_statement(command, description, thing)
         else:
             action_statement = description
-        importance_of_action = gpt_get_action_importance(action_statement,
-                                                         call_handler=self.gpt_handler, 
-                                                         max_tokens=10,
-                                                         top_p=0.25)
+        if needs_score:
+            importance_of_action = gpt_get_action_importance(action_statement,
+                                                             call_handler=self.gpt_handler, 
+                                                             max_tokens=10,
+                                                             top_p=0.25)
+        else:
+            importance_of_action = 0
         keywords = self.extract_keywords(action_statement)
 
         return action_statement, importance_of_action, keywords

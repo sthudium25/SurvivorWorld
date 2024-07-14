@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from collections import defaultdict
 
 import numpy as np
-from text_adventure_games.utils.general import set_up_openai_client, get_text_embedding
+from text_adventure_games.utils.general import get_logger_extras, get_text_embedding
 from text_adventure_games.assets.prompts import goal_prompt as gp
 from text_adventure_games.gpt.gpt_helpers import (GptCallHandler,
                                                   limit_context_length,
@@ -63,6 +63,11 @@ class Goals:
         }
 
         return GptCallHandler(**model_params)
+    
+    def _log_goals(self, game, message):
+        extras = get_logger_extras(game, self.character)
+        extras["type"] = "Goal"
+        game.logger.debug(msg=message, extra=extras)
 
     def gpt_generate_goals(self, game: "Game") -> str:
         """
@@ -87,6 +92,9 @@ class Goals:
             self.token_offset = token_difference + self.offset_pad
             self.offset_pad += 2 * self.offset_pad 
             return self.gpt_generate_goals(self.game)
+        
+        # log the content of the goals explicitly
+        self._log_goals(game, goal)
         
         # get embedding of goal
         goal_embed = self._create_goal_embedding(goal)

@@ -2,7 +2,7 @@ import json
 import inspect
 from collections import defaultdict, namedtuple
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 from numpy.random import permutation
 import dill as pickle
 
@@ -14,6 +14,7 @@ from .agent.agent_cognition.vote import VotingSession, JuryVotingSession
 from .assets.prompts import vote_prompt, world_info_prompt
 from .utils.consts import get_output_logs_path
 from .utils.general import create_dirs, get_logger_extras
+from .gpt.gpt_helpers import GptCallHandler
 
 class Game:
     """
@@ -467,7 +468,8 @@ class SurvivorGame(Game):
                  max_ticks: int = 10, 
                  num_finalists: int = 2,
                  experiment_name: str = "exp1",
-                 experiment_id: int = 1):
+                 experiment_id: int = 1,
+                 end_state_check: Literal["on_round", "on_tick", "on_action"] = "on_round"):
         super().__init__(start_at, player, characters, custom_actions)
         game_logger = logger.CustomLogger(experiment_name=experiment_name, sim_id=experiment_id)
         self.logger = game_logger.get_logger()
@@ -482,6 +484,7 @@ class SurvivorGame(Game):
         self.tick = 0
         self.total_ticks = 0
         self.num_contestants = len(self.characters)
+        self.end_state_check = end_state_check
         
         # Store end state variables: 
         # Exiled players in jury cast the final vote
@@ -514,8 +517,8 @@ class SurvivorGame(Game):
                 print(f"ROUND: {self.round}.{self.tick}")
                 
                 # If this is the end of the round, vote
-                if self.tick == (self.max_ticks_per_round - 1):
-                    self.handle_voting_sessions()
+                # if self.tick == (self.max_ticks_per_round - 1):
+                #     self.handle_voting_sessions()
                 
                 # Set goals for all characters at beginning of round
                 self.goal_setting_handler()
@@ -526,12 +529,20 @@ class SurvivorGame(Game):
                     print(f"It is: {character.name}'s turn")
                     self.turn_handler(character)
 
+                    # EXPLORATION: check if game ended
+                    if self.end_state_check == "on_action" and self.is_game_over():
+                        return 
+
                 # Update the total ticks that have occurred in the game.
                 self.total_ticks += 1
+
+                # EXPLORATION: check if game ended
+                if self.end_state_check == "on_tick" and self.is_game_over():
+                    break
             
             # NOTE: this placement allows agents to reflect prior to voting.
             
-            if self.is_game_over():
+            if self.end_state_check == "on_round" and self.is_game_over():
                 break
 
             # Increment the rounds
@@ -539,6 +550,7 @@ class SurvivorGame(Game):
 
             # save game results so far
             self.save_simulation_data()
+            self._log_gpt_call_data()
             self.save_game("test_file.json")
 
     def reset_character_dialogue(self):
@@ -573,8 +585,10 @@ class SurvivorGame(Game):
             if self._should_enact_command(command):
                 success = self.parser.parse_command(command, character)
             else:
-                success = True
+                # This is the end of round case when -999 is returned. I don't want to log that.
+                break
             if success:
+                self._log_action(character, command)
                 break
 
     def is_game_over(self) -> bool:
@@ -633,6 +647,21 @@ class SurvivorGame(Game):
         contestants_remaining = len(self.characters)
         message = f"{exiled.name} was exiled. Position: {contestants_remaining + 1}"
         self.vote_session.log_vote(exiled, message=message)
+
+    def _log_gpt_call_data(self):
+        extras = get_logger_extras(self, character=None)
+        extras["type"] = "Calls"
+        message = f"Current GPT calls count: {GptCallHandler.get_calls_count()}"
+        self.logger.debug(msg=message, extra=extras)
+
+        extras["type"] = "Tokens"
+        message = f"Current GPT tokens count: {GptCallHandler.get_tokens_processed()}"
+        self.logger.debug(msg=message, extra=extras)
+
+    def _log_action(self, character, message):
+        extras = get_logger_extras(self, character)
+        extras["type"] = "Act"
+        self.logger.debug(msg=message, extra=extras)
 
     def update_exile_state(self, exiled_agent):        
         # Loop over them

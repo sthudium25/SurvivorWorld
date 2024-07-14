@@ -5,7 +5,6 @@ select a next action that advances your goals or strategy. You can only select o
 
 action_system_end = """
 Using the information provided, generate a short action statement in the present tense from your perspective.
-Be sure to mention any characters you wish to interact with by name. 
 Examples could be:\nGo outside to the garden.
 Talk to Tom about his strategy 
 Pick up the stone from the ground
@@ -15,10 +14,11 @@ Notes to keep in mind:
 You can only use items that are in your possesion. 
 If you want to go somewhere, state the direction or the location in which you want to travel. 
 Actions should be atomic, not general, and should interact with your immediate environment. 
+Be sure to mention any characters you wish to interact with by name. 
 Aim to keep action statements to 10 words or less. 
 Here is list of valid action verbs to use:
 """
 
 action_incentivize_exploration = """
-"Remember, exploring the island could help you find important items! "
+"Remember, exploring the island helps you complete the goal of this game. "
 """

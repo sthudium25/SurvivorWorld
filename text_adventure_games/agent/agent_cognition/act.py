@@ -49,10 +49,10 @@ class Act:
 
         return GptCallHandler(**model_params) 
     
-    def _log_action(self, game, character, message):
-        extras = get_logger_extras(game, character)
-        extras["type"] = "Act"
-        game.logger.debug(msg=message, extra=extras)
+    # def _log_action(self, game, character, message):
+    #     extras = get_logger_extras(game, character)
+    #     extras["type"] = "Act"
+    #     game.logger.debug(msg=message, extra=extras)
 
     def act(self):
         
@@ -64,7 +64,7 @@ class Act:
 
         action_to_take = self.generate_action(system_prompt, user_prompt)
         
-        self._log_action(self.game, self.character, action_to_take)
+        # self._log_action(self.game, self.character, action_to_take)
         print(f"{self.character.name} chose to take action: {action_to_take}")
         return action_to_take
 
@@ -124,6 +124,11 @@ class Act:
         return system, sys_token_count
 
     def build_user_message(self, consumed_tokens: int):
+
+        if hasattr(self.game, "get_basic_game_goal"):
+            goal_reminder = self.game.get_basic_game_goal()
+        else:
+            goal_reminder = "Complete the objective of the game as quickly as you can. "    
         
         # Reiterate which characters are currently in view
         chars_in_view = self.character.get_characters_in_view(self.game)
@@ -131,6 +136,7 @@ class Act:
             "\nThese are select MEMORIES in ORDER from LEAST to MOST RELEVANT:\n",
             f"In this location, you see: {', '.join([c.name for c in chars_in_view])}\n",
             ap.action_incentivize_exploration,
+            goal_reminder,
             "Given the above information and others present here, what would you like to do?"]
         always_included_tokens = get_prompt_token_count(content=always_included,
                                                         role="user",
@@ -161,7 +167,7 @@ class Act:
             pass
 
         # Retrieve ALL relevant memories to the situation
-        memories_list = retrieve(self.game, self.character, query=None, n=-1)  # Should we limit this too or just let it fill up?
+        memories_list = retrieve(self.game, self.character, query=None, n=40)  # Should we limit this too or just let it fill up?
 
         # This is the token count still available to fill with memories
         memory_available_tokens = get_token_remainder(user_available_tokens, tok_count)

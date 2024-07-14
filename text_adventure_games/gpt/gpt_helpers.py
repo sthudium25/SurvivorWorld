@@ -81,7 +81,8 @@ class GptCallHandler:
     # Class variables
     model_limits: ClassVar = field(init=False)
     client_handler: ClassVar = ClientInitializer()
-    calls_made: ClassVar = 0
+    calls_made: ClassVar[int] = 0
+    tokens_processed: ClassVar[int] = 0 
 
     # Instance variables
     api_key_org: str = "Helicone"
@@ -140,6 +141,22 @@ class GptCallHandler:
         # Reset the parameters to the original values
         for param, value in self.original_params.items():
             setattr(self, param, value)
+
+    @classmethod
+    def get_calls_count(cls):
+        return cls.calls_made
+
+    @classmethod
+    def increment_calls_count(cls):
+        cls.calls_made += 1
+
+    @classmethod
+    def get_tokens_processed(cls):
+        return cls.tokens_processed
+
+    @classmethod
+    def update_token_count(cls, add_on: int):
+        cls.tokens_processed += add_on
         
     def generate(self, 
                  system: str = None, 
@@ -177,7 +194,7 @@ class GptCallHandler:
                     presence_penalty=self.presence_penalty,
                     stop=self.stop
                 )
-                return response.choices[0].message.content
+                # return response.choices[0].message.content
             except openai.APITimeoutError as e:
                 # The request took too long
                 self._log_gpt_error(e)
@@ -206,9 +223,25 @@ class GptCallHandler:
             except openai.AuthenticationError as e:
                 print("Your api credentials caused an error. Check your config file.")
                 raise e
-            finally:
-                self.calls_made += 1
+            else:
+                self._set_token_counts(system, user, messages)
+                # print("incrementing the number of calls to GPT")
+                GptCallHandler.increment_calls_count()
+                return response.choices[0].message.content
 
+    def _set_token_counts(self, system, user, messages):
+        if system and user:
+            system_tkn_count = get_prompt_token_count(system, role="system", pad_reply=False)
+            user_tkn_count = get_prompt_token_count(user, role="user", pad_reply=True)
+            # print(f"System token count: {system_tkn_count}, User token count: {user_tkn_count}: Adding to Count")
+            GptCallHandler.update_token_count((system_tkn_count + user_tkn_count))
+        elif messages:
+            pad = len(messages) * 3
+            prompt_contents = [chat.get("content") for chat in messages if chat.get("content", None)]
+            prompt_tkn_count = get_prompt_token_count(content=prompt_contents)
+            # print(f"From Message type count: {prompt_tkn_count}, padding count{pad}.")
+            GptCallHandler.update_token_count((prompt_tkn_count + pad))
+        
     def _log_gpt_error(self, e):
         logger.error("GPT Error: {}".format(e)) 
 

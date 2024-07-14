@@ -183,3 +183,9 @@ logs/*
 
 # evaluation
 evaluation/*
+
+# bash scrips
+*.sh
+
+# playthrough
+playthrough/experiments/*
